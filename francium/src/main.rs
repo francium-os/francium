@@ -1,6 +1,16 @@
 #![no_std]
 #![no_main]
-#![feature(global_asm)]
+#![feature(default_alloc_error_handler)]
+
+#[macro_use]
+extern crate bitflags;
+
+
+pub mod mmu;
+pub mod bump_allocator;
+
+use numtoa::NumToA;
+use crate::mmu::PageTable;
 
 pub fn write_uart(a: &str) {
 	let uart_base: *mut u8 = 0x09000000 as *mut u8;
@@ -10,10 +20,34 @@ pub fn write_uart(a: &str) {
 		}
 	}
 }
-
+  
 #[no_mangle]
 pub extern "C" fn rust_main() -> ! {
 	write_uart("hello from rust!\n");
+
+	let mut page_table_root = PageTable::new();
+	// map uart
+	page_table_root.map_4k(0x09000000, 0x09000000);
+
+	for i in (0x40000000..0x41000000).step_by(0x1000) {
+		page_table_root.map_4k(i, i);
+	}
+	for i in (0x50000000..0x51000000).step_by(0x1000) {
+		page_table_root.map_4k(i, i);
+	}
+
+	mmu::enable_mmu(&page_table_root);
+	write_uart("hello from rust after enabling mmu!\n");
+    loop {}
+}
+
+#[no_mangle]
+pub extern "C" fn rust_curr_el_spx_sync(lr: usize) -> ! {
+	let mut buffer = [0u8; 20];
+
+	write_uart("Exception!!! rust_curr_el_spx_sync!\n");
+	write_uart("lr: ");
+	write_uart(lr.numtoa_str(16, &mut buffer));
     loop {}
 }
 
@@ -24,5 +58,3 @@ use core::panic::PanicInfo;
 fn panic(_info: &PanicInfo) -> ! {
     loop {}
 }
-
-global_asm!(include_str!("entry.s"));

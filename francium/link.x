@@ -1,7 +1,5 @@
 ENTRY(_start)
 
-EXTERN(exception_handler)
-
 SECTIONS
 {
   # memory starts at 1gb, lmao
@@ -13,8 +11,9 @@ SECTIONS
     __text_start = .;
 
     *(.text.entry)
-    . = 0x40000200;
-    *(.text.exceptions)
+    . = 0x40000800;
+    __vbar = .;
+    KEEP(*(.text.exceptions))
 
     . = ALIGN(0x1000);
     *(.text .text.*);
