@@ -1,0 +1,4 @@
+memory map:
+0xffff_0000_0000_0000: physmap ( ""- 256 TiB"")
+0xffff_fff8_0000_0000: kernel base ( - 32 gb )
+0xffff_fffc_0000_0000: kernel heap base (- 16 gb)

@@ -1,4 +1,4 @@
-.global _start
+.global kernel_start
 .global set_ttbr0_el1
 
 .extern rust_main
@@ -6,8 +6,8 @@
 .extern _bootstrap_stack_bottom
 .extern _bootstrap_stack_top
 
-.section .text.entry
-_start:
+.section .text
+kernel_start:
 	ldr x0, =_bootstrap_stack_top
 	mov sp, x0
 

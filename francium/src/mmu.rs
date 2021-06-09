@@ -22,6 +22,16 @@ bitflags! {
 
 		const TYPE_PAGE = 1 << 1;
 
+		const ATTR_INDEX_0 = 0 << 2;
+		const ATTR_INDEX_1 = 1 << 2;
+		const ATTR_INDEX_2 = 2 << 2;
+		const ATTR_INDEX_3 = 3 << 2;
+		const ATTR_INDEX_4 = 4 << 2;
+		const ATTR_INDEX_5 = 5 << 2;
+		const ATTR_INDEX_6 = 6 << 2;
+		const ATTR_INDEX_7 = 7 << 2;
+
+
 		const ATTR_AP_2 = 1 << 7;
 		const ATTR_AP_1 = 1 << 6;
 
@@ -153,8 +163,11 @@ extern "C" {
 pub fn enable_mmu(page_table: &PageTable) {
 	// set ttbr0_el1
 	unsafe {
-		set_ttbr0_el1(page_table as *const PageTable as usize);
-		set_ttbr1_el1(page_table as *const PageTable as usize);
+		let kernel_base = 0xfffffff800000000;
+		let phys_base = 0x40000000;
+
+		set_ttbr0_el1(page_table as *const PageTable as usize - kernel_base + phys_base);
+		set_ttbr1_el1(page_table as *const PageTable as usize - kernel_base + phys_base);
 
 		// enable caches + mmu
 		// enable sp alignment?

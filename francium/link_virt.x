@@ -2,16 +2,15 @@ ENTRY(_start)
 
 SECTIONS
 {
+  KERNEL_BASE = 0xfffffff800000000;
+
   # memory starts at 1gb, lmao
-
-  . = 0x40000000;
-
-  .text : ALIGN(0x1000)
+  . = KERNEL_BASE;
+  .text : AT(0x40000000)
   {
     __text_start = .;
-
     *(.text.entry)
-    . = 0x40000800;
+    . = KERNEL_BASE + 0x800;
     __vbar = .;
     KEEP(*(.text.exceptions))
 

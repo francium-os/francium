@@ -1,1 +1,4 @@
 * eh_personality / unwinding support
+
+* enter kernel with MMU on
+* memory attr support - map devices as device memory...

@@ -3,7 +3,8 @@ fn main() {
         .compiler("clang")
         .no_default_flags(true)
         .flag("--target=aarch64-none-unknown-elf") 
-        .file("src/entry.s")
+        .file("src/kernel_entry.s")
         .file("src/memory.s")
+        .file("src/stub_virt.s")
         .compile("asm");
 }

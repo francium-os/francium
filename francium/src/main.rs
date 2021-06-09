@@ -5,7 +5,6 @@
 #[macro_use]
 extern crate bitflags;
 
-
 pub mod mmu;
 pub mod bump_allocator;
 
@@ -25,13 +24,16 @@ pub fn write_uart(a: &str) {
 pub extern "C" fn rust_main() -> ! {
 	write_uart("hello from rust!\n");
 
+	let kernel_base = 0xfffffff800000000;
+
 	let mut page_table_root = PageTable::new();
 	// map uart
 	page_table_root.map_4k(0x09000000, 0x09000000);
 
-	for i in (0x40000000..0x41000000).step_by(0x1000) {
-		page_table_root.map_4k(i, i);
+	for i in (0x0000000..0x1000000).step_by(0x1000) {
+		page_table_root.map_4k(0x40000000 + i, kernel_base + i);
 	}
+
 	for i in (0x50000000..0x51000000).step_by(0x1000) {
 		page_table_root.map_4k(i, i);
 	}
