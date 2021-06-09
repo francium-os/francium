@@ -142,6 +142,7 @@ impl PageTable {
 
 extern "C" {
 	fn set_ttbr0_el1(ttbr: usize);
+	fn set_ttbr1_el1(ttbr: usize);
 	fn get_sctlr_el1() -> usize;
 	fn set_sctlr_el1(sctlr: usize);
 
@@ -153,6 +154,7 @@ pub fn enable_mmu(page_table: &PageTable) {
 	// set ttbr0_el1
 	unsafe {
 		set_ttbr0_el1(page_table as *const PageTable as usize);
+		set_ttbr1_el1(page_table as *const PageTable as usize);
 
 		// enable caches + mmu
 		// enable sp alignment?
@@ -167,24 +169,20 @@ pub fn enable_mmu(page_table: &PageTable) {
 		const SCTLR_C: usize    = 1 << 2;
 		const SCTLR_M: usize    = 1 << 0;
 
-		let old_tcr = get_tcr_el1();
-
-		/*let mut buffer = [0u8; 20];
-		write_uart("tcr: ");
-		write_uart(old_tcr.numtoa_str(16, &mut buffer));*/
-
 		const TCR_IPS_48_BIT: usize = 0b101 << 32;
 		const TCR_TG1_GRANULE_4K: usize = 0 << 30;
 		const TCR_TG0_GRANULE_4K: usize = 0 << 14;
 
 		const TCR_T0SZ_48_BIT: usize = 16;
-		const TCR_T1SZ_48_BIT: usize = 16;
+		const TCR_T1SZ_48_BIT: usize = 16 << 16;
 
 		let tcr = TCR_IPS_48_BIT | TCR_TG0_GRANULE_4K | TCR_TG1_GRANULE_4K | TCR_T0SZ_48_BIT | TCR_T1SZ_48_BIT;
 		set_tcr_el1(tcr);
 
 		// RES1 bits
 		let mut sctlr = SCTLR_LSMAOE | SCTLR_NTLSMD | SCTLR_TSCXT;
+
+		// icache, dcache, sp alignment, mmu enable
 		sctlr |= SCTLR_I | SCTLR_SPAN | SCTLR_C | SCTLR_M;
 		set_sctlr_el1(sctlr);
 	}
