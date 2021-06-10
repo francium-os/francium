@@ -1,7 +1,16 @@
 extern crate alloc;
+
 use alloc::boxed::Box;
-use numtoa::NumToA;
-use crate::write_uart;
+use core::convert::TryFrom;
+
+#[repr(transparent)]
+pub struct PhysAddr(pub usize);
+
+impl PhysAddr {
+	fn is_aligned(&self, n: usize) -> bool {
+		self.0 & (n-1) == 0
+	}
+}
 
 #[derive(Copy, Clone)]
 #[repr(transparent)]
@@ -57,9 +66,9 @@ impl PageTableEntry {
 		PageTableEntry { entry: 0 }
 	}	
 
-	fn addr(&self) -> u64 {
+	fn addr(&self) -> PhysAddr {
 		// Extract bits 47:12
-		self.entry & 0x000f_ffff_ffff_f000
+		PhysAddr(usize::try_from(self.entry & 0x000f_ffff_ffff_f000).unwrap())
 	}
 
 	fn flags(&self) -> EntryFlags {
@@ -67,14 +76,14 @@ impl PageTableEntry {
 	}
 
 	fn set_flags(&mut self, flags: EntryFlags) {
-		self.entry = self.addr() | flags.bits()
+		self.entry = self.addr().0 as u64 | flags.bits()
 	}
 
-	fn set_addr(&mut self, addr: usize) {
+	fn set_addr(&mut self, addr: PhysAddr) {
 		// TODO TODO
-		//assert!(addr.is_aligned(4096));
+		assert!(addr.is_aligned(4096));
 
-		self.entry = (addr & 0x000f_ffff_ffff_f000) as u64 | self.flags().bits();
+		self.entry = (addr.0 as u64 & 0x000f_ffff_ffff_f000) | self.flags().bits();
 	}
 }
 
@@ -100,8 +109,7 @@ impl PageTable {
 		}
 	}
 
-	// TODO PhysAddr newtype
-	pub fn map_4k(&mut self, phys: usize, virt: usize) {
+	pub fn map_4k(&mut self, phys: PhysAddr, virt: usize) {
 		let mut entry = PageTableEntry::new();
 		// i think i can not care about flags wtf???
 		entry.set_flags(EntryFlags::VALID | EntryFlags::TYPE_PAGE | EntryFlags::ATTR_ACCESS);
@@ -122,7 +130,7 @@ impl PageTable {
 
 					let mut new_entry = PageTableEntry::new();
 					new_entry.set_flags(EntryFlags::VALID | EntryFlags::TYPE_TABLE);
-					new_entry.set_addr(new_table_box.as_mut() as *mut PageTable as usize); // uhh
+					new_entry.set_addr(PhysAddr(new_table_box.as_mut() as *mut PageTable as usize)); // uhh
 
 					self.entries[index] = new_entry;
 					new_table_box.as_mut().map_4k_internal(virt, entry, level + 1);
@@ -151,8 +159,8 @@ impl PageTable {
 }
 
 extern "C" {
-	fn set_ttbr0_el1(ttbr: usize);
-	fn set_ttbr1_el1(ttbr: usize);
+	fn set_ttbr0_el1(ttbr: PhysAddr);
+	fn set_ttbr1_el1(ttbr: PhysAddr);
 	fn get_sctlr_el1() -> usize;
 	fn set_sctlr_el1(sctlr: usize);
 
@@ -160,14 +168,22 @@ extern "C" {
 	fn set_tcr_el1(tcr: usize);
 }
 
-pub fn enable_mmu(page_table: &PageTable) {
-	// set ttbr0_el1
-	unsafe {
-		let kernel_base = 0xfffffff800000000;
-		let phys_base = 0x40000000;
+pub fn phys_to_virt(phys: usize) -> usize {
+	let kernel_base = 0xfffffff800000000;
+	let phys_base = 0x40000000;
+	phys + kernel_base - phys_base
+}
 
-		set_ttbr0_el1(page_table as *const PageTable as usize - kernel_base + phys_base);
-		set_ttbr1_el1(page_table as *const PageTable as usize - kernel_base + phys_base);
+pub fn virt_to_phys(virt: usize) -> PhysAddr {
+	let kernel_base = 0xfffffff800000000;
+	let phys_base = 0x40000000;
+	PhysAddr(virt - kernel_base + phys_base)
+}
+
+pub fn enable_mmu(page_table: &PageTable) {
+	unsafe {
+		set_ttbr0_el1(virt_to_phys(page_table as *const PageTable as usize));
+		set_ttbr1_el1(virt_to_phys(page_table as *const PageTable as usize));
 
 		// enable caches + mmu
 		// enable sp alignment?

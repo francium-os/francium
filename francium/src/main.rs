@@ -10,6 +10,7 @@ pub mod bump_allocator;
 
 use numtoa::NumToA;
 use crate::mmu::PageTable;
+use crate::mmu::PhysAddr;
 
 pub fn write_uart(a: &str) {
 	let uart_base: *mut u8 = 0x09000000 as *mut u8;
@@ -19,7 +20,7 @@ pub fn write_uart(a: &str) {
 		}
 	}
 }
-  
+
 #[no_mangle]
 pub extern "C" fn rust_main() -> ! {
 	write_uart("hello from rust!\n");
@@ -28,14 +29,14 @@ pub extern "C" fn rust_main() -> ! {
 
 	let mut page_table_root = PageTable::new();
 	// map uart
-	page_table_root.map_4k(0x09000000, 0x09000000);
+	page_table_root.map_4k(PhysAddr(0x09000000), 0x09000000);
 
 	for i in (0x0000000..0x1000000).step_by(0x1000) {
-		page_table_root.map_4k(0x40000000 + i, kernel_base + i);
+		page_table_root.map_4k(PhysAddr(0x40000000 + i), kernel_base + i);
 	}
 
 	for i in (0x50000000..0x51000000).step_by(0x1000) {
-		page_table_root.map_4k(i, i);
+		page_table_root.map_4k(PhysAddr(i), i);
 	}
 
 	mmu::enable_mmu(&page_table_root);

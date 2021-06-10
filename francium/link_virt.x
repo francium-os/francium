@@ -4,7 +4,6 @@ SECTIONS
 {
   KERNEL_BASE = 0xfffffff800000000;
 
-  # memory starts at 1gb, lmao
   . = KERNEL_BASE;
   .text : AT(0x40000000)
   {
