@@ -45,7 +45,8 @@ bitflags! {
 		const ATTR_AP_1 = 1 << 6;
 
 		const ATTR_ACCESS = 1 << 10;
-		// TODO: uhh, attributes ig
+
+		// TODO: uhh, upper half attributes ig
 		// • In Armv8.0, the position and contents of bits[63:52, 11:2] are identical to bits[63:52, 11:2] in the Page descriptors.
 	}
 
@@ -80,9 +81,7 @@ impl PageTableEntry {
 	}
 
 	fn set_addr(&mut self, addr: PhysAddr) {
-		// TODO TODO
 		assert!(addr.is_aligned(4096));
-
 		self.entry = (addr.0 as u64 & 0x000f_ffff_ffff_f000) | self.flags().bits();
 	}
 }
@@ -111,18 +110,41 @@ impl PageTable {
 
 	pub fn map_4k(&mut self, phys: PhysAddr, virt: usize) {
 		let mut entry = PageTableEntry::new();
-		// i think i can not care about flags wtf???
+
 		entry.set_flags(EntryFlags::VALID | EntryFlags::TYPE_PAGE | EntryFlags::ATTR_ACCESS);
 		entry.set_addr(phys);
 
-		self.map_4k_internal(virt, entry, 0);
+		self.map_internal(virt, entry, 0, 3);
 	}
 
-	fn map_4k_internal(&mut self, virt: usize, entry: PageTableEntry, level: i32) {
+	pub fn map_2mb(&mut self, phys: PhysAddr, virt: usize) {
+		assert!(phys.is_aligned(0x200000));
+		assert!((virt & (0x200000-1)) == 0);
+
+		let mut entry = PageTableEntry::new();
+
+		entry.set_flags(EntryFlags::VALID | EntryFlags::TYPE_BLOCK | EntryFlags::ATTR_ACCESS);
+		entry.set_addr(phys);
+
+		self.map_internal(virt, entry, 0, 2);
+	}
+
+	pub fn map_1gb(&mut self, phys: PhysAddr, virt: usize) {
+		assert!(phys.is_aligned(0x40000000));
+		assert!((virt & (0x40000000-1)) == 0);
+		let mut entry = PageTableEntry::new();
+
+		entry.set_flags(EntryFlags::VALID | EntryFlags::TYPE_BLOCK | EntryFlags::ATTR_ACCESS);
+		entry.set_addr(phys);
+
+		self.map_internal(virt, entry, 0, 1);
+	}
+
+	fn map_internal(&mut self, virt: usize, entry: PageTableEntry, level: i32, final_level: i32) {
 		let off = (3-level) * 9 + 12;
 
 		let index = (virt & (0x1ff << off)) >> off;
-		if level < 3 {
+		if level < final_level {
 			match &mut self.tables[index] {
 				None => {
 					let new_table = PageTable::new();
@@ -133,29 +155,20 @@ impl PageTable {
 					new_entry.set_addr(PhysAddr(new_table_box.as_mut() as *mut PageTable as usize)); // uhh
 
 					self.entries[index] = new_entry;
-					new_table_box.as_mut().map_4k_internal(virt, entry, level + 1);
+					new_table_box.as_mut().map_internal(virt, entry, level + 1, final_level);
 
 					let new_table_option = Some(new_table_box);
 					self.tables[index] = new_table_option;
 				},
 				Some(x) => {
-					x.map_4k_internal(virt, entry, level + 1);
+					x.map_internal(virt, entry, level + 1, final_level);
 				}
 			}
-
 		} else {
 			// We are the final table! good.
 			self.entries[index] = entry;
 		}
 	}
-
-	/*fn map_2mb() {
-
-	}
-
-	fn map_1gb() {
-
-	}*/
 }
 
 extern "C" {

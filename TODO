@@ -1,4 +1,4 @@
 * eh_personality / unwinding support
 * memory attr support - map devices as device memory...
 * phys allocator
-* 2mb/1gb blocks
+* make alignment checks easier - VirtAddr type? just a function?
