@@ -3,12 +3,12 @@
 
 .extern rust_main
 .extern rust_curr_el_spx_sync
-.extern _bootstrap_stack_bottom
-.extern _bootstrap_stack_top
+.extern __bootstrap_stack_bottom
+.extern __bootstrap_stack_top
 
 .section .text
 kernel_start:
-	ldr x0, =_bootstrap_stack_top
+	ldr x0, =__bootstrap_stack_top
 	mov sp, x0
 
 	ldr x0, =__vbar
@@ -105,7 +105,7 @@ lower_el_aarch32_serror: // The exception handler for a System Error
                          // exception from a lower EL(AArch32).
 b .
 
-.section .data.bootstrap_stack
-_bootstrap_stack_bottom:
+.section .bss.bootstrap_stack
+__bootstrap_stack_bottom:
 .space 0x20000
-_bootstrap_stack_top:
+__bootstrap_stack_top:
