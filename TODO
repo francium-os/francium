@@ -1,4 +1,7 @@
 * eh_personality / unwinding support
 * memory attr support - map devices as device memory...
-* phys allocator
 * make alignment checks easier - VirtAddr type? just a function?
+
+* virt_to_phys using addr translation instrs??
+* investigate NEON/FP stuff being wonky
+* actual seperate tables for ttbr0/1??

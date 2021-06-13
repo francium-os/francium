@@ -50,9 +50,12 @@ initial_level_0_table:
 
 # table, level 1.
 .quad (initial_level_1_table - KERNEL_BASE + PHYS_BASE) + (1<<10) + 3
-.rept 510
+.rept 509
 .quad 0
 .endr
+# identity map physical memory at 0xffff_ff00_0000_0000 ie "physmap"
+.quad (initial_level_1_table - KERNEL_BASE + PHYS_BASE) + (1<<10) + 3
+# map kernel
 .quad (initial_kernel_map - KERNEL_BASE + PHYS_BASE) + (1<<10) + 3
 
 # map a 512GB block as identity

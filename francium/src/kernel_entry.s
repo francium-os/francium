@@ -107,5 +107,5 @@ b .
 
 .section .data.bootstrap_stack
 _bootstrap_stack_bottom:
-.space 0x30000
+.space 0x20000
 _bootstrap_stack_top:

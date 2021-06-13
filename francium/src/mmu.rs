@@ -4,10 +4,17 @@ use alloc::boxed::Box;
 use core::convert::TryFrom;
 
 #[repr(transparent)]
+#[derive(Copy, Clone)]
 pub struct PhysAddr(pub usize);
 
+impl core::fmt::Display for PhysAddr {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "0x{:x}", self.0)
+    }
+}
+
 impl PhysAddr {
-	fn is_aligned(&self, n: usize) -> bool {
+	pub fn is_aligned(&self, n: usize) -> bool {
 		self.0 & (n-1) == 0
 	}
 }
@@ -181,10 +188,9 @@ extern "C" {
 	fn set_tcr_el1(tcr: usize);
 }
 
-pub fn phys_to_virt(phys: usize) -> usize {
-	let kernel_base = 0xfffffff800000000;
-	let phys_base = 0x40000000;
-	phys + kernel_base - phys_base
+pub fn phys_to_virt(phys: PhysAddr) -> usize {
+	let physmap_base = 0xffffff0000000000;
+	phys.0 + physmap_base
 }
 
 pub fn virt_to_phys(virt: usize) -> PhysAddr {

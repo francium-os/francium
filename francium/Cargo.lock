@@ -20,11 +20,4 @@ version = "0.1.0"
 dependencies = [
  "bitflags",
  "cc",
- "numtoa",
 ]
-
-[[package]]
-name = "numtoa"
-version = "0.2.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6aa2c4e539b869820a2b82e1aef6ff40aa85e65decdd5185e83fb4b1249cd00f"
