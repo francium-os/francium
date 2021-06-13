@@ -32,6 +32,12 @@ msr ttbr1_el1, x0
 ldr x0, = SCTLR_LSMAOE | SCTLR_NTLSMD | SCTLR_TSCXT | SCTLR_I | SCTLR_SPAN | SCTLR_C | SCTLR_M;
 msr sctlr_el1, x0
 
+# Disable trapping of SIMD/FP instructions.
+mrs    x1, cpacr_el1
+mov    x0, #(3 << 20)
+orr    x0, x1, x0
+msr    cpacr_el1, x0
+
 # This is important - if we do a `b kernel_start` it will be relative.
 ldr x0, =kernel_start
 br x0
