@@ -32,7 +32,7 @@ SECTIONS
   .bss : ALIGN(0x1000)
   {
     __bss_start = .;
-    *(.bss)
+    *(.bss .bss.*)
     __bss_end = .;
   }
 }

@@ -54,17 +54,11 @@ pub extern "C" fn rust_main() -> ! {
 
 	let mut page_table_root = PageTable::new();
 
+	page_table_root.map_1gb(PhysAddr(0), physmap_base);
 	page_table_root.map_1gb(PhysAddr(0x40000000), physmap_base + 0x40000000);
-
-	// map uart
-	page_table_root.map_4k(PhysAddr(0x09000000), 0x09000000);
 
 	for i in (0x0000000..0x1000000).step_by(0x200000) {
 		page_table_root.map_2mb(PhysAddr(0x40000000 + i), kernel_base + i);
-	}
-
-	for i in (0x50000000..0x51000000).step_by(0x200000) {
-		page_table_root.map_2mb(PhysAddr(i), i);
 	}
 
 	mmu::enable_mmu(&page_table_root);

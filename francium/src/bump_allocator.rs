@@ -1,13 +1,14 @@
 extern crate alloc;
 use alloc::alloc::{GlobalAlloc, Layout};
 
-static mut ALLOC_START: usize = 0x50000000; // 1gb+some
+static mut ALLOC_START: usize = 0xfffffffc00000000;
 
 struct BumpAllocator {
 }
 
 unsafe impl GlobalAlloc for BumpAllocator {
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 { 
+        unimplemented!();
     	// respect layout.size, layout.align
     	let mut start = ALLOC_START;
 

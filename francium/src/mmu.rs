@@ -3,6 +3,8 @@ extern crate alloc;
 use alloc::boxed::Box;
 use core::convert::TryFrom;
 
+use crate::phys_allocator;
+
 #[repr(transparent)]
 #[derive(Copy, Clone)]
 pub struct PhysAddr(pub usize);
@@ -102,16 +104,14 @@ impl PageTableEntry {
 #[repr(C)]
 pub struct PageTable {
     entries: [PageTableEntry; 512],
-    tables: [Option<Box<PageTable>>; 512]
 }
+
+struct MappingError;
 
 impl PageTable {
 	pub fn new() -> PageTable {
-		// TODO: weird
-		const N: Option<Box<PageTable>> = None;
 		PageTable {
 			entries: [PageTableEntry::new(); 512],
-			tables: [N; 512]
 		}
 	}
 
@@ -121,7 +121,9 @@ impl PageTable {
 		entry.set_flags(EntryFlags::VALID | EntryFlags::TYPE_PAGE | EntryFlags::ATTR_ACCESS);
 		entry.set_addr(phys);
 
-		self.map_internal(virt, entry, 0, 3);
+		unsafe {
+			self.map_internal(virt, entry, 0, 3);
+		}
 	}
 
 	pub fn map_2mb(&mut self, phys: PhysAddr, virt: usize) {
@@ -133,7 +135,9 @@ impl PageTable {
 		entry.set_flags(EntryFlags::VALID | EntryFlags::TYPE_BLOCK | EntryFlags::ATTR_ACCESS);
 		entry.set_addr(phys);
 
-		self.map_internal(virt, entry, 0, 2);
+		unsafe {
+			self.map_internal(virt, entry, 0, 2);
+		}
 	}
 
 	pub fn map_1gb(&mut self, phys: PhysAddr, virt: usize) {
@@ -144,36 +148,35 @@ impl PageTable {
 		entry.set_flags(EntryFlags::VALID | EntryFlags::TYPE_BLOCK | EntryFlags::ATTR_ACCESS);
 		entry.set_addr(phys);
 
-		self.map_internal(virt, entry, 0, 1);
+		unsafe {
+			self.map_internal(virt, entry, 0, 1);
+		}
 	}
 
-	fn map_internal(&mut self, virt: usize, entry: PageTableEntry, level: i32, final_level: i32) {
+	unsafe fn map_internal(&mut self, virt: usize, entry: PageTableEntry, level: i32, final_level: i32) -> Option<()> {
 		let off = (3-level) * 9 + 12;
 
 		let index = (virt & (0x1ff << off)) >> off;
 		if level < final_level {
-			match &mut self.tables[index] {
-				None => {
-					let new_table = PageTable::new();
-					let mut new_table_box = Box::new(new_table);
+			if self.entries[index].entry == 0 {
+				let new_table_phys: PhysAddr = phys_allocator::alloc()?;
+				let x: usize = phys_to_virt(new_table_phys);
+				let page_table = x as *mut PageTable;
+				*page_table = PageTable::new();
 
-					let mut new_entry = PageTableEntry::new();
-					new_entry.set_flags(EntryFlags::VALID | EntryFlags::TYPE_TABLE);
-					new_entry.set_addr(PhysAddr(new_table_box.as_mut() as *mut PageTable as usize)); // uhh
-
-					self.entries[index] = new_entry;
-					new_table_box.as_mut().map_internal(virt, entry, level + 1, final_level);
-
-					let new_table_option = Some(new_table_box);
-					self.tables[index] = new_table_option;
-				},
-				Some(x) => {
-					x.map_internal(virt, entry, level + 1, final_level);
-				}
+				let mut new_entry = PageTableEntry::new();
+				new_entry.set_flags(EntryFlags::VALID | EntryFlags::TYPE_TABLE);
+				new_entry.set_addr(new_table_phys); // uh
+				self.entries[index] = new_entry;
 			}
+
+			let x: usize = phys_to_virt(self.entries[index].addr());
+			let page_table = x as *mut PageTable;
+			page_table.as_mut()?.map_internal(virt, entry, level + 1, final_level)
 		} else {
 			// We are the final table! good.
 			self.entries[index] = entry;
+			Some(())
 		}
 	}
 }
