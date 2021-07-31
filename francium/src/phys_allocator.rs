@@ -15,7 +15,7 @@ unsafe fn read_phys<T: Copy>(addr: PhysAddr) -> T {
 	*(virt_addr as *const T)
 }
 
-unsafe fn write_phys<T>(addr: PhysAddr, value: T) {
+pub unsafe fn write_phys<T>(addr: PhysAddr, value: T) {
 	let virt_addr = phys_to_virt(addr);
 	*(virt_addr as *mut T) = value;
 }

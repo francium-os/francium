@@ -6,5 +6,6 @@ fn main() {
         .file("src/kernel_entry.s")
         .file("src/memory.s")
         .file("src/stub_virt.s")
+        .file("src/arch/aarch64/context.s")
         .compile("asm");
 }

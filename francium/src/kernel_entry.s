@@ -60,6 +60,7 @@ curr_el_spx_sync:        // The exception handler for a synchrous
                          // current SP.
 mrs x0, elr_el1
 b rust_curr_el_spx_sync
+b .
 
 .balign 0x80
 curr_el_spx_irq:         // The exception handler for an IRQ exception from 
@@ -80,6 +81,11 @@ b .
  .balign 0x80
 lower_el_aarch64_sync:   // The exception handler for a synchronous 
                          // exception from a lower EL (AArch64).
+mrs x0, elr_el1
+mrs x1, esr_el1
+mrs x2, far_el1
+
+b rust_lower_el_spx_sync
 b .
 
 .balign 0x80

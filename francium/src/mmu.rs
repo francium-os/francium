@@ -1,9 +1,9 @@
 extern crate alloc;
 
-use alloc::boxed::Box;
 use core::convert::TryFrom;
 
 use crate::phys_allocator;
+use crate::constants::*;
 
 #[repr(transparent)]
 #[derive(Copy, Clone)]
@@ -48,7 +48,6 @@ bitflags! {
 		const ATTR_INDEX_5 = 5 << 2;
 		const ATTR_INDEX_6 = 6 << 2;
 		const ATTR_INDEX_7 = 7 << 2;
-
 
 		const ATTR_AP_2 = 1 << 7;
 		const ATTR_AP_1 = 1 << 6;
@@ -115,10 +114,21 @@ impl PageTable {
 		}
 	}
 
+	pub fn user_process(&self) -> PageTable {
+		// TODO: is there a better way to do this
+
+		let mut pg = PageTable::new();
+		pg.entries[510] = self.entries[510];
+		pg.entries[511] = self.entries[511];
+
+		pg
+	}
+
+
 	pub fn map_4k(&mut self, phys: PhysAddr, virt: usize) {
 		let mut entry = PageTableEntry::new();
 
-		entry.set_flags(EntryFlags::VALID | EntryFlags::TYPE_PAGE | EntryFlags::ATTR_ACCESS);
+		entry.set_flags(EntryFlags::VALID | EntryFlags::TYPE_PAGE | EntryFlags::ATTR_ACCESS | EntryFlags::ATTR_AP_1);
 		entry.set_addr(phys);
 
 		unsafe {
@@ -182,24 +192,22 @@ impl PageTable {
 }
 
 extern "C" {
-	fn set_ttbr0_el1(ttbr: PhysAddr);
-	fn set_ttbr1_el1(ttbr: PhysAddr);
-	fn get_sctlr_el1() -> usize;
+	pub fn set_ttbr0_el1(ttbr: PhysAddr);
+	pub fn set_ttbr1_el1(ttbr: PhysAddr);
+	//fn get_sctlr_el1() -> usize;
 	fn set_sctlr_el1(sctlr: usize);
 
-	fn get_tcr_el1() -> usize;
+	//fn get_tcr_el1() -> usize;
 	fn set_tcr_el1(tcr: usize);
 }
 
 pub fn phys_to_virt(phys: PhysAddr) -> usize {
-	let physmap_base = 0xffffff0000000000;
-	phys.0 + physmap_base
+	phys.0 + PHYSMAP_BASE
 }
 
 pub fn virt_to_phys(virt: usize) -> PhysAddr {
-	let kernel_base = 0xfffffff800000000;
 	let phys_base = 0x40000000;
-	PhysAddr(virt - kernel_base + phys_base)
+	PhysAddr(virt - KERNEL_BASE + phys_base)
 }
 
 pub fn enable_mmu(page_table: &PageTable) {
