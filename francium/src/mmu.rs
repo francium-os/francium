@@ -1,9 +1,11 @@
 extern crate alloc;
 
 use core::convert::TryFrom;
+use spin::RwLock;
 
 use crate::phys_allocator;
 use crate::constants::*;
+use crate::println;
 
 #[repr(transparent)]
 #[derive(Copy, Clone)]
@@ -54,6 +56,9 @@ bitflags! {
 
 		const ATTR_ACCESS = 1 << 10;
 
+		const ATTR_XN = 1<<54;
+		const ATTR_PXN = 1<<53;
+
 		// TODO: uhh, upper half attributes ig
 		// • In Armv8.0, the position and contents of bits[63:52, 11:2] are identical to bits[63:52, 11:2] in the Page descriptors.
 	}
@@ -67,11 +72,27 @@ bitflags! {
 	// Blocks at level 3 are illegal
 }
 
+bitflags! {
+	pub struct PagePermission : u64 {
+		const READ_ONLY = 0;
+		const WRITE = 1;
+		const EXECUTE = 2;
+		const KERNEL = 4;
 
-// TODO TODO PhysAddr newtype
+		const USER_READ_ONLY = Self::READ_ONLY.bits;
+		const USER_READ_WRITE = Self::READ_ONLY.bits | Self::WRITE.bits;
+		const USER_READ_EXECUTE = Self::READ_ONLY.bits | Self::EXECUTE.bits;
+		const USER_RWX = Self::READ_ONLY.bits | Self::WRITE.bits | Self::EXECUTE.bits;
+
+		const KERNEL_READ_ONLY = Self::READ_ONLY.bits | Self::KERNEL.bits;
+		const KERNEL_READ_WRITE = Self::READ_ONLY.bits | Self::WRITE.bits | Self::KERNEL.bits;
+		const KERNEL_READ_EXECUTE = Self::READ_ONLY.bits | Self::WRITE.bits | Self::KERNEL.bits;
+		const KERNEL_RWX = Self::KERNEL_READ_EXECUTE.bits | Self::WRITE.bits; 
+	}
+}
 
 impl PageTableEntry {
-	fn new() -> PageTableEntry {
+	const fn new() -> PageTableEntry {
 		PageTableEntry { entry: 0 }
 	}	
 
@@ -107,8 +128,29 @@ pub struct PageTable {
 
 struct MappingError;
 
+// https://9net.org/screenshots/1627760764.png
+fn map_perms(perm: PagePermission) -> EntryFlags {
+	let mut flags: EntryFlags = EntryFlags::empty();
+
+	// TODO: PXN, maybe
+
+	if !perm.contains(PagePermission::KERNEL) {
+		flags |= EntryFlags::ATTR_AP_1;
+	}
+
+	if !perm.contains(PagePermission::WRITE) {
+		flags |= EntryFlags::ATTR_AP_2;
+	}
+
+	if !perm.contains(PagePermission::EXECUTE) {
+		flags |= EntryFlags::ATTR_XN;
+	}
+
+	flags
+}
+
 impl PageTable {
-	pub fn new() -> PageTable {
+	pub const fn new() -> PageTable {
 		PageTable {
 			entries: [PageTableEntry::new(); 512],
 		}
@@ -124,42 +166,56 @@ impl PageTable {
 		pg
 	}
 
-
-	pub fn map_4k(&mut self, phys: PhysAddr, virt: usize) {
+	pub fn map_4k(&mut self, phys: PhysAddr, virt: usize, perm: PagePermission) {
 		let mut entry = PageTableEntry::new();
 
-		entry.set_flags(EntryFlags::VALID | EntryFlags::TYPE_PAGE | EntryFlags::ATTR_ACCESS | EntryFlags::ATTR_AP_1);
+		entry.set_flags(EntryFlags::VALID | EntryFlags::TYPE_PAGE | EntryFlags::ATTR_ACCESS | map_perms(perm));
 		entry.set_addr(phys);
 
 		unsafe {
-			self.map_internal(virt, entry, 0, 3);
+			match self.map_internal(virt, entry, 0, 3) {
+				Some(x) => (),
+				None => {
+					panic!("4k map failed!");
+				}
+			}
 		}
 	}
 
-	pub fn map_2mb(&mut self, phys: PhysAddr, virt: usize) {
+	pub fn map_2mb(&mut self, phys: PhysAddr, virt: usize, perm: PagePermission) {
 		assert!(phys.is_aligned(0x200000));
 		assert!((virt & (0x200000-1)) == 0);
 
 		let mut entry = PageTableEntry::new();
 
-		entry.set_flags(EntryFlags::VALID | EntryFlags::TYPE_BLOCK | EntryFlags::ATTR_ACCESS);
+		entry.set_flags(EntryFlags::VALID | EntryFlags::TYPE_BLOCK | EntryFlags::ATTR_ACCESS | map_perms(perm));
 		entry.set_addr(phys);
 
 		unsafe {
-			self.map_internal(virt, entry, 0, 2);
+			match self.map_internal(virt, entry, 0, 2) {
+				Some(x) => (),
+				None => {
+					panic!("2mb map failed!");
+				}
+			}
 		}
 	}
 
-	pub fn map_1gb(&mut self, phys: PhysAddr, virt: usize) {
+	pub fn map_1gb(&mut self, phys: PhysAddr, virt: usize, perm: PagePermission) {
 		assert!(phys.is_aligned(0x40000000));
 		assert!((virt & (0x40000000-1)) == 0);
 		let mut entry = PageTableEntry::new();
 
-		entry.set_flags(EntryFlags::VALID | EntryFlags::TYPE_BLOCK | EntryFlags::ATTR_ACCESS);
+		entry.set_flags(EntryFlags::VALID | EntryFlags::TYPE_BLOCK | EntryFlags::ATTR_ACCESS | map_perms(perm));
 		entry.set_addr(phys);
 
 		unsafe {
-			self.map_internal(virt, entry, 0, 1);
+			match self.map_internal(virt, entry, 0, 1) {
+				Some(x) => (),
+				None => { 
+					panic!("1gb map failed!");
+				}
+			}
 		}
 	}
 
@@ -170,6 +226,7 @@ impl PageTable {
 		if level < final_level {
 			if self.entries[index].entry == 0 {
 				let new_table_phys: PhysAddr = phys_allocator::alloc()?;
+				
 				let x: usize = phys_to_virt(new_table_phys);
 				let page_table = x as *mut PageTable;
 				*page_table = PageTable::new();

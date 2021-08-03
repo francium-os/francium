@@ -59,6 +59,8 @@ curr_el_spx_sync:        // The exception handler for a synchrous
                          // exception from the current EL using the
                          // current SP.
 mrs x0, elr_el1
+mrs x1, esr_el1
+mrs x2, far_el1
 b rust_curr_el_spx_sync
 b .
 
@@ -124,6 +126,8 @@ lower_el_aarch32_serror: // The exception handler for a System Error
 b .
 
 .section .bss.bootstrap_stack
+__bootstrap_stack_guard:
+.space 0x10
 __bootstrap_stack_bottom:
-.space 0x20000
+.space 0x40000
 __bootstrap_stack_top:

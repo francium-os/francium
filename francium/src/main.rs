@@ -5,18 +5,28 @@
 #[macro_use]
 extern crate bitflags;
 
+#[macro_use]
+extern crate lazy_static;
+
+extern crate alloc;
+
 pub mod mmu;
 pub mod bump_allocator;
 pub mod phys_allocator;
 pub mod uart;
 pub mod panic;
+
+#[macro_use]
 pub mod print;
 pub mod constants;
 pub mod process;
 pub mod arch;
+pub mod memory;
 
 use crate::mmu::PageTable;
 use crate::mmu::PhysAddr;
+use crate::mmu::PagePermission;
+use crate::memory::KERNEL_ADDRESS_SPACE;
 use crate::process::Process;
 use crate::constants::*;
 
@@ -28,7 +38,6 @@ extern "C" {
 #[no_mangle]
 pub extern "C" fn rust_main() -> ! {
 	println!("hello from rust!");
-	println!("trying to allocate a physical frame");
 
 	// set up physical allocator
 	unsafe {
@@ -51,45 +60,49 @@ pub extern "C" fn rust_main() -> ! {
 		}
 	}
 
-	let mut page_table_root = PageTable::new();
+	{
+		let mut page_table_root = &mut KERNEL_ADDRESS_SPACE.write().page_table;
 
-	// map virt peripherals into physmap
-	// TODO: seperate device mapping under kernel somewhere
-	page_table_root.map_1gb(PhysAddr(0), PHYSMAP_BASE);
+		// map virt peripherals into physmap
+		// TODO: seperate device mapping under kernel somewhere
+		page_table_root.map_1gb(PhysAddr(0), PHYSMAP_BASE, PagePermission::KERNEL_RWX);
 
-	// 1 gb is enough for anyone
-	// TODO: know physical memory size
-	page_table_root.map_1gb(PhysAddr(0x40000000), PHYSMAP_BASE + 0x40000000);
+		// 1 gb is enough for anyone
+		// TODO: know physical memory size
+		page_table_root.map_1gb(PhysAddr(0x40000000), PHYSMAP_BASE + 0x40000000, PagePermission::KERNEL_RWX);
 
-	// map kernel in
-	unsafe {
-		let text_start_virt = &__text_start as *const i32 as usize;
-		let bss_end_virt = &__bss_end as *const i32 as usize;
+		// map kernel in
+		unsafe {
+			let text_start_virt = &__text_start as *const i32 as usize;
+			let bss_end_virt = &__bss_end as *const i32 as usize;
 
-		let kernel_length = bss_end_virt - text_start_virt;
+			let kernel_length = bss_end_virt - text_start_virt;
 
-		for i in (0x0000000..kernel_length).step_by(0x200000) {
-			page_table_root.map_2mb(PhysAddr(0x40000000 + i), KERNEL_BASE + i);
+			for i in (0x0000000..kernel_length).step_by(0x200000) {
+				page_table_root.map_2mb(PhysAddr(0x40000000 + i), KERNEL_BASE + i, PagePermission::KERNEL_RWX);
+			}
 		}
 	}
+	println!("hello from rust before enabling mmu!");
 
-	mmu::enable_mmu(&page_table_root);
+	{
+		let mut page_table_root = &KERNEL_ADDRESS_SPACE.read().page_table;
+		mmu::enable_mmu(page_table_root);
+	}
+
 	println!("hello from rust after enabling mmu!");
 
 	// Load the first process
-	let mut p = Process::new(&page_table_root);
+	let mut p = {
+		let page_table_root = &KERNEL_ADDRESS_SPACE.read().page_table;
+		Process::new(page_table_root)
+	};
 
 	// Give it some memory... just a little
-	unsafe {
-		let page: PhysAddr = phys_allocator::alloc().unwrap();
-		let page_two: PhysAddr = phys_allocator::alloc().unwrap();
-		println!("code page {}", page);
-		println!("stack page {}", page);
-		p.pages.map_4k(page, 0x1000_0000);
-		p.pages.map_4k(page_two, 0x4000_0000);
+	p.address_space.create(0x1000_0000, 0x1000, PagePermission::USER_RWX);
+	p.address_space.create(0x4000_0000, 0x1000, PagePermission::USER_RWX);
 
-		phys_allocator::write_phys::<u32>(page, 0x14000000);
-	}
+	//phys_allocator::write_phys::<u32>(page, 0x14000000);
 
 	p.setup_context(0x1000_0000, 0x4000_0000 + 0x1000);
 	p.switch_to();
@@ -100,9 +113,9 @@ pub extern "C" fn rust_main() -> ! {
 }
 
 #[no_mangle]
-pub extern "C" fn rust_curr_el_spx_sync(lr: usize) -> ! {
+pub extern "C" fn rust_curr_el_spx_sync(lr: usize, esr: usize, far: usize) -> ! {
 	println!("Exception!!! rust_curr_el_spx_sync!\n");
-	println!("lr: {:x}", lr);
+	println!("lr: {:x}, esr: {:x}, far: {:x}", lr, esr, far);
     loop {}
 }
 

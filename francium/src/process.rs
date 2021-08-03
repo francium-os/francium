@@ -1,16 +1,16 @@
+use crate::memory::AddressSpace;
 use crate::mmu::*;
-use crate::mmu::{set_ttbr0_el1, set_ttbr1_el1};
 use crate::arch::aarch64::context::ProcessContext;
 
 pub struct Process {
-	pub pages: PageTable,
+	pub address_space: AddressSpace,
 	pub context: ProcessContext
 }
 
 impl Process {
 	pub fn new(root: &PageTable) -> Process {
 		let p = Process {
-			pages: root.user_process(),
+			address_space: AddressSpace::new(root.user_process()),
 			context: ProcessContext::new()
 		};
 		p
@@ -26,8 +26,8 @@ impl Process {
 
 		unsafe {
 			// Switch to `pages`, switch to user mode
-			set_ttbr0_el1(virt_to_phys(&self.pages as *const PageTable as usize));
-			set_ttbr1_el1(virt_to_phys(&self.pages as *const PageTable as usize));
+			set_ttbr0_el1(virt_to_phys(&self.address_space.page_table as *const PageTable as usize));
+			set_ttbr1_el1(virt_to_phys(&self.address_space.page_table  as *const PageTable as usize));
 			self.context.switch();
 		}
 	}
