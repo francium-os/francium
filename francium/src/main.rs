@@ -99,15 +99,18 @@ pub extern "C" fn rust_main() -> ! {
 	};
 
 	// Give it some memory... just a little
-	p.address_space.create(0x1000_0000, 0x1000, PagePermission::USER_RWX);
-	p.address_space.create(0x4000_0000, 0x1000, PagePermission::USER_RWX);
+	let user_code_base = 0x10000000;
+	let user_stack_base = 0x40000000;
+
+	p.address_space.create(user_code_base, 0x1000, PagePermission::USER_RWX);
+	p.address_space.create(user_stack_base, 0x1000, PagePermission::USER_READ_WRITE);
 
 	unsafe {
 		let page = p.address_space.page_table.virt_to_phys(0x1000_0000).unwrap();
 		phys_allocator::write_phys::<u32>(page, 0x14000000);
 	}
 
-	p.setup_context(0x1000_0000, 0x4000_0000 + 0x1000);
+	p.setup_context(user_code_base, user_stack_base + 0x1000);
 	p.switch_to();
 
 	println!("hello from rust inside the ... user process. hm.");
