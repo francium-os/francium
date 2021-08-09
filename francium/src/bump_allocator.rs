@@ -1,7 +1,6 @@
 extern crate alloc;
 use alloc::alloc::{GlobalAlloc, Layout};
 use crate::constants::*;
-use crate::println;
 
 static mut ALLOC_START: usize = KERNEL_HEAP_BASE;
 static mut ALLOC_PRESENT: usize = KERNEL_HEAP_BASE;
@@ -22,7 +21,7 @@ unsafe impl GlobalAlloc for BumpAllocator {
     	ALLOC_START = start;
         ALLOC_START += layout.size();
 
-        if(ALLOC_START >= ALLOC_PRESENT) {
+        if ALLOC_START >= ALLOC_PRESENT {
             let len = ALLOC_START - ALLOC_PRESENT;
             panic!("We need to make up some memory {:x} {:x} {:x}", ALLOC_START, ALLOC_PRESENT, len);
 

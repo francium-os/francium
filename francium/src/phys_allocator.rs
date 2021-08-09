@@ -1,5 +1,4 @@
 use crate::mmu::{PhysAddr, phys_to_virt};
-use crate::println;
 
 // classic 4k pages everywhere
 // dumb linked list

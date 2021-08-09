@@ -12,14 +12,5 @@
   "panic-strategy": "abort",
   "relocation-model": "static",
   "target-pointer-width": "64",
-  "unsupported-abis": [
-    "stdcall",
-    "stdcall-unwind",
-    "fastcall",
-    "vectorcall",
-    "thiscall",
-    "thiscall-unwind",
-    "win64",
-    "sysv64"
-  ]
+  "pre-link-args": { "ld.lld": ["-Tlink_virt.x"] }
 }

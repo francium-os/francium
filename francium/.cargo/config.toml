@@ -4,6 +4,3 @@ build-std = ["core", "compiler_builtins", "alloc"]
 
 [build]
 target = "aarch64-unknown-francium.json"
-
-[target.aarch64-unknown-francium]
-rustflags = ["-C", "link-arg=-Tlink_virt.x"]

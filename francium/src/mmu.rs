@@ -1,11 +1,9 @@
 extern crate alloc;
 
 use core::convert::TryFrom;
-use spin::RwLock;
 
 use crate::phys_allocator;
 use crate::constants::*;
-use crate::println;
 
 #[repr(transparent)]
 #[derive(Copy, Clone)]
@@ -174,7 +172,7 @@ impl PageTable {
 
 		unsafe {
 			match self.map_internal(virt, entry, 0, 3) {
-				Some(x) => (),
+				Some(_) => (),
 				None => {
 					panic!("4k map failed!");
 				}
@@ -193,7 +191,7 @@ impl PageTable {
 
 		unsafe {
 			match self.map_internal(virt, entry, 0, 2) {
-				Some(x) => (),
+				Some(_) => (),
 				None => {
 					panic!("2mb map failed!");
 				}
@@ -211,7 +209,7 @@ impl PageTable {
 
 		unsafe {
 			match self.map_internal(virt, entry, 0, 1) {
-				Some(x) => (),
+				Some(_) => (),
 				None => { 
 					panic!("1gb map failed!");
 				}
@@ -244,6 +242,50 @@ impl PageTable {
 			// We are the final table! good.
 			self.entries[index] = entry;
 			Some(())
+		}
+	}
+
+	unsafe fn walk_internal(&self, virt: usize, level: usize) -> Option<PhysAddr> {
+		let final_level = 3;
+		let off = (3-level) * 9 + 12;
+
+		let index = (virt & (0x1ff << off)) >> off;
+
+		// either block (done) or table (not done), or page (done)
+		let entry_flags = self.entries[index].flags();
+		if entry_flags.contains(EntryFlags::VALID) {
+			if entry_flags.contains(EntryFlags::TYPE_TABLE) {
+				if level < final_level {
+					let x: usize = phys_to_virt(self.entries[index].addr());
+					let page_table = x as *const PageTable;
+					page_table.as_ref()?.walk_internal(virt, level + 1)
+				}
+				else {
+					// calc block size from level
+					let page_addr = self.entries[index].addr().0;
+					let page_mask = (1<<(off)) - 1;
+					Some(PhysAddr((virt & page_mask) + page_addr))
+				}
+			} else {
+				// done, unless we are in the final level
+				if level < final_level {
+					let block_addr = self.entries[index].addr().0;
+					let block_mask = (1<<(off)) - 1;
+					Some(PhysAddr((virt & block_mask) + block_addr))
+				} else {
+					// Block encoding in level 3 table is invalid
+					panic!("Your page tables are broken!");
+				}
+			}
+		} else {
+			// not valid, stop
+			None
+		}
+	}
+
+	pub fn virt_to_phys(&self, virt: usize) -> Option<PhysAddr> {
+		unsafe {
+			self.walk_internal(virt, 0)
 		}
 	}
 }

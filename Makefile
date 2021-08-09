@@ -1,10 +1,10 @@
-francium = francium/target/aarch64-unknown-francium/debug/francium
+francium = francium/target/aarch64-unknown-francium/release/francium
 
 QEMU_ARGS := -M virt -cpu cortex-a53 -kernel $(francium) -serial stdio -m 512
 
 .PHONY: qemu gdb $(francium)
 $(francium): 
-	cd francium && cargo build
+	cd francium && cargo build --release
 
 qemu: $(francium)
 	qemu-system-aarch64 $(QEMU_ARGS) -s

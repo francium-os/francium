@@ -9,21 +9,21 @@ extern crate bitflags;
 extern crate lazy_static;
 
 extern crate alloc;
+extern crate smallvec;
+
+#[macro_use]
+pub mod print;
 
 pub mod mmu;
 pub mod bump_allocator;
 pub mod phys_allocator;
 pub mod uart;
 pub mod panic;
-
-#[macro_use]
-pub mod print;
 pub mod constants;
 pub mod process;
 pub mod arch;
 pub mod memory;
 
-use crate::mmu::PageTable;
 use crate::mmu::PhysAddr;
 use crate::mmu::PagePermission;
 use crate::memory::KERNEL_ADDRESS_SPACE;
@@ -61,7 +61,7 @@ pub extern "C" fn rust_main() -> ! {
 	}
 
 	{
-		let mut page_table_root = &mut KERNEL_ADDRESS_SPACE.write().page_table;
+		let page_table_root = &mut KERNEL_ADDRESS_SPACE.write().page_table;
 
 		// map virt peripherals into physmap
 		// TODO: seperate device mapping under kernel somewhere
@@ -86,7 +86,7 @@ pub extern "C" fn rust_main() -> ! {
 	println!("hello from rust before enabling mmu!");
 
 	{
-		let mut page_table_root = &KERNEL_ADDRESS_SPACE.read().page_table;
+		let page_table_root = &KERNEL_ADDRESS_SPACE.read().page_table;
 		mmu::enable_mmu(page_table_root);
 	}
 
@@ -102,7 +102,10 @@ pub extern "C" fn rust_main() -> ! {
 	p.address_space.create(0x1000_0000, 0x1000, PagePermission::USER_RWX);
 	p.address_space.create(0x4000_0000, 0x1000, PagePermission::USER_RWX);
 
-	//phys_allocator::write_phys::<u32>(page, 0x14000000);
+	unsafe {
+		let page = p.address_space.page_table.virt_to_phys(0x1000_0000).unwrap();
+		phys_allocator::write_phys::<u32>(page, 0x14000000);
+	}
 
 	p.setup_context(0x1000_0000, 0x4000_0000 + 0x1000);
 	p.switch_to();
