@@ -1,10 +1,15 @@
 francium = francium/target/aarch64-unknown-francium/release/francium
+cesium = cesium/target/aarch64-unknown-francium/release/cesium
 
 QEMU_ARGS := -M virt -cpu cortex-a53 -kernel $(francium) -serial stdio -m 512
 
 .PHONY: qemu gdb $(francium)
-$(francium): 
+
+$(francium): $(cesium)
 	cd francium && cargo build --release
+
+$(cesium):
+	cd cesium && cargo build --release
 
 qemu: $(francium)
 	qemu-system-aarch64 $(QEMU_ARGS) -s

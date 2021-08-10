@@ -21,7 +21,7 @@ impl Process {
 		self.context.saved_pc = initial_pc;
 	}
 
-	pub fn switch_to(self) {
+	pub fn switch_to(&self) {
 		// TODO: arm-ism
 
 		unsafe {
@@ -29,6 +29,13 @@ impl Process {
 			set_ttbr0_el1(virt_to_phys(&self.address_space.page_table as *const PageTable as usize));
 			set_ttbr1_el1(virt_to_phys(&self.address_space.page_table  as *const PageTable as usize));
 			self.context.switch();
+		}
+	}
+
+	pub fn use_pages(&self) {
+		unsafe {
+			set_ttbr0_el1(virt_to_phys(&self.address_space.page_table as *const PageTable as usize));
+			set_ttbr1_el1(virt_to_phys(&self.address_space.page_table  as *const PageTable as usize));
 		}
 	}
 }

@@ -10,6 +10,8 @@ extern crate lazy_static;
 
 extern crate alloc;
 extern crate smallvec;
+extern crate elf_rs;
+use elf_rs::*;
 
 #[macro_use]
 pub mod print;
@@ -98,20 +100,39 @@ pub extern "C" fn rust_main() -> ! {
 		Process::new(page_table_root)
 	};
 
-	// Give it some memory... just a little
-	let user_code_base = 0x10000000;
-	let user_stack_base = 0x40000000;
-
-	p.address_space.create(user_code_base, 0x1000, PagePermission::USER_RWX);
-	p.address_space.create(user_stack_base, 0x1000, PagePermission::USER_READ_WRITE);
-
-	unsafe {
-		let page = p.address_space.page_table.virt_to_phys(0x1000_0000).unwrap();
-		phys_allocator::write_phys::<u32>(page, 0x14000000);
+	{
+		p.use_pages();
 	}
 
-	p.setup_context(user_code_base, user_stack_base + 0x1000);
-	p.switch_to();
+	let elf_buf = include_bytes!("../../cesium/target/aarch64-unknown-francium/release/cesium");
+	let elf = elf_rs::Elf::from_bytes(elf_buf).unwrap();
+	if let elf_rs::Elf::Elf64(e) = elf {
+		for section in e.section_header_iter() {
+			let sh = section.sh;
+			if sh.sh_type() == SectionType::SHT_PROGBITS {
+				if sh.flags().contains(SectionHeaderFlags::SHF_ALLOC) {
+					if sh.flags().contains(SectionHeaderFlags::SHF_EXECINSTR) {
+						p.address_space.create(sh.addr() as usize, sh.size() as usize, PagePermission::USER_RWX);
+					}
+					else {
+						p.address_space.create(sh.addr() as usize, sh.size() as usize, PagePermission::USER_READ_WRITE);
+					}
+					unsafe {
+						core::ptr::copy_nonoverlapping(elf_buf.as_ptr().offset(sh.offset() as isize), sh.addr() as *mut u8, sh.size() as usize);
+					}
+					println!("{:x?}", section);
+				}
+			}
+		}
+
+		let user_code_base = e.header().entry_point() as usize;
+		let user_stack_base = 0x40000000;
+
+		p.address_space.create(user_stack_base, 0x1000, PagePermission::USER_READ_WRITE);
+
+		p.setup_context(user_code_base, user_stack_base + 0x1000);
+		p.switch_to();
+	}
 
 	println!("hello from rust inside the ... user process. hm.");
 
