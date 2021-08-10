@@ -2,15 +2,9 @@
 #![feature(lang_items)]
 
 pub mod bleh;
-
-
-extern "C" {
-	pub fn syscall_print(s: *const u8);
-}
+pub mod syscalls;
 
 fn main() {
-	unsafe {
-		syscall_print(b"testing!\n" as *const u8);
-	}
+	syscalls::print("gaming");
 	loop {}
 }

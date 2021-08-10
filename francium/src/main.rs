@@ -32,6 +32,8 @@ use crate::memory::KERNEL_ADDRESS_SPACE;
 use crate::process::Process;
 use crate::constants::*;
 
+use arch::aarch64::context::ExceptionContext;
+
 extern "C" {
 	static __text_start: i32;
 	static __bss_end: i32;
@@ -141,28 +143,29 @@ pub extern "C" fn rust_main() -> ! {
 }
 
 #[no_mangle]
-pub extern "C" fn rust_curr_el_spx_sync(lr: usize, esr: usize, far: usize) -> ! {
+pub extern "C" fn rust_curr_el_spx_sync(ctx: &ExceptionContext) -> ! {
 	println!("Exception!!! rust_curr_el_spx_sync!\n");
-	println!("lr: {:x}, esr: {:x}, far: {:x}", lr, esr, far);
+	println!("lr: {:x}, esr: {:x}", ctx.saved_pc, ctx.esr);
 
     loop {}
 }
 
 #[no_mangle]
-pub extern "C" fn rust_lower_el_spx_sync(lr: usize, esr: usize, far: usize) -> ! {
-	println!("Exception!!! rust_lower_el_spx_sync!\n");
-	println!("lr: {:x}, esr: {:x}, far: {:x}", lr, esr, far);
+pub extern "C" fn rust_lower_el_spx_sync(ctx: &mut ExceptionContext) {
+	let ec = (ctx.esr & (0x3f << 26)) >> 26;
+	let iss = ctx.esr & 0xffffff;
 
-	let ec = (esr & (0x3f << 26)) >> 26;
-	println!("EC: {:b}", ec);
-	let iss = esr & 0xffffff;
-
-	if(ec == 0b010101) {
-		println!("Got a SVC!!!! iss = {:x}\n", iss);
-		if(iss == 0x01) {
-			println!("Got a print!\n");
-			
+	if ec == 0b010101 {
+		if iss == 0x01 {
+			let mut temp_buffer: [u8; 256] = [0; 256];
+			unsafe {
+				core::ptr::copy_nonoverlapping(ctx.regs[0] as *const u8, temp_buffer.as_mut_ptr(), ctx.regs[1]);
+			}
+			println!("[Debug] {}", core::str::from_utf8(&temp_buffer[0..ctx.regs[1]]).unwrap());
 		}
+	} else {
+		println!("Exception!!! rust_lower_el_spx_sync!\n");
+		println!("lr: {:x}, esr: {:x}", ctx.saved_pc, ctx.esr);
+		loop {}
 	}
-    loop {}
 }

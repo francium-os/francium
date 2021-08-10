@@ -1,5 +1,4 @@
 .global restore_context
-.global save_context
 
 .section .text
 restore_context:

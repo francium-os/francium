@@ -9,10 +9,17 @@ pub struct ProcessContext {
 	pub saved_spsr: usize
 }
 
+#[repr(C)]
+pub struct ExceptionContext {
+	pub regs: [usize; 32],
+	pub saved_pc: usize,
+	pub esr: usize
+}
+
 // to enter user mode for the first time: setup SPSR_EL1, setup ELR_EL1, setup SP_EL0, eret
 
 impl ProcessContext {
-	pub fn new() -> ProcessContext {
+	pub const fn new() -> ProcessContext {
 		ProcessContext {
 			regs: [0; 32],
 			saved_pc: 0,
