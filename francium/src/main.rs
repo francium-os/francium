@@ -127,10 +127,11 @@ pub extern "C" fn rust_main() -> ! {
 
 		let user_code_base = e.header().entry_point() as usize;
 		let user_stack_base = 0x40000000;
+		let user_stack_size = 0x4000;
 
-		p.address_space.create(user_stack_base, 0x1000, PagePermission::USER_READ_WRITE);
+		p.address_space.create(user_stack_base, user_stack_size, PagePermission::USER_READ_WRITE);
 
-		p.setup_context(user_code_base, user_stack_base + 0x1000);
+		p.setup_context(user_code_base, user_stack_base + user_stack_size);
 		p.switch_to();
 	}
 
@@ -143,6 +144,7 @@ pub extern "C" fn rust_main() -> ! {
 pub extern "C" fn rust_curr_el_spx_sync(lr: usize, esr: usize, far: usize) -> ! {
 	println!("Exception!!! rust_curr_el_spx_sync!\n");
 	println!("lr: {:x}, esr: {:x}, far: {:x}", lr, esr, far);
+
     loop {}
 }
 
@@ -151,6 +153,16 @@ pub extern "C" fn rust_lower_el_spx_sync(lr: usize, esr: usize, far: usize) -> !
 	println!("Exception!!! rust_lower_el_spx_sync!\n");
 	println!("lr: {:x}, esr: {:x}, far: {:x}", lr, esr, far);
 
-	println!("EC: {:b}", (esr & (0x3f << 26)) >> 26);
+	let ec = (esr & (0x3f << 26)) >> 26;
+	println!("EC: {:b}", ec);
+	let iss = esr & 0xffffff;
+
+	if(ec == 0b010101) {
+		println!("Got a SVC!!!! iss = {:x}\n", iss);
+		if(iss == 0x01) {
+			println!("Got a print!\n");
+			
+		}
+	}
     loop {}
 }
