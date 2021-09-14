@@ -4,6 +4,7 @@ use core::convert::TryFrom;
 
 use crate::phys_allocator;
 use crate::constants::*;
+use crate::KERNEL_ADDRESS_SPACE;
 
 #[repr(transparent)]
 #[derive(Copy, Clone)]
@@ -123,8 +124,6 @@ impl PageTableEntry {
 pub struct PageTable {
     entries: [PageTableEntry; 512],
 }
-
-struct MappingError;
 
 // https://9net.org/screenshots/1627760764.png
 fn map_perms(perm: PagePermission) -> EntryFlags {
@@ -304,16 +303,10 @@ pub fn phys_to_virt(phys: PhysAddr) -> usize {
 	phys.0 + PHYSMAP_BASE
 }
 
-pub fn virt_to_phys(virt: usize) -> PhysAddr {
-	let phys_base = 0x40000000;
-	PhysAddr(virt - KERNEL_BASE + phys_base)
-}
+pub fn enable_mmu() {
+	KERNEL_ADDRESS_SPACE.read().make_active();
 
-pub fn enable_mmu(page_table: &PageTable) {
 	unsafe {
-		set_ttbr0_el1(virt_to_phys(page_table as *const PageTable as usize));
-		set_ttbr1_el1(virt_to_phys(page_table as *const PageTable as usize));
-
 		// enable caches + mmu
 		// enable sp alignment?
 

@@ -29,10 +29,13 @@ pub mod memory;
 use crate::mmu::PhysAddr;
 use crate::mmu::PagePermission;
 use crate::memory::KERNEL_ADDRESS_SPACE;
+use crate::memory::AddressSpace;
 use crate::process::Process;
 use crate::constants::*;
 
 use arch::aarch64::context::ExceptionContext;
+use alloc::boxed::Box;
+
 
 extern "C" {
 	static __text_start: i32;
@@ -54,8 +57,8 @@ pub extern "C" fn rust_main() -> ! {
 		let text_start_virt = &__text_start as *const i32 as usize;
 		let bss_end_virt = &__bss_end as *const i32 as usize;
 
-		let text_start: usize = mmu::virt_to_phys(text_start_virt).0;
-		let bss_end: usize = mmu::virt_to_phys(bss_end_virt).0;
+		let text_start: usize = text_start_virt - KERNEL_BASE + phys_mem_start;
+		let bss_end: usize = bss_end_virt - KERNEL_BASE + phys_mem_start;
 
 		for i in (phys_mem_start .. phys_mem_end).step_by(0x1000).rev() {
 			if !(i >= text_start && i <= bss_end) {
@@ -89,22 +92,25 @@ pub extern "C" fn rust_main() -> ! {
 	}
 	println!("hello from rust before enabling mmu!");
 
-	{
-		let page_table_root = &KERNEL_ADDRESS_SPACE.read().page_table;
-		mmu::enable_mmu(page_table_root);
-	}
-
+	mmu::enable_mmu();
+	
 	println!("hello from rust after enabling mmu!");
 
-	// Load the first process
-	let mut p = {
-		let page_table_root = &KERNEL_ADDRESS_SPACE.read().page_table;
-		Process::new(page_table_root)
+	// Set up kernel heap
+	{ 
+		let kernel_aspace = &mut KERNEL_ADDRESS_SPACE.write();
+		kernel_aspace.create(KERNEL_HEAP_BASE, 0x2000, PagePermission::KERNEL_READ_WRITE);
 	};
 
-	{
-		p.use_pages();
-	}
+
+	// Load the first process
+	let aspace = { 
+		let page_table_root = &KERNEL_ADDRESS_SPACE.read().page_table;
+		AddressSpace::new(page_table_root.user_process())
+	};
+
+	let mut p = Process::new(Box::new(aspace));
+	p.use_pages();
 
 	let elf_buf = include_bytes!("../../cesium/target/aarch64-unknown-francium/release/cesium");
 	let elf = elf_rs::Elf::from_bytes(elf_buf).unwrap();

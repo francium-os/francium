@@ -1,18 +1,19 @@
 use crate::memory::AddressSpace;
-use crate::mmu::*;
 use crate::arch::aarch64::context::ProcessContext;
+use alloc::boxed::Box;
 
 pub struct Process {
-	pub address_space: AddressSpace,
+	pub address_space: Box<AddressSpace>,
 	pub context: ProcessContext
 }
 
 impl Process {
-	pub fn new(root: &PageTable) -> Process {
+	pub fn new(aspace: Box<AddressSpace>) -> Process {
 		let p = Process {
-			address_space: AddressSpace::new(root.user_process()),
+			address_space: aspace,
 			context: ProcessContext::new()
 		};
+
 		p
 	}
 
@@ -24,18 +25,12 @@ impl Process {
 	pub fn switch_to(&self) {
 		// TODO: arm-ism
 
-		unsafe {
-			// Switch to `pages`, switch to user mode
-			set_ttbr0_el1(virt_to_phys(&self.address_space.page_table as *const PageTable as usize));
-			set_ttbr1_el1(virt_to_phys(&self.address_space.page_table  as *const PageTable as usize));
-			self.context.switch();
-		}
+		// Switch to `pages`, switch to user mode
+		self.address_space.make_active();
+		self.context.switch();
 	}
 
 	pub fn use_pages(&self) {
-		unsafe {
-			set_ttbr0_el1(virt_to_phys(&self.address_space.page_table as *const PageTable as usize));
-			set_ttbr1_el1(virt_to_phys(&self.address_space.page_table  as *const PageTable as usize));
-		}
+		self.address_space.make_active();
 	}
 }

@@ -15,15 +15,34 @@ struct Block {
 }
 
 pub struct AddressSpace {
-	pub page_table: PageTable,
+	pub page_table: &'static mut PageTable,
+	page_table_phys: PhysAddr,
 	regions: SmallVec<[Block; 4]>
 }
 
 impl AddressSpace {
-	pub fn new(page_table: PageTable) -> AddressSpace {
-		AddressSpace {
-			page_table: page_table,
-			regions: SmallVec::new()
+	pub fn new(template_page_table: PageTable) -> AddressSpace {
+		// Crimes activated
+		// This will only really work if pagetable is exactly a page big... and we never free it.
+		unsafe {
+			let phys_page = match phys_allocator::alloc() {
+				Some(x) => x,
+				None => panic!("Out of physical memory!")
+			};
+
+			let page_table_ptr = crate::mmu::phys_to_virt(phys_page) as *mut PageTable;
+			page_table_ptr.copy_from(&template_page_table as *const PageTable, 1);
+
+			let page_table = match page_table_ptr.as_mut() {
+				Some(x) => x,
+				None => panic!("Somehow phys_to_virt returned null?")
+			};
+
+			AddressSpace {
+				page_table: page_table,
+				page_table_phys: phys_page,
+				regions: SmallVec::new()
+			}
 		}
 	}
 
@@ -44,6 +63,7 @@ impl AddressSpace {
 		unsafe {
 			for addr in (start_addr..(start_addr+size)).step_by(0x1000) {
 				let page = phys_allocator::alloc().unwrap();
+				println!("{:x} {:x}", addr, page.0);
 				self.page_table.map_4k(page, addr, perm);
 			}
 		}
@@ -53,5 +73,33 @@ impl AddressSpace {
 			size: size,
 			permissions: perm
 		})
+	}
+
+	pub fn expand(&mut self, start_addr: usize, new_size: usize) {
+		for r in &mut self.regions {
+			if r.address == start_addr {
+				// etc
+				// TODO: page coalescing, etc.
+				// For now, dumb ass 4k pages.
+
+				unsafe {
+					for offset in (r.size .. new_size).step_by(0x1000) {
+						let page = phys_allocator::alloc().unwrap();
+						self.page_table.map_4k(page, r.address+offset, r.permissions);
+					}
+				}
+
+				r.size = new_size;
+				return
+			}
+		}
+		panic!("Wtf?");
+	}
+
+	pub fn make_active(&self) {
+		unsafe {
+			crate::mmu::set_ttbr0_el1(self.page_table_phys);
+			crate::mmu::set_ttbr1_el1(self.page_table_phys);
+		}
 	}
 }
