@@ -33,13 +33,57 @@ use crate::memory::AddressSpace;
 use crate::process::Process;
 use crate::constants::*;
 
-use arch::aarch64::context::ExceptionContext;
-use alloc::boxed::Box;
+use crate::arch::aarch64;
+use crate::arch::aarch64::gicv2;
+use crate::arch::aarch64::arch_timer;
 
+use alloc::boxed::Box;
 
 extern "C" {
 	static __text_start: i32;
 	static __bss_end: i32;
+}
+
+fn load_process(elf_buf: &[u8]) {
+	// Load the first process
+	let aspace = { 
+		let page_table_root = &KERNEL_ADDRESS_SPACE.read().page_table;
+		AddressSpace::new(page_table_root.user_process())
+	};
+
+	let mut p = Process::new(Box::new(aspace));
+	p.use_pages();
+
+	
+	let elf = elf_rs::Elf::from_bytes(elf_buf).unwrap();
+	if let elf_rs::Elf::Elf64(e) = elf {
+		for section in e.section_header_iter() {
+			let sh = section.sh;
+			if sh.sh_type() == SectionType::SHT_PROGBITS {
+				if sh.flags().contains(SectionHeaderFlags::SHF_ALLOC) {
+					if sh.flags().contains(SectionHeaderFlags::SHF_EXECINSTR) {
+						p.address_space.create(sh.addr() as usize, sh.size() as usize, PagePermission::USER_RWX);
+					}
+					else {
+						p.address_space.create(sh.addr() as usize, sh.size() as usize, PagePermission::USER_READ_WRITE);
+					}
+					unsafe {
+						core::ptr::copy_nonoverlapping(elf_buf.as_ptr().offset(sh.offset() as isize), sh.addr() as *mut u8, sh.size() as usize);
+					}
+					println!("{:x?}", section);
+				}
+			}
+		}
+
+		let user_code_base = e.header().entry_point() as usize;
+		let user_stack_base = 0x40000000;
+		let user_stack_size = 0x4000;
+
+		p.address_space.create(user_stack_base, user_stack_size, PagePermission::USER_READ_WRITE);
+
+		p.setup_context(user_code_base, user_stack_base + user_stack_size);
+		p.switch_to();
+	}
 }
 
 #[no_mangle]
@@ -91,9 +135,7 @@ pub extern "C" fn rust_main() -> ! {
 		}
 	}
 	println!("hello from rust before enabling mmu!");
-
 	mmu::enable_mmu();
-	
 	println!("hello from rust after enabling mmu!");
 
 	// Set up kernel heap
@@ -102,76 +144,23 @@ pub extern "C" fn rust_main() -> ! {
 		kernel_aspace.create(KERNEL_HEAP_BASE, 0x2000, PagePermission::KERNEL_READ_WRITE);
 	};
 
+	// enable GIC
+	let timer_irq = 16 + 14; // ARCH_TIMER_NS_EL1_IRQ + 16 because "lol no u"
+	gicv2::init();
+	gicv2::enable(timer_irq);
+	aarch64::enable_interrupts();
 
-	// Load the first process
-	let aspace = { 
-		let page_table_root = &KERNEL_ADDRESS_SPACE.read().page_table;
-		AddressSpace::new(page_table_root.user_process())
-	};
+	// enable arch timer
 
-	let mut p = Process::new(Box::new(aspace));
-	p.use_pages();
+	arch_timer::set_frequency_us(1000000);
+	arch_timer::reset_timer();
+	arch_timer::enable();
+
 
 	let elf_buf = include_bytes!("../../cesium/target/aarch64-unknown-francium/release/cesium");
-	let elf = elf_rs::Elf::from_bytes(elf_buf).unwrap();
-	if let elf_rs::Elf::Elf64(e) = elf {
-		for section in e.section_header_iter() {
-			let sh = section.sh;
-			if sh.sh_type() == SectionType::SHT_PROGBITS {
-				if sh.flags().contains(SectionHeaderFlags::SHF_ALLOC) {
-					if sh.flags().contains(SectionHeaderFlags::SHF_EXECINSTR) {
-						p.address_space.create(sh.addr() as usize, sh.size() as usize, PagePermission::USER_RWX);
-					}
-					else {
-						p.address_space.create(sh.addr() as usize, sh.size() as usize, PagePermission::USER_READ_WRITE);
-					}
-					unsafe {
-						core::ptr::copy_nonoverlapping(elf_buf.as_ptr().offset(sh.offset() as isize), sh.addr() as *mut u8, sh.size() as usize);
-					}
-					println!("{:x?}", section);
-				}
-			}
-		}
+	load_process(elf_buf);
 
-		let user_code_base = e.header().entry_point() as usize;
-		let user_stack_base = 0x40000000;
-		let user_stack_size = 0x4000;
-
-		p.address_space.create(user_stack_base, user_stack_size, PagePermission::USER_READ_WRITE);
-
-		p.setup_context(user_code_base, user_stack_base + user_stack_size);
-		p.switch_to();
-	}
-
-	println!("hello from rust inside the ... user process. hm.");
+	println!("We shouldn't get here, ever!!");
 
     loop {}
-}
-
-#[no_mangle]
-pub extern "C" fn rust_curr_el_spx_sync(ctx: &ExceptionContext) -> ! {
-	println!("Exception!!! rust_curr_el_spx_sync!\n");
-	println!("lr: {:x}, esr: {:x}", ctx.saved_pc, ctx.esr);
-
-    loop {}
-}
-
-#[no_mangle]
-pub extern "C" fn rust_lower_el_spx_sync(ctx: &mut ExceptionContext) {
-	let ec = (ctx.esr & (0x3f << 26)) >> 26;
-	let iss = ctx.esr & 0xffffff;
-
-	if ec == 0b010101 {
-		if iss == 0x01 {
-			let mut temp_buffer: [u8; 256] = [0; 256];
-			unsafe {
-				core::ptr::copy_nonoverlapping(ctx.regs[0] as *const u8, temp_buffer.as_mut_ptr(), ctx.regs[1]);
-			}
-			println!("[Debug] {}", core::str::from_utf8(&temp_buffer[0..ctx.regs[1]]).unwrap());
-		}
-	} else {
-		println!("Exception!!! rust_lower_el_spx_sync!\n");
-		println!("lr: {:x}, esr: {:x}", ctx.saved_pc, ctx.esr);
-		loop {}
-	}
 }

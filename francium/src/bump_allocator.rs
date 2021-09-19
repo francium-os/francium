@@ -27,7 +27,6 @@ unsafe impl GlobalAlloc for BumpAllocator {
             let requested_len = ALLOC_START - ALLOC_PRESENT;
 
             {
-                println!("need to Do A Memory, getting the lock");
                 let kernel_aspace = &mut KERNEL_ADDRESS_SPACE.write();
                 kernel_aspace.expand(KERNEL_HEAP_BASE, requested_len);
             }

@@ -7,5 +7,7 @@ fn main() {
         .file("src/memory.s")
         .file("src/stub_virt.s")
         .file("src/arch/aarch64/context.s")
+        .file("src/arch/aarch64/interrupt.s")
+        .file("src/arch/aarch64/arch_timer.s")
         .compile("asm");
 }

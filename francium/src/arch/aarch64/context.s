@@ -1,7 +1,7 @@
-.global restore_context
+.global restore_process_context
 
 .section .text
-restore_context:
+restore_process_context:
 // context in x0, x1 is scratch
 ldp x2, x3,    [x0, #0x10]
 ldp x4, x3,    [x0, #0x20]

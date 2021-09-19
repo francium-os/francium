@@ -3,6 +3,7 @@ use crate::mmu::{PageTable, PagePermission};
 use crate::PhysAddr;
 use spin::RwLock;
 use smallvec::SmallVec;
+use crate::arch::aarch64;
 
 lazy_static! {
 	pub static ref KERNEL_ADDRESS_SPACE: RwLock<AddressSpace> = RwLock::new(AddressSpace::new(PageTable::new()));
@@ -63,7 +64,6 @@ impl AddressSpace {
 		unsafe {
 			for addr in (start_addr..(start_addr+size)).step_by(0x1000) {
 				let page = phys_allocator::alloc().unwrap();
-				println!("{:x} {:x}", addr, page.0);
 				self.page_table.map_4k(page, addr, perm);
 			}
 		}
@@ -98,8 +98,8 @@ impl AddressSpace {
 
 	pub fn make_active(&self) {
 		unsafe {
-			crate::mmu::set_ttbr0_el1(self.page_table_phys);
-			crate::mmu::set_ttbr1_el1(self.page_table_phys);
+			aarch64::set_ttbr0_el1(self.page_table_phys);
+			aarch64::set_ttbr1_el1(self.page_table_phys);
 		}
 	}
 }

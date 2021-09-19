@@ -1,5 +1,5 @@
 extern "C" {
-	fn restore_context(ctx: &ProcessContext);
+	fn restore_process_context(ctx: &ProcessContext);
 }
 
 #[repr(C)]
@@ -29,7 +29,7 @@ impl ProcessContext {
 
 	pub fn switch(self: &ProcessContext) {
 		unsafe {
-			restore_context(self);
+			restore_process_context(self);
 		}
 	}
 }
