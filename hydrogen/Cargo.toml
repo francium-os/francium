@@ -1,5 +1,5 @@
 [package]
-name = "cesium"
+name = "libprocess"
 version = "0.1.0"
 authors = ["Ezekiel Bethel <zek@9net.org>"]
 edition = "2018"
@@ -10,7 +10,6 @@ edition = "2018"
 "process" = { path = "../libprocess" }
 
 [build-dependencies]
-cc = "1.0"
 
 [profile.dev]
 panic = "abort"

@@ -1,9 +1,9 @@
 #![no_std]
+#![feature(lang_items)]
 
-extern crate process;
 use process::syscalls;
 
 fn main() {
-	syscalls::print("process one");
+	syscalls::print("process two");
 	loop {}
 }
