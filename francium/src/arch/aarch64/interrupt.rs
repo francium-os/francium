@@ -71,16 +71,14 @@ extern "C" {
 
 pub fn enable_interrupts() {
 	unsafe {
-		const DAIF_I: usize = (1<<7);
-		println!("A: {:x}", get_daif());
+		const DAIF_I: usize = 1<<7;
 		set_daif(get_daif() & !DAIF_I);
-		println!("A: {:x}", get_daif());
 	}
 }
 
 pub fn disable_interrupts() {
 	unsafe {
-		const DAIF_I: usize = (1<<7);
+		const DAIF_I: usize = 1<<7;
 		set_daif(get_daif() | DAIF_I);
 	}
 }

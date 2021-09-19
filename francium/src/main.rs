@@ -44,7 +44,7 @@ extern "C" {
 	static __bss_end: i32;
 }
 
-fn load_process(elf_buf: &[u8]) {
+fn load_process(elf_buf: &[u8]) -> Process {
 	// Load the first process
 	let aspace = { 
 		let page_table_root = &KERNEL_ADDRESS_SPACE.read().page_table;
@@ -52,8 +52,8 @@ fn load_process(elf_buf: &[u8]) {
 	};
 
 	let mut p = Process::new(Box::new(aspace));
+	println!("Fuck shit balls");
 	p.use_pages();
-
 	
 	let elf = elf_rs::Elf::from_bytes(elf_buf).unwrap();
 	if let elf_rs::Elf::Elf64(e) = elf {
@@ -82,8 +82,9 @@ fn load_process(elf_buf: &[u8]) {
 		p.address_space.create(user_stack_base, user_stack_size, PagePermission::USER_READ_WRITE);
 
 		p.setup_context(user_code_base, user_stack_base + user_stack_size);
-		p.switch_to();
+		return p
 	}
+	panic!("Fuck");
 }
 
 #[no_mangle]
@@ -151,14 +152,16 @@ pub extern "C" fn rust_main() -> ! {
 	aarch64::enable_interrupts();
 
 	// enable arch timer
-
 	arch_timer::set_frequency_us(1000000);
 	arch_timer::reset_timer();
 	arch_timer::enable();
 
+	let elf_one_buf = include_bytes!("../../cesium/target/aarch64-unknown-francium/release/cesium");
+	let elf_two_buf = include_bytes!("../../hydrogen/target/aarch64-unknown-francium/release/hydrogen");
 
-	let elf_buf = include_bytes!("../../cesium/target/aarch64-unknown-francium/release/cesium");
-	load_process(elf_buf);
+	let proc_one = load_process(elf_one_buf);
+	let proc_two = load_process(elf_two_buf);
+	proc_one.switch_to();
 
 	println!("We shouldn't get here, ever!!");
 

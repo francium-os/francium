@@ -4,6 +4,6 @@
 use process::syscalls;
 
 fn main() {
-	syscalls::print("process two");
+	syscalls::print("process two this is also long");
 	loop {}
 }

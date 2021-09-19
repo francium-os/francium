@@ -4,7 +4,7 @@ hydrogen = hydrogen/target/aarch64-unknown-francium/release/hydrogen
 
 QEMU_ARGS := -M virt -cpu cortex-a53 -kernel $(francium) -serial stdio -m 512
 
-.PHONY: qemu gdb $(francium)
+.PHONY: qemu gdb $(francium) $(cesium) $(hydrogen)
 
 $(francium): $(cesium) $(hydrogen)
 	cd francium && cargo build --release

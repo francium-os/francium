@@ -9,10 +9,18 @@
 .section .text
 set_ttbr0_el1:
 msr ttbr0_el1, x0
+
+tlbi vmalle1
+dsb ish
+isb
 ret
 
 set_ttbr1_el1:
 msr ttbr1_el1, x0
+
+tlbi vmalle1
+dsb ish
+isb
 ret
 
 get_sctlr_el1:
