@@ -23,8 +23,6 @@ impl Process {
 	}
 
 	pub fn switch_to(&self) {
-		// TODO: arm-ism
-
 		// Switch to `pages`, switch to user mode
 		self.address_space.make_active();
 		self.context.switch();

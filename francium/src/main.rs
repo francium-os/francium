@@ -52,7 +52,6 @@ fn load_process(elf_buf: &[u8]) -> Process {
 	};
 
 	let mut p = Process::new(Box::new(aspace));
-	println!("Fuck shit balls");
 	p.use_pages();
 	
 	let elf = elf_rs::Elf::from_bytes(elf_buf).unwrap();
@@ -159,8 +158,11 @@ pub extern "C" fn rust_main() -> ! {
 	let elf_one_buf = include_bytes!("../../cesium/target/aarch64-unknown-francium/release/cesium");
 	let elf_two_buf = include_bytes!("../../hydrogen/target/aarch64-unknown-francium/release/hydrogen");
 
+	println!("Loading process one...");
 	let proc_one = load_process(elf_one_buf);
+	println!("Loading process two...");
 	let proc_two = load_process(elf_two_buf);
+	println!("Running...");
 	proc_one.switch_to();
 
 	println!("We shouldn't get here, ever!!");

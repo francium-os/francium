@@ -64,7 +64,6 @@ impl AddressSpace {
 		unsafe {
 			for addr in (start_addr..(start_addr+size)).step_by(0x1000) {
 				let page = phys_allocator::alloc().unwrap();
-				println!("phys alloc: {:x}", page.0);
 				self.page_table.map_4k(page, addr, perm);
 			}
 		}
@@ -98,7 +97,6 @@ impl AddressSpace {
 	}
 
 	pub fn make_active(&self) {
-		println!("Switching page tables to {:x}", self.page_table_phys.0);
 		unsafe {
 			aarch64::set_ttbr0_el1(self.page_table_phys);
 			aarch64::set_ttbr1_el1(self.page_table_phys);
