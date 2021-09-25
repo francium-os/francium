@@ -4,7 +4,6 @@ use smallvec::SmallVec;
 use spin::Mutex;
 
 use crate::Process;
-use crate::process;
 use crate::aarch64::context::ExceptionContext;
 
 pub struct Scheduler {
@@ -33,15 +32,10 @@ impl Scheduler {
 
 		// do the thing
 		let p = self.runnable_processes[self.current_process_index].clone();
+
 		p.lock().switch_in(exc_context);
 		let next = self.advance();
-
-		// Release the scheduler lock. This is very important.
-		unsafe {
-			SCHEDULER.force_unlock();
-		}
-
-		process::switch_locked(next);
+		next.lock().switch_out(exc_context);
 	}
 
 	pub fn advance(&mut self) -> Arc<Mutex<Box<Process>>> {

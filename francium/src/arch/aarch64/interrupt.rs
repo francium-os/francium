@@ -2,8 +2,10 @@ use super::context::ExceptionContext;
 use super::gicv2;
 use super::arch_timer;
 use crate::scheduler;
+use crate::process::get_elr_el1;
 
 extern "C" {
+	fn get_esr_el1() -> usize;
 	fn get_far_el1() -> usize;
 }
 
@@ -28,37 +30,43 @@ const SVC_HANDLERS: [SVCHandler; 2] = [
 ];
 
 #[no_mangle]
-pub extern "C" fn rust_curr_el_spx_sync(ctx: &ExceptionContext) -> ! {
-	let ec = (ctx.esr & (0x3f << 26)) >> 26;
-	let iss = ctx.esr & 0xffffff;
-
-	if ec == 0b100101 {
-		println!("Data abort!");
-	}
-
-	println!("Exception!!! rust_curr_el_spx_sync!\n");
-	println!("lr: {:x}, esr: {:6b}, iss: {:x}", ctx.saved_pc, ec, iss);
+pub extern "C" fn rust_curr_el_spx_sync(_ctx: &ExceptionContext) -> ! {
 	unsafe {
-		println!("FAR: {:x}", get_far_el1());
-	}
+		let esr = get_esr_el1();
+		let ec = (esr & (0x3f << 26)) >> 26;
+		let iss = esr & 0xffffff;
 
-    loop {}
+		if ec == 0b100101 {
+			println!("Data abort!");
+		}
+
+		println!("Exception!!! rust_curr_el_spx_sync!\n");
+		println!("lr: {:x}, ec: {:6b}, iss: {:x}", get_elr_el1(), ec, iss);
+		println!("FAR: {:x}", get_far_el1());
+
+	    loop {}
+	}
 }
 
 #[no_mangle]
 pub extern "C" fn rust_lower_el_spx_sync(ctx: &mut ExceptionContext) {
-	let ec = (ctx.esr & (0x3f << 26)) >> 26;
-	let iss = ctx.esr & 0xffffff;
+	unsafe {
+		let esr = get_esr_el1();
+		let ec = (esr & (0x3f << 26)) >> 26;
+		let iss = esr & 0xffffff;
 
-	// 0b010101 SVC instruction execution in AArch64 state.
-	if ec == 0b010101 {
-		if iss < SVC_HANDLERS.len() {
-			SVC_HANDLERS[iss](ctx);
+		// 0b010101 SVC instruction execution in AArch64 state.
+		if ec == 0b010101 {
+			if iss < SVC_HANDLERS.len() {
+				SVC_HANDLERS[iss](ctx);
+			}
+		} else {
+			println!("Exception!!! rust_lower_el_spx_sync!\n");
+			println!("lr: {:x}, ec: {:6b}, iss: {:x}", get_elr_el1(), ec, iss);
+			println!("FAR: {:x}", get_far_el1());
+			
+			loop {}
 		}
-	} else {
-		println!("Exception!!! rust_lower_el_spx_sync!\n");
-		println!("lr: {:x}, esr: {:x}", ctx.saved_pc, ctx.esr);
-		loop {}
 	}
 }
 

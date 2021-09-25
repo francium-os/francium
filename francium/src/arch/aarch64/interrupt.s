@@ -1,6 +1,7 @@
 .global get_daif
 .global set_daif
 .global get_far_el1
+.global get_esr_el1
 
 .extern rust_curr_el_spx_sync
 .extern rust_lower_el_spx_sync
@@ -225,4 +226,8 @@ ret
 
 get_far_el1:
 mrs x0, far_el1
+ret
+
+get_esr_el1:
+mrs x0, esr_el1
 ret

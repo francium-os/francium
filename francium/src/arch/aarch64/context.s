@@ -1,14 +1,38 @@
 .global restore_process_context
+.global get_elr_el1
+.global set_elr_el1
 .global get_spsr_el1
+.global set_spsr_el1
 .global get_sp_el0
+.global set_sp_el0
 
 .section .text
+get_esr_el1:
+mrs x0, esr_el1
+ret
+
+get_elr_el1:
+mrs x0, elr_el1
+ret
+
+set_elr_el1:
+msr elr_el1, x0
+ret
+
 get_spsr_el1:
 mrs x0, spsr_el1
 ret
 
+set_spsr_el1:
+msr spsr_el1, x0
+ret
+
 get_sp_el0:
 mrs x0, sp_el0
+ret
+
+set_sp_el0:
+msr sp_el0, x0
 ret
 
 restore_process_context:

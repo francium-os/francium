@@ -17,8 +17,12 @@ pub struct Process {
 }
 
 extern "C" {
+	pub fn get_elr_el1() -> usize;
+	fn set_elr_el1(val: usize);
 	fn get_spsr_el1() -> usize;
+	fn set_spsr_el1(val: usize);
 	fn get_sp_el0() -> usize;
+	fn set_sp_el0(val: usize);
 }
 
 impl Process {
@@ -37,15 +41,22 @@ impl Process {
 		self.context.saved_pc = initial_pc;
 	}
 
-	pub fn switch_out(&mut self) {
+	pub fn switch_out(&mut self, exc: &mut ExceptionContext) {
+		exc.regs = self.context.regs;
+		unsafe {
+			set_elr_el1(self.context.saved_pc);
+			set_spsr_el1(self.context.saved_spsr);
+			set_sp_el0(self.context.regs[31]);
+		}
+
 		self.address_space.make_active();
-		self.context.switch();
 	}
 
 	pub fn switch_in(&mut self, exc: &mut ExceptionContext) {
 		self.context.regs = exc.regs;
-		self.context.saved_pc = exc.saved_pc;
+
 		unsafe {
+			self.context.saved_pc = get_elr_el1();
 			self.context.saved_spsr = get_spsr_el1();
 			self.context.regs[31] = get_sp_el0();
 		}
@@ -56,7 +67,7 @@ impl Process {
 	}
 }
 
-pub fn switch_locked(locked: Arc<Mutex<Box<Process>>>) {
+pub fn force_switch_to(locked: Arc<Mutex<Box<Process>>>) {
 	let process_context = { 
 		let p = locked.lock();
 		p.address_space.make_active();

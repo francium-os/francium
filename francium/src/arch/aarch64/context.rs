@@ -12,9 +12,7 @@ pub struct ProcessContext {
 
 #[repr(C)]
 pub struct ExceptionContext {
-	pub regs: [usize; 32],
-	pub saved_pc: usize,
-	pub esr: usize
+	pub regs: [usize; 32]
 }
 
 // to enter user mode for the first time: setup SPSR_EL1, setup ELR_EL1, setup SP_EL0, eret

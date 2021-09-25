@@ -38,7 +38,6 @@ use crate::constants::*;
 use crate::arch::aarch64;
 use crate::arch::aarch64::gicv2;
 use crate::arch::aarch64::arch_timer;
-use crate::aarch64::context::ExceptionContext;
 
 use alloc::boxed::Box;
 use alloc::sync::Arc;
@@ -88,7 +87,7 @@ fn load_process(elf_buf: &[u8]) -> Box<Process> {
 		p.setup_context(user_code_base, user_stack_base + user_stack_size);
 		return p
 	}
-	panic!("Fuck");
+	panic!("Failed to load process??");
 }
 
 #[no_mangle]
@@ -158,25 +157,24 @@ pub extern "C" fn rust_main() -> ! {
 	// enable arch timer
 	arch_timer::set_frequency_us(50000);
 	arch_timer::reset_timer();
-	
 
 	let elf_one_buf = include_bytes!("../../cesium/target/aarch64-unknown-francium/release/cesium");
 	let elf_two_buf = include_bytes!("../../hydrogen/target/aarch64-unknown-francium/release/hydrogen");
 
 	println!("Loading process one...");
-	let mut proc_one = load_process(elf_one_buf);
+	let proc_one = load_process(elf_one_buf);
 	let proc_one_arc = Arc::new(Mutex::new(proc_one));
 	scheduler::register_process(proc_one_arc.clone());
 
 	println!("Loading process two...");
-	let mut proc_two = load_process(elf_two_buf);
+	let proc_two = load_process(elf_two_buf);
 	let proc_two_arc = Arc::new(Mutex::new(proc_two));
 	scheduler::register_process(proc_two_arc.clone());
 
 	arch_timer::enable();
 
 	println!("Running...");
-	process::switch_locked(proc_one_arc);
+	process::force_switch_to(proc_one_arc);
 	println!("We shouldn't get here, ever!!");
 
     loop {}
