@@ -14,7 +14,7 @@ const GICD_ICPENDR: *mut u32 = (GICD_BASE + 0x280) as *mut u32;
 // CPU interface Controller
 const GICC_CTLR: *mut u32 = GICC_BASE as *mut u32;
 const GICC_PMR: *mut u32 = (GICC_BASE + 0x0004) as *mut u32;
-const GICC_BPR: *mut u32 = (GICC_BASE + 0x0008) as *mut u32;
+//const GICC_BPR: *mut u32 = (GICC_BASE + 0x0008) as *mut u32;
 
 pub fn init() {
     unsafe {

@@ -4,7 +4,6 @@ use core::convert::TryFrom;
 
 use crate::phys_allocator;
 use crate::constants::*;
-use crate::KERNEL_ADDRESS_SPACE;
 
 #[repr(transparent)]
 #[derive(Copy, Clone)]

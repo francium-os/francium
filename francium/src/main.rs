@@ -1,6 +1,7 @@
 #![no_std]
 #![no_main]
 #![feature(default_alloc_error_handler)]
+#![feature(linked_list_cursors)]
 
 #[macro_use]
 extern crate bitflags;
@@ -25,6 +26,7 @@ pub mod constants;
 pub mod process;
 pub mod arch;
 pub mod memory;
+pub mod scheduler;
 
 use crate::mmu::PhysAddr;
 use crate::mmu::PagePermission;
@@ -36,22 +38,25 @@ use crate::constants::*;
 use crate::arch::aarch64;
 use crate::arch::aarch64::gicv2;
 use crate::arch::aarch64::arch_timer;
+use crate::aarch64::context::ExceptionContext;
 
 use alloc::boxed::Box;
+use alloc::sync::Arc;
+use spin::Mutex;
 
 extern "C" {
 	static __text_start: i32;
 	static __bss_end: i32;
 }
 
-fn load_process(elf_buf: &[u8]) -> Process {
+fn load_process(elf_buf: &[u8]) -> Box<Process> {
 	// Load the first process
 	let aspace = { 
 		let page_table_root = &KERNEL_ADDRESS_SPACE.read().page_table;
 		AddressSpace::new(page_table_root.user_process())
 	};
 
-	let mut p = Process::new(Box::new(aspace));
+	let mut p = Box::new(Process::new(Box::new(aspace)));
 	p.use_pages();
 	
 	let elf = elf_rs::Elf::from_bytes(elf_buf).unwrap();
@@ -141,7 +146,7 @@ pub extern "C" fn rust_main() -> ! {
 	// Set up kernel heap
 	{ 
 		let kernel_aspace = &mut KERNEL_ADDRESS_SPACE.write();
-		kernel_aspace.create(KERNEL_HEAP_BASE, 0x2000, PagePermission::KERNEL_READ_WRITE);
+		kernel_aspace.create(KERNEL_HEAP_BASE, KERNEL_HEAP_INITIAL_SIZE, PagePermission::KERNEL_READ_WRITE);
 	};
 
 	// enable GIC
@@ -151,20 +156,27 @@ pub extern "C" fn rust_main() -> ! {
 	aarch64::enable_interrupts();
 
 	// enable arch timer
-	arch_timer::set_frequency_us(1000000);
+	arch_timer::set_frequency_us(50000);
 	arch_timer::reset_timer();
-	arch_timer::enable();
+	
 
 	let elf_one_buf = include_bytes!("../../cesium/target/aarch64-unknown-francium/release/cesium");
 	let elf_two_buf = include_bytes!("../../hydrogen/target/aarch64-unknown-francium/release/hydrogen");
 
 	println!("Loading process one...");
-	let proc_one = load_process(elf_one_buf);
-	println!("Loading process two...");
-	let proc_two = load_process(elf_two_buf);
-	println!("Running...");
-	proc_one.switch_to();
+	let mut proc_one = load_process(elf_one_buf);
+	let proc_one_arc = Arc::new(Mutex::new(proc_one));
+	scheduler::register_process(proc_one_arc.clone());
 
+	println!("Loading process two...");
+	let mut proc_two = load_process(elf_two_buf);
+	let proc_two_arc = Arc::new(Mutex::new(proc_two));
+	scheduler::register_process(proc_two_arc.clone());
+
+	arch_timer::enable();
+
+	println!("Running...");
+	process::switch_locked(proc_one_arc);
 	println!("We shouldn't get here, ever!!");
 
     loop {}

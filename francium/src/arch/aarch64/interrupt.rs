@@ -1,6 +1,11 @@
 use super::context::ExceptionContext;
 use super::gicv2;
 use super::arch_timer;
+use crate::scheduler;
+
+extern "C" {
+	fn get_far_el1() -> usize;
+}
 
 type SVCHandler = fn(&mut ExceptionContext);
 
@@ -10,6 +15,7 @@ fn svc_break(_: &mut ExceptionContext) {
 
 fn svc_debug_output(ctx: &mut ExceptionContext) {
 	let mut temp_buffer: [u8; 256] = [0; 256];
+
 	unsafe {
 		core::ptr::copy_nonoverlapping(ctx.regs[0] as *const u8, temp_buffer.as_mut_ptr(), ctx.regs[1]);
 	}
@@ -26,8 +32,15 @@ pub extern "C" fn rust_curr_el_spx_sync(ctx: &ExceptionContext) -> ! {
 	let ec = (ctx.esr & (0x3f << 26)) >> 26;
 	let iss = ctx.esr & 0xffffff;
 
+	if ec == 0b100101 {
+		println!("Data abort!");
+	}
+
 	println!("Exception!!! rust_curr_el_spx_sync!\n");
 	println!("lr: {:x}, esr: {:6b}, iss: {:x}", ctx.saved_pc, ec, iss);
+	unsafe {
+		println!("FAR: {:x}", get_far_el1());
+	}
 
     loop {}
 }
@@ -62,6 +75,8 @@ pub extern "C" fn rust_lower_el_aarch64_irq(ctx: &mut ExceptionContext) {
 
 	let timer_irq = 16 + 14;
 	gicv2::clear(timer_irq);
+
+	scheduler::tick(ctx);
 }
 
 extern "C" {

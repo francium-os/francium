@@ -31,5 +31,5 @@ kernel_start:
 __bootstrap_stack_guard:
 .space 0x10
 __bootstrap_stack_bottom:
-.space 0x40000
+.space 0x80000
 __bootstrap_stack_top:

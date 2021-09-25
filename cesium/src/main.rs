@@ -4,6 +4,7 @@ extern crate process;
 use process::syscalls;
 
 fn main() {
-	syscalls::print("process one this is long");
-	loop {}
+	loop {
+		syscalls::print("process one");
+	}
 }

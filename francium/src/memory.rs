@@ -76,13 +76,20 @@ impl AddressSpace {
 	}
 
 	pub fn expand(&mut self, start_addr: usize, new_size: usize) {
+
 		for r in &mut self.regions {
 			if r.address == start_addr {
 				// etc
 				// TODO: page coalescing, etc.
 				// For now, dumb ass 4k pages.
 
+				if r.size > new_size {
+					// Wtf are you doing trying to shrink?
+					panic!("Stop it! expand called with smaller size");
+				}
+
 				unsafe {
+					println!("{:?} {:?}", r.size, new_size);
 					for offset in (r.size .. new_size).step_by(0x1000) {
 						let page = phys_allocator::alloc().unwrap();
 						self.page_table.map_4k(page, r.address+offset, r.permissions);

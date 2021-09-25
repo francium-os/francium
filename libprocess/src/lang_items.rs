@@ -14,7 +14,7 @@ trait Termination {}
 impl Termination for () {}
 
 #[lang = "start"]
-fn lang_start<T: Termination>(main: fn() -> T, argc: isize, argv: *const *const u8) -> isize {
+fn lang_start<T: Termination>(main: fn() -> T, _argc: isize, _argv: *const *const u8) -> isize {
     main();
     2
 }
