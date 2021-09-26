@@ -58,3 +58,8 @@ pub fn register_process(p: Arc<Mutex<Box<Process>>>) {
 	sched.processes.push(p.clone());
 	sched.runnable_processes.push(p.clone());
 }
+
+pub fn get_current_process() -> Arc<Mutex<Box<Process>>> {
+	let mut sched = SCHEDULER.lock();
+	sched.runnable_processes[sched.current_process_index].clone()
+}

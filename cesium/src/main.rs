@@ -4,7 +4,6 @@ extern crate process;
 use process::syscalls;
 
 fn main() {
-	loop {
-		syscalls::print("process one");
-	}
+	syscalls::create_port("sm");
+	syscalls::exit_process();
 }

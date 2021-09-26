@@ -3,6 +3,7 @@ use super::gicv2;
 use super::arch_timer;
 use crate::scheduler;
 use crate::process::get_elr_el1;
+use crate::svc;
 
 extern "C" {
 	fn get_esr_el1() -> usize;
@@ -11,22 +12,12 @@ extern "C" {
 
 type SVCHandler = fn(&mut ExceptionContext);
 
-fn svc_break(_: &mut ExceptionContext) {
-	panic!("svcBreak called!");
-}
-
-fn svc_debug_output(ctx: &mut ExceptionContext) {
-	let mut temp_buffer: [u8; 256] = [0; 256];
-
-	unsafe {
-		core::ptr::copy_nonoverlapping(ctx.regs[0] as *const u8, temp_buffer.as_mut_ptr(), ctx.regs[1]);
-	}
-	println!("[Debug] {}", core::str::from_utf8(&temp_buffer[0..ctx.regs[1]]).unwrap());
-}
-
-const SVC_HANDLERS: [SVCHandler; 2] = [
-	svc_break,
-	svc_debug_output
+const SVC_HANDLERS: [SVCHandler; 5] = [
+	svc::svc_break,
+	svc::svc_debug_output,
+	svc::svc_create_port,
+	svc::svc_connect_to_port,
+	svc::svc_exit_process
 ];
 
 #[no_mangle]

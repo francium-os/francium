@@ -4,7 +4,6 @@
 use process::syscalls;
 
 fn main() {
-	loop {
-		syscalls::print("process two");
-	}
+	syscalls::connect_to_port("sm");
+	syscalls::exit_process();
 }

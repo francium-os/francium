@@ -4,15 +4,16 @@ use spin::Mutex;
 
 use crate::process::Process;
 use crate::memory::AddressSpace;
+use crate::svc::ports::ServerPort;
 
 struct HandleError;
 
-struct HandleObject<T> {
-	obj: Arc<Mutex<Box<T>>>
+pub struct HandleObject<T> {
+	pub obj: Arc<Mutex<Box<T>>>
 }
 
 impl<T> HandleObject<T> {
-	fn new(x: Box<T>) -> HandleObject<T> {
+	pub fn new(x: Box<T>) -> HandleObject<T> {
 		HandleObject{obj: Arc::new(Mutex::new(x))}
 	}
 
@@ -24,7 +25,7 @@ impl<T> HandleObject<T> {
 	}
 }
 
-enum Handle {
+pub enum Handle {
 	Process(HandleObject<Process>),
 	AddressSpace(HandleObject<AddressSpace>)
 }

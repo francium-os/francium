@@ -4,6 +4,6 @@ use crate::println;
 /// This function is called on panic.
 #[panic_handler]
 fn panic(info: &PanicInfo) -> ! {
-    println!("a panic happened {}", info);
+    println!("kernel {}", info);
     loop{}
 }

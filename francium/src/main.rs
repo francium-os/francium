@@ -16,7 +16,7 @@ use elf_rs::*;
 
 #[macro_use]
 pub mod print;
-
+pub mod handle;
 pub mod mmu;
 pub mod bump_allocator;
 pub mod phys_allocator;
@@ -27,6 +27,7 @@ pub mod process;
 pub mod arch;
 pub mod memory;
 pub mod scheduler;
+pub mod svc;
 
 use crate::mmu::PhysAddr;
 use crate::mmu::PagePermission;
@@ -155,7 +156,7 @@ pub extern "C" fn rust_main() -> ! {
 	aarch64::enable_interrupts();
 
 	// enable arch timer
-	arch_timer::set_frequency_us(50000);
+	arch_timer::set_frequency_us(25000);
 	arch_timer::reset_timer();
 
 	let elf_one_buf = include_bytes!("../../cesium/target/aarch64-unknown-francium/release/cesium");
