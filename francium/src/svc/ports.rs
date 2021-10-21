@@ -4,6 +4,10 @@ use alloc::boxed::Box;
 use crate::handle::HandleObject;
 use crate::aarch64::context::ExceptionContext;
 
+use alloc::sync::Arc;
+use crate::process::Process;
+
+#[derive(Debug)]
 pub struct ServerPort {
 	tag: u64
 }
@@ -16,6 +20,7 @@ impl ServerPort {
 	}
 }
 
+#[derive(Debug)]
 pub struct ClientPort {
 	tag: u64
 }

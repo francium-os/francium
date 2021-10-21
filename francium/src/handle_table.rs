@@ -6,6 +6,12 @@ pub struct HandleTable {
 	handles: [Handle; MAX_HANDLES],
 }
 
+impl core::fmt::Debug for HandleTable {
+	fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+		f.debug_struct("HandleTable").finish()
+	}
+}
+
 impl HandleTable {
 	pub fn new() -> HandleTable {
 		const INVALID_HANDLE: Handle = Handle::Invalid;

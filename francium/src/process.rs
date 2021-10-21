@@ -8,12 +8,14 @@ use core::sync::atomic::AtomicUsize;
 use core::sync::atomic::Ordering;
 use crate::handle_table::HandleTable;
 
+#[derive(Debug)]
 pub enum ProcessState {
 	Created,
 	Runnable,
 	Suspended
 }
 
+#[derive(Debug)]
 pub struct Process {
 	pub address_space: Box<AddressSpace>,
 	pub context: ProcessContext,

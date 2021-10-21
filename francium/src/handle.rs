@@ -6,6 +6,7 @@ use crate::process::Process;
 use crate::memory::AddressSpace;
 use crate::svc::ports::{ServerPort,ClientPort};
 
+#[derive(Debug)]
 pub struct HandleObject<T> {
 	pub obj: Arc<Mutex<Box<T>>>
 }
@@ -29,7 +30,7 @@ impl<T> Clone for HandleObject<T>{
 	}
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub enum Handle {
 	Process(HandleObject<Process>),
 	AddressSpace(HandleObject<AddressSpace>),

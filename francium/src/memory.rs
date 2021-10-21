@@ -9,6 +9,7 @@ lazy_static! {
 	pub static ref KERNEL_ADDRESS_SPACE: RwLock<AddressSpace> = RwLock::new(AddressSpace::new(PageTable::new()));
 }
 
+#[derive(Debug)]
 struct Block {
 	address: usize,
 	size: usize,
@@ -19,6 +20,12 @@ pub struct AddressSpace {
 	pub page_table: &'static mut PageTable,
 	page_table_phys: PhysAddr,
 	regions: SmallVec<[Block; 4]>
+}
+
+impl core::fmt::Debug for AddressSpace {
+	fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+		f.debug_struct("AddressSpace").finish()
+	}
 }
 
 impl AddressSpace {

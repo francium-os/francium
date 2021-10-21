@@ -3,7 +3,7 @@ extern "C" {
 }
 
 #[repr(C)]
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct ProcessContext {
 	pub regs: [usize; 32],
 	pub saved_pc: usize,

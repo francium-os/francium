@@ -6,7 +6,7 @@ use crate::phys_allocator;
 use crate::constants::*;
 
 #[repr(transparent)]
-#[derive(Copy, Clone)]
+#[derive(Debug, Copy, Clone)]
 pub struct PhysAddr(pub usize);
 
 impl core::fmt::Display for PhysAddr {
@@ -21,7 +21,7 @@ impl PhysAddr {
 	}
 }
 
-#[derive(Copy, Clone)]
+#[derive(Debug, Copy, Clone)]
 #[repr(transparent)]
 pub struct PageTableEntry {
 	entry: u64
@@ -118,6 +118,7 @@ impl PageTableEntry {
 // for 4k granule, table holds 2**(log2(4096) - 3) = 512 entries
 // table resolves 9 bits of address per level.
 
+#[derive(Debug)]
 #[repr(align(4096))]
 #[repr(C)]
 pub struct PageTable {
