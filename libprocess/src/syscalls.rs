@@ -1,10 +1,13 @@
+use crate::{Handle,ResultCode,RESULT_OK};
+use crate::os_error::{OSError,result_to_error};
 use core::cmp::min;
 
 extern "C" {
-	pub fn syscall_debug_output(s: *const u8, len: usize);
-	pub fn syscall_create_port(tag: u64);
-	pub fn syscall_connect_to_port(tag: u64);
-	pub fn syscall_exit_process();
+	pub fn syscall_debug_output(s: *const u8, len: usize) -> ResultCode;
+	pub fn syscall_create_port(tag: u64, handle_out: *mut Handle) -> ResultCode;
+	pub fn syscall_connect_to_port(tag: u64, handle_out: *mut Handle) -> ResultCode;
+	pub fn syscall_exit_process() -> !;
+	pub fn syscall_close_handle(h: Handle);
 }
 
 pub fn print(s: &str) {
@@ -22,19 +25,37 @@ fn make_tag(s: &str) -> u64 {
 	u64::from_be_bytes(tag_bytes_padded)
 }
 
-pub fn create_port(s: &str) {
+pub fn create_port(s: &str) -> Result<Handle, OSError> {
+	let mut handle_out = Handle(0);
 	unsafe {
-		syscall_create_port(make_tag(s));
+		let res = syscall_create_port(make_tag(s), &mut handle_out);
+		if res == RESULT_OK {
+			Ok(handle_out)
+		} else {
+			Err(result_to_error(res))
+		}
 	}
 }
 
-pub fn connect_to_port(s: &str) {
+pub fn connect_to_port(s: &str) -> Result<Handle, OSError> {
+	let mut handle_out = Handle(0);
 	unsafe {
-		syscall_connect_to_port(make_tag(s));
+		let res = syscall_connect_to_port(make_tag(s), &mut handle_out);
+		if res == RESULT_OK {
+			Ok(handle_out)
+		} else {
+			Err(result_to_error(res))
+		}
 	}
 }
 
-pub fn exit_process() {
+pub fn close_handle(h: Handle) {
+	unsafe {
+		syscall_close_handle(h);
+	}
+}
+
+pub fn exit_process() -> ! {
 	unsafe {
 		syscall_exit_process();
 	}

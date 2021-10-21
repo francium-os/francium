@@ -4,16 +4,22 @@ use crate::aarch64::context::ExceptionContext;
 use alloc::boxed::Box;
 use alloc::sync::Arc;
 use spin::Mutex;
+use core::sync::atomic::AtomicUsize;
+use core::sync::atomic::Ordering;
+use crate::handle_table::HandleTable;
 
 pub enum ProcessState {
 	Created,
-	Runnable
+	Runnable,
+	Suspended
 }
 
 pub struct Process {
 	pub address_space: Box<AddressSpace>,
 	pub context: ProcessContext,
-	pub state: ProcessState
+	pub state: ProcessState,
+	pub id: usize,
+	pub handle_table: HandleTable
 }
 
 extern "C" {
@@ -25,12 +31,16 @@ extern "C" {
 	fn set_sp_el0(val: usize);
 }
 
+static PROCESS_ID: AtomicUsize = AtomicUsize::new(0);
+
 impl Process {
 	pub fn new(aspace: Box<AddressSpace>) -> Process {
 		let p = Process {
 			address_space: aspace,
 			context: ProcessContext::new(),
-			state: ProcessState::Created
+			state: ProcessState::Created,
+			id: PROCESS_ID.fetch_add(1, Ordering::SeqCst),
+			handle_table: HandleTable::new()
 		};
 
 		p

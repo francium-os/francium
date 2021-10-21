@@ -1,9 +1,11 @@
 #![no_std]
-#![feature(lang_items)]
 
+use process::println;
 use process::syscalls;
 
 fn main() {
-	syscalls::connect_to_port("sm");
+	println!("Connecting to sm...");
+	let port = syscalls::connect_to_port("sm").unwrap();
+	syscalls::close_handle(port);
 	syscalls::exit_process();
 }

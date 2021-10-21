@@ -4,6 +4,7 @@ use smallvec::SmallVec;
 use spin::Mutex;
 
 use crate::Process;
+use crate::process::ProcessState;
 use crate::aarch64::context::ExceptionContext;
 
 pub struct Scheduler {
@@ -25,6 +26,19 @@ impl Scheduler {
 		}
 	}
 
+	fn get_current_process(&mut self) -> Arc<Mutex<Box<Process>>> {
+		self.runnable_processes[self.current_process_index].clone()
+	}
+
+	pub fn get_next_process(&mut self) -> Arc<Mutex<Box<Process>>> {
+		if self.current_process_index == self.runnable_processes.len() - 1 {
+			self.current_process_index = 0;
+		} else {
+			self.current_process_index += 1;
+		}
+		self.runnable_processes[self.current_process_index].clone()
+	}
+
 	pub fn tick(&mut self, exc_context: &mut ExceptionContext) {
 		if self.runnable_processes.len() == 0 {
 			panic!("No runnable processes!");
@@ -34,17 +48,47 @@ impl Scheduler {
 		let p = self.runnable_processes[self.current_process_index].clone();
 
 		p.lock().switch_in(exc_context);
-		let next = self.advance();
+		let next = self.get_next_process();
 		next.lock().switch_out(exc_context);
 	}
 
-	pub fn advance(&mut self) -> Arc<Mutex<Box<Process>>> {
-		if self.current_process_index == self.runnable_processes.len() - 1 {
-			self.current_process_index = 0;
-		} else {
-			self.current_process_index += 1;
+	pub fn suspend(&mut self, p: &Arc<Mutex<Box<Process>>>) {
+		let process_id = p.lock().id;
+		if let Some(runnable_index) = self.runnable_processes.iter().position(|x| x.lock().id == process_id) {
+			if runnable_index == self.current_process_index {
+				panic!("Bad");
+			}
+			if runnable_index < self.current_process_index {
+				self.current_process_index -= 1;
+			}
+			self.runnable_processes.remove(runnable_index);
 		}
-		self.runnable_processes[self.current_process_index].clone()
+
+		p.lock().state = ProcessState::Suspended;
+	}
+
+	pub fn wake(&mut self, p: Arc<Mutex<Box<Process>>>) {
+		let process_id = p.lock().id;
+		if let Some(_runnable_index) = self.runnable_processes.iter().position(|x| x.lock().id == process_id) {
+			// wtf
+			panic!("Trying to re-wake a process!");
+		} else {
+			self.runnable_processes.push(p);
+		}
+		// TODO: reschedule, as well?
+	}
+
+	pub fn terminate_current_process(&mut self, exc: &mut ExceptionContext) {
+		let process = self.get_current_process();
+
+		// Important - don't suspend while we're running! This is probably possible to do properly, but...
+		self.tick(exc);
+		self.suspend(&process);
+
+		let process_id = process.lock().id;
+
+		let proc_index = self.processes.iter().position(|x| x.lock().id == process_id).unwrap();
+		self.processes.remove(proc_index);
 	}
 }
 
@@ -60,6 +104,21 @@ pub fn register_process(p: Arc<Mutex<Box<Process>>>) {
 }
 
 pub fn get_current_process() -> Arc<Mutex<Box<Process>>> {
-	let mut sched = SCHEDULER.lock();
+	let sched = SCHEDULER.lock();
 	sched.runnable_processes[sched.current_process_index].clone()
+}
+
+pub fn suspend_process(p: Arc<Mutex<Box<Process>>>) {
+	let mut sched = SCHEDULER.lock();
+	sched.suspend(&p);
+}
+
+pub fn wake_process(p: Arc<Mutex<Box<Process>>>) {
+	let mut sched = SCHEDULER.lock();
+	sched.wake(p);
+}
+
+pub fn terminate_current_process(exc: &mut ExceptionContext) {
+	let mut sched = SCHEDULER.lock();
+	sched.terminate_current_process(exc);
 }

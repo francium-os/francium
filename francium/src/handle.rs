@@ -4,9 +4,7 @@ use spin::Mutex;
 
 use crate::process::Process;
 use crate::memory::AddressSpace;
-use crate::svc::ports::ServerPort;
-
-struct HandleError;
+use crate::svc::ports::{ServerPort,ClientPort};
 
 pub struct HandleObject<T> {
 	pub obj: Arc<Mutex<Box<T>>>
@@ -20,12 +18,22 @@ impl<T> HandleObject<T> {
 	fn to_box(self) -> Box<T> {
 		match Arc::try_unwrap(self.obj) {
 			Ok(x) => x.into_inner(),
-			Err(arc) => panic!("what did you do wtf")
+			Err(_arc) => panic!("what did you do wtf")
 		}
 	}
 }
 
+impl<T> Clone for HandleObject<T>{
+	fn clone(&self) -> HandleObject<T> {
+		HandleObject::<T> {obj: self.obj.clone()}
+	}
+}
+
+#[derive(Clone)]
 pub enum Handle {
 	Process(HandleObject<Process>),
-	AddressSpace(HandleObject<AddressSpace>)
+	AddressSpace(HandleObject<AddressSpace>),
+	ServerPort(HandleObject<ServerPort>),
+	ClientPort(HandleObject<ClientPort>),
+	Invalid
 }

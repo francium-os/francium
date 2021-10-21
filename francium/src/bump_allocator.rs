@@ -26,8 +26,8 @@ unsafe impl GlobalAlloc for BumpAllocator {
         ALLOC_START += layout.size();
 
         if ALLOC_START >= ALLOC_PRESENT {
-            let requested_len = ((ALLOC_START - ALLOC_PRESENT) & !(0xfff)) + 0x1000;
-            println!("Expanding kernel heap! We want a new size of {:x} bytes.", requested_len);
+            let requested_len = ((ALLOC_START - KERNEL_HEAP_BASE) & !(0xfff)) + 0x1000;
+            println!("Expanding kernel heap! We want a new size of {:?} bytes.", requested_len);
             {
                 let kernel_aspace = &mut KERNEL_ADDRESS_SPACE.write();
                 kernel_aspace.expand(KERNEL_HEAP_BASE, requested_len);

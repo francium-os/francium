@@ -32,7 +32,6 @@ lazy_static! {
 pub fn svc_create_port(ctx: &mut ExceptionContext) {
 	let tag = ctx.regs[0] as u64;
 
-	println!("svc_create_port");
 	let mut ports = PORT_LIST.lock();
 	for p in ports.iter() {
 		if p.obj.lock().tag == tag {
@@ -41,7 +40,7 @@ pub fn svc_create_port(ctx: &mut ExceptionContext) {
 		}
 	}
 	ports.push(HandleObject::new(Box::new(ServerPort::new(tag))));
-	// todo create handle
+	// How: current process reference?
 
 	ctx.regs[0] = 0;
 	ctx.regs[1] = 0;
@@ -53,7 +52,6 @@ pub fn svc_create_port(ctx: &mut ExceptionContext) {
 // x0 contains result
 // x1 contains port handle (on success)
 pub fn svc_connect_to_port(ctx: &mut ExceptionContext) {
-	println!("svc_connect_to_port");
 	ctx.regs[0] = 0;
 	ctx.regs[1] = 0;
 }

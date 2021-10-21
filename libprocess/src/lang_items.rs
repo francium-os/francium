@@ -8,7 +8,7 @@ extern "C" {
 extern "C" fn _start() -> ! {
     let argv = [];
     unsafe { main(0, argv.as_ptr()) };
-    unreachable!()
+    syscalls::exit_process()
 }
 
 trait Termination {}
@@ -18,7 +18,7 @@ impl Termination for () {}
 #[lang = "start"]
 fn lang_start<T: Termination>(main: fn() -> T, _argc: isize, _argv: *const *const u8) -> isize {
     main();
-    2
+    syscalls::exit_process();
 }
 
 use core::panic::PanicInfo;

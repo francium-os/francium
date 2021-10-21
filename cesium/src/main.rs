@@ -1,9 +1,11 @@
 #![no_std]
 
-extern crate process;
+use process::println;
 use process::syscalls;
 
 fn main() {
-	syscalls::create_port("sm");
+	println!("Creating sm port...");
+	let port = syscalls::create_port("sm").unwrap();
+	syscalls::close_handle(port);
 	syscalls::exit_process();
 }
