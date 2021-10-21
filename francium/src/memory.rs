@@ -96,7 +96,6 @@ impl AddressSpace {
 				}
 
 				unsafe {
-					println!("{:?} {:?}", r.size, new_size);
 					for offset in (r.size .. new_size).step_by(0x1000) {
 						let page = phys_allocator::alloc().unwrap();
 						self.page_table.map_4k(page, r.address+offset, r.permissions);

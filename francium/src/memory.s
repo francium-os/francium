@@ -4,7 +4,7 @@
 .global set_sctlr_el1
 .global get_tcr_el1
 .global set_tcr_el1
-
+.global wfe
 
 .section .text
 set_ttbr0_el1:
@@ -37,4 +37,8 @@ ret
 
 set_tcr_el1:
 msr tcr_el1, x0
+ret
+
+wfe:
+wfe
 ret

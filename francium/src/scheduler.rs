@@ -17,6 +17,10 @@ lazy_static! {
 	static ref SCHEDULER: Mutex<Scheduler> = Mutex::new(Scheduler::new());
 }
 
+extern "C" {
+	fn wfe();
+}
+
 impl Scheduler {
 	fn new() -> Scheduler {
 		Scheduler {
@@ -40,8 +44,9 @@ impl Scheduler {
 	}
 
 	pub fn tick(&mut self, exc_context: &mut ExceptionContext) {
+		// todo: process things
 		if self.runnable_processes.len() == 0 {
-			panic!("No runnable processes!");
+			return
 		}
 
 		// do the thing
@@ -52,22 +57,29 @@ impl Scheduler {
 		next.lock().switch_out(exc_context);
 	}
 
-	pub fn suspend(&mut self, p: &Arc<Mutex<Box<Process>>>) {
+	pub fn suspend(&mut self, p: &Arc<Mutex<Box<Process>>>, exc: &mut ExceptionContext) {
 		let process_id = p.lock().id;
 		if let Some(runnable_index) = self.runnable_processes.iter().position(|x| x.lock().id == process_id) {
-			if runnable_index == self.current_process_index {
-				panic!("Bad");
-			}
 			if runnable_index < self.current_process_index {
 				self.current_process_index -= 1;
 			}
 			self.runnable_processes.remove(runnable_index);
+
+			if runnable_index == self.current_process_index {
+				if self.runnable_processes.len() == 0 {
+					panic!("Trying to suspend everything.")
+				} else {
+					p.lock().switch_in(exc);
+					let next = self.get_current_process();
+					next.lock().switch_out(exc);
+				}
+			}
 		}
 
 		p.lock().state = ProcessState::Suspended;
 	}
 
-	pub fn wake(&mut self, p: Arc<Mutex<Box<Process>>>) {
+	pub fn wake(&mut self, p: Arc<Mutex<Box<Process>>>, exc: &mut ExceptionContext) {
 		let process_id = p.lock().id;
 		if let Some(_runnable_index) = self.runnable_processes.iter().position(|x| x.lock().id == process_id) {
 			// wtf
@@ -80,10 +92,7 @@ impl Scheduler {
 
 	pub fn terminate_current_process(&mut self, exc: &mut ExceptionContext) {
 		let process = self.get_current_process();
-
-		// Important - don't suspend while we're running! This is probably possible to do properly, but...
-		self.tick(exc);
-		self.suspend(&process);
+		self.suspend(&process, exc);
 
 		let process_id = process.lock().id;
 
@@ -108,14 +117,20 @@ pub fn get_current_process() -> Arc<Mutex<Box<Process>>> {
 	sched.runnable_processes[sched.current_process_index].clone()
 }
 
-pub fn suspend_process(p: Arc<Mutex<Box<Process>>>) {
+pub fn suspend_process(p: Arc<Mutex<Box<Process>>>, exc: &mut ExceptionContext) {
 	let mut sched = SCHEDULER.lock();
-	sched.suspend(&p);
+	sched.suspend(&p, exc);
 }
 
-pub fn wake_process(p: Arc<Mutex<Box<Process>>>) {
+pub fn suspend_current_process(exc: &mut ExceptionContext) {
 	let mut sched = SCHEDULER.lock();
-	sched.wake(p);
+	let curr = sched.get_current_process();
+	sched.suspend(&curr, exc);
+}
+
+pub fn wake_process(p: Arc<Mutex<Box<Process>>>, exc: &mut ExceptionContext) {
+	let mut sched = SCHEDULER.lock();
+	sched.wake(p, exc);
 }
 
 pub fn terminate_current_process(exc: &mut ExceptionContext) {

@@ -160,8 +160,8 @@ pub extern "C" fn rust_main() -> ! {
 	arch_timer::set_frequency_us(25000);
 	arch_timer::reset_timer();
 
-	let elf_one_buf = include_bytes!("../../cesium/target/aarch64-unknown-francium/release/cesium");
-	let elf_two_buf = include_bytes!("../../hydrogen/target/aarch64-unknown-francium/release/hydrogen");
+	let elf_one_buf = include_bytes!("../../hydrogen/target/aarch64-unknown-francium/release/hydrogen");
+	let elf_two_buf = include_bytes!("../../cesium/target/aarch64-unknown-francium/release/cesium");
 
 	println!("Loading process one...");
 	let proc_one = load_process(elf_one_buf);
@@ -172,26 +172,6 @@ pub extern "C" fn rust_main() -> ! {
 	let proc_two = load_process(elf_two_buf);
 	let proc_two_arc = Arc::new(Mutex::new(proc_two));
 	scheduler::register_process(proc_two_arc.clone());
-
-	let aspace = { 
-		let page_table_root = &KERNEL_ADDRESS_SPACE.read().page_table;
-		AddressSpace::new(page_table_root.user_process())
-	};
-
-	let mut idle_process = Box::new(Process::new(Box::new(aspace)));
-	idle_process.address_space.create(0x100000, 0x1000, PagePermission::USER_RWX);
-	idle_process.setup_context(0x100000, 0);
-	idle_process.use_pages();
-
-	// a: wfe
-	// b a
-
-	let idle_code: [u8; 8] = [0x5f, 0x20, 0x03, 0xd5, 0xff, 0xff, 0xff, 0x17];
-	unsafe {
-		core::ptr::copy_nonoverlapping(idle_code.as_ptr(), 0x100000 as *mut u8, idle_code.len() as usize);
-	}
-
-	scheduler::register_process(Arc::new(Mutex::new(idle_process)));
 
 	arch_timer::enable();
 
