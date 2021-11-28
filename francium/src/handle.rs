@@ -16,12 +16,12 @@ impl<T> HandleObject<T> {
 		HandleObject{obj: Arc::new(Mutex::new(x))}
 	}
 
-	fn to_box(self) -> Box<T> {
+	/*fn to_box(self) -> Box<T> {
 		match Arc::try_unwrap(self.obj) {
 			Ok(x) => x.into_inner(),
 			Err(_arc) => panic!("what did you do wtf")
 		}
-	}
+	}*/
 }
 
 impl<T> Clone for HandleObject<T>{

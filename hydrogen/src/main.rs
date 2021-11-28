@@ -1,12 +1,14 @@
 #![no_std]
 
-use process::print;
+use process::println;
 use process::syscalls;
 
 fn main() {
-	print!("Connecting to sm...");
+	println!("Connecting to sm...");
 	let port = syscalls::connect_to_port("sm").unwrap();
-	print!("Connected to sm port!");
-	syscalls::close_handle(port);
+	println!("Connected to sm port! {:?}", port);
+	syscalls::ipc_request(port).unwrap();
+
+	syscalls::close_handle(port).unwrap();
 	syscalls::exit_process();
 }

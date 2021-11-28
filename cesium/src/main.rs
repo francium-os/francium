@@ -1,12 +1,14 @@
 #![no_std]
 
-use process::print;
+use process::println;
 use process::syscalls;
 
 fn main() {
-	print!("Creating sm port...");
+	println!("Creating sm port...");
 	let port = syscalls::create_port("sm").unwrap();
-	print!("Created sm port.");
+	println!("Created sm port: {:?}.", port);;
+	syscalls::ipc_receive(port).unwrap();
+
 	syscalls::close_handle(port);
 	syscalls::exit_process();
 }

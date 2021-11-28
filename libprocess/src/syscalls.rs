@@ -7,7 +7,10 @@ extern "C" {
 	pub fn syscall_create_port(tag: u64, handle_out: *mut Handle) -> ResultCode;
 	pub fn syscall_connect_to_port(tag: u64, handle_out: *mut Handle) -> ResultCode;
 	pub fn syscall_exit_process() -> !;
-	pub fn syscall_close_handle(h: Handle);
+	pub fn syscall_close_handle(h: Handle) -> ResultCode;
+	pub fn syscall_ipc_request(session_handle: Handle) -> ResultCode;
+	pub fn syscall_ipc_reply(session_handle: Handle) -> ResultCode;
+	pub fn syscall_ipc_receive(session_handle: Handle) -> ResultCode;
 }
 
 pub fn print(s: &str) {
@@ -49,14 +52,52 @@ pub fn connect_to_port(s: &str) -> Result<Handle, OSError> {
 	}
 }
 
-pub fn close_handle(h: Handle) {
+pub fn close_handle(h: Handle) -> Result<(), OSError> {
 	unsafe {
-		syscall_close_handle(h);
+		let res = syscall_close_handle(h);
+		if res == RESULT_OK {
+			Ok(())
+		} else {
+			Err(result_to_error(res))
+		}
 	}
 }
 
 pub fn exit_process() -> ! {
 	unsafe {
 		syscall_exit_process();
+	}
+}
+
+pub fn ipc_request(session_handle: Handle) -> Result<(), OSError> {
+	unsafe {
+		let res = syscall_ipc_request(session_handle);
+		if res == RESULT_OK {
+			Ok(())
+		} else {
+			Err(result_to_error(res))
+		}
+	}
+}
+
+pub fn ipc_reply(session_handle: Handle) -> Result<(), OSError> {
+	unsafe {
+		let res = syscall_ipc_reply(session_handle);
+		if res == RESULT_OK {
+			Ok(())
+		} else {
+			Err(result_to_error(res))
+		}
+	}
+}
+
+pub fn ipc_receive(session_handle: Handle) -> Result<(), OSError> {
+	unsafe {
+		let res = syscall_ipc_receive(session_handle);
+		if res == RESULT_OK {
+			Ok(())
+		} else {
+			Err(result_to_error(res))
+		}
 	}
 }

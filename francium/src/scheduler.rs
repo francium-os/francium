@@ -17,10 +17,6 @@ lazy_static! {
 	static ref SCHEDULER: Mutex<Scheduler> = Mutex::new(Scheduler::new());
 }
 
-extern "C" {
-	fn wfe();
-}
-
 impl Scheduler {
 	fn new() -> Scheduler {
 		Scheduler {
@@ -79,7 +75,7 @@ impl Scheduler {
 		p.lock().state = ProcessState::Suspended;
 	}
 
-	pub fn wake(&mut self, p: Arc<Mutex<Box<Process>>>, exc: &mut ExceptionContext) {
+	pub fn wake(&mut self, p: Arc<Mutex<Box<Process>>>, _exc: &mut ExceptionContext) {
 		let process_id = p.lock().id;
 		if let Some(_runnable_index) = self.runnable_processes.iter().position(|x| x.lock().id == process_id) {
 			// wtf

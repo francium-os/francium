@@ -40,4 +40,18 @@ impl HandleTable {
 		}
 		panic!("handle table is exhausted!");
 	}
+
+	pub fn close(&mut self, handle: u32) -> u32 {
+		if (handle as usize) < MAX_HANDLES {
+			match self.handles[handle as usize] {
+				Handle::Invalid => 1,
+				_ => {
+					self.handles[handle as usize] = Handle::Invalid;
+					0
+				}
+			}
+		} else {
+			1
+		}
+	}
 }

@@ -6,5 +6,5 @@ pub fn svc_debug_output(ctx: &mut ExceptionContext) {
 	unsafe {
 		core::ptr::copy_nonoverlapping(ctx.regs[0] as *const u8, temp_buffer.as_mut_ptr(), ctx.regs[1]);
 	}
-	println!("[Debug] {}", core::str::from_utf8(&temp_buffer[0..ctx.regs[1]]).unwrap());
+	print!("{}", core::str::from_utf8(&temp_buffer[0..ctx.regs[1]]).unwrap());
 }

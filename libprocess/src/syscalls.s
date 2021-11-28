@@ -3,6 +3,9 @@
 .global syscall_connect_to_port
 .global syscall_exit_process
 .global syscall_close_handle
+.global syscall_ipc_request
+.global syscall_ipc_reply
+.global syscall_ipc_receive
 
 .section .text
 syscall_debug_output:
@@ -27,4 +30,16 @@ ret
 
 syscall_close_handle:
 svc #5
+ret
+
+syscall_ipc_request:
+svc #6
+ret
+
+syscall_ipc_reply:
+svc #7
+ret
+
+syscall_ipc_receive:
+svc #8
 ret

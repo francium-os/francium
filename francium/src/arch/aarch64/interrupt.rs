@@ -12,12 +12,16 @@ extern "C" {
 
 type SVCHandler = fn(&mut ExceptionContext);
 
-const SVC_HANDLERS: [SVCHandler; 5] = [
+const SVC_HANDLERS: [SVCHandler; 9] = [
 	svc::svc_break,
 	svc::svc_debug_output,
 	svc::svc_create_port,
 	svc::svc_connect_to_port,
-	svc::svc_exit_process
+	svc::svc_exit_process,
+	svc::svc_close_handle,
+	svc::svc_ipc_request,
+	svc::svc_ipc_reply,
+	svc::svc_ipc_receive
 ];
 
 #[no_mangle]
@@ -50,6 +54,8 @@ pub extern "C" fn rust_lower_el_spx_sync(ctx: &mut ExceptionContext) {
 		if ec == 0b010101 {
 			if iss < SVC_HANDLERS.len() {
 				SVC_HANDLERS[iss](ctx);
+			} else {
+				panic!("Invalid SVC!");
 			}
 		} else {
 			println!("Exception!!! rust_lower_el_spx_sync!\n");
