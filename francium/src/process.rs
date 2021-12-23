@@ -1,6 +1,7 @@
 use crate::memory::AddressSpace;
 use crate::arch::aarch64::context::ProcessContext;
 use crate::aarch64::context::ExceptionContext;
+use alloc::alloc::{alloc, Layout};
 use alloc::boxed::Box;
 use alloc::sync::Arc;
 use spin::Mutex;
@@ -21,56 +22,50 @@ pub struct Process {
 	pub context: ProcessContext,
 	pub state: ProcessState,
 	pub id: usize,
-	pub handle_table: HandleTable
-}
-
-extern "C" {
-	pub fn get_elr_el1() -> usize;
-	fn set_elr_el1(val: usize);
-	fn get_spsr_el1() -> usize;
-	fn set_spsr_el1(val: usize);
-	fn get_sp_el0() -> usize;
-	fn set_sp_el0(val: usize);
+	pub handle_table: HandleTable,
+	pub kernel_stack_top: usize,
+	pub kernel_stack_size: usize
 }
 
 static PROCESS_ID: AtomicUsize = AtomicUsize::new(0);
 
+extern "C" {
+	fn user_thread_starter();
+}
+
 impl Process {
 	pub fn new(aspace: Box<AddressSpace>) -> Process {
+		let kernel_stack_size = 0x1000;
+
+		let kernel_stack = unsafe {
+			alloc(Layout::from_size_align(kernel_stack_size, 0x1000).unwrap())
+		};
+
 		let p = Process {
 			address_space: aspace,
 			context: ProcessContext::new(),
 			state: ProcessState::Created,
 			id: PROCESS_ID.fetch_add(1, Ordering::SeqCst),
-			handle_table: HandleTable::new()
+			handle_table: HandleTable::new(),
+			kernel_stack_top: kernel_stack as *const usize as usize + kernel_stack_size,
+			kernel_stack_size: kernel_stack_size,
 		};
 
 		p
 	}
 
-	pub fn setup_context(&mut self, initial_pc: usize, initial_sp: usize) {
-		self.context.regs[31] = initial_sp;
-		self.context.saved_pc = initial_pc;
-	}
-
-	pub fn switch_out(&mut self, exc: &mut ExceptionContext) {
-		exc.regs = self.context.regs;
+	pub fn setup_user_context(&mut self, usermode_pc: usize, usermode_sp: usize) {
 		unsafe {
-			set_elr_el1(self.context.saved_pc);
-			set_spsr_el1(self.context.saved_spsr);
-			set_sp_el0(self.context.regs[31]);
-		}
+			let exc_context_location = self.kernel_stack_top - core::mem::size_of::<ExceptionContext>();
 
-		self.address_space.make_active();
-	}
+			let exc_context = &mut *(exc_context_location as *mut ExceptionContext);
 
-	pub fn switch_in(&mut self, exc: &mut ExceptionContext) {
-		self.context.regs = exc.regs;
+			exc_context.regs[31] = usermode_sp;
+			exc_context.saved_pc = usermode_pc;
+			exc_context.saved_spsr = 0;
 
-		unsafe {
-			self.context.saved_pc = get_elr_el1();
-			self.context.saved_spsr = get_spsr_el1();
-			self.context.regs[31] = get_sp_el0();
+			self.context.regs[30] = user_thread_starter as usize;
+			self.context.regs[31] = exc_context_location;
 		}
 	}
 
@@ -85,5 +80,7 @@ pub fn force_switch_to(locked: Arc<Mutex<Box<Process>>>) {
 		p.address_space.make_active();
 		p.context.clone()
 	};
-	process_context.switch();
+	unsafe {
+		process_context.switch();
+	}
 }

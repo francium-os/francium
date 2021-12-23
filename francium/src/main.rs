@@ -86,7 +86,7 @@ fn load_process(elf_buf: &[u8]) -> Box<Process> {
 
 		p.address_space.create(user_stack_base, user_stack_size, PagePermission::USER_READ_WRITE);
 
-		p.setup_context(user_code_base, user_stack_base + user_stack_size);
+		p.setup_user_context(user_code_base, user_stack_base + user_stack_size);
 		return p
 	}
 	panic!("Failed to load process??");

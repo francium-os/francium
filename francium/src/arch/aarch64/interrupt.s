@@ -3,6 +3,8 @@
 .global get_far_el1
 .global get_esr_el1
 
+.global restore_exception_context
+
 .extern rust_curr_el_spx_sync
 .extern rust_lower_el_spx_sync
 .extern rust_lower_el_aarch64_irq
@@ -37,7 +39,7 @@ b .
 curr_el_spx_sync:        // The exception handler for a synchrous 
                          // exception from the current EL using the
                          // current SP.
-sub sp, sp,    #0x110
+sub sp, sp,    #0x118
 stp x0, x1,    [sp, #0x00]
 stp x2, x3,    [sp, #0x10]
 stp x4, x5,    [sp, #0x20]
@@ -53,12 +55,17 @@ stp x22, x23,  [sp, #0xb0]
 stp x24, x25,  [sp, #0xc0]
 stp x26, x27,  [sp, #0xd0]
 stp x28, x29,  [sp, #0xe0]
-str x30,       [sp, #0xf0]
-// x31 (sp) is uninitialised!
+
+mrs x0, sp_el0
+stp x30, x0,   [sp, #0xf0]
+
 mrs x0, elr_el1
-str x0,        [sp, #0x100]
+mrs x1, spsr_el1
+// todo: tpidr?
+stp x0, x1,    [sp, #0x100]
+
 mrs x0, esr_el1
-str x0,        [sp, #0x108]
+str x0,        [sp, #0x110]
 
 mov x0, sp
 bl rust_curr_el_spx_sync
@@ -67,7 +74,7 @@ b restore_exception_context
 .balign 0x80
 curr_el_spx_irq:         // The exception handler for an IRQ exception from 
                          // the current EL using the current SP.
-sub sp, sp,    #0x110
+sub sp, sp,    #0x118
 stp x0, x1,    [sp, #0x00]
 stp x2, x3,    [sp, #0x10]
 stp x4, x5,    [sp, #0x20]
@@ -83,11 +90,17 @@ stp x22, x23,  [sp, #0xb0]
 stp x24, x25,  [sp, #0xc0]
 stp x26, x27,  [sp, #0xd0]
 stp x28, x29,  [sp, #0xe0]
-str x30,       [sp, #0xf0]
+
+mrs x0, sp_el0
+stp x30, x0,   [sp, #0xf0]
+
 mrs x0, elr_el1
-str x0,        [sp, #0x100]
+mrs x1, spsr_el1
+// todo: tpidr?
+stp x0, x1,    [sp, #0x100]
+
 mrs x0, esr_el1
-str x0,        [sp, #0x108]
+str x0,        [sp, #0x110]
 
 mov x0, sp
 bl rust_lower_el_aarch64_irq
@@ -108,7 +121,7 @@ b .
 .balign 0x80
 lower_el_aarch64_sync:   // The exception handler for a synchronous 
                          // exception from a lower EL (AArch64).
-sub sp, sp,    #0x110
+sub sp, sp,    #0x118
 stp x0, x1,    [sp, #0x00]
 stp x2, x3,    [sp, #0x10]
 stp x4, x5,    [sp, #0x20]
@@ -124,11 +137,17 @@ stp x22, x23,  [sp, #0xb0]
 stp x24, x25,  [sp, #0xc0]
 stp x26, x27,  [sp, #0xd0]
 stp x28, x29,  [sp, #0xe0]
-str x30,       [sp, #0xf0]
+
+mrs x0, sp_el0
+stp x30, x0,   [sp, #0xf0]
+
 mrs x0, elr_el1
-str x0,        [sp, #0x100]
+mrs x1, spsr_el1
+// todo: tpidr?
+stp x0, x1,    [sp, #0x100]
+
 mrs x0, esr_el1
-str x0,        [sp, #0x108]
+str x0,        [sp, #0x110]
 
 mov x0, sp
 bl rust_lower_el_spx_sync
@@ -138,7 +157,7 @@ b .
 .balign 0x80
 lower_el_aarch64_irq:    // The exception handler for an IRQ from a lower EL
                          // (AArch64).
-sub sp, sp,    #0x110
+sub sp, sp,    #0x118
 stp x0, x1,    [sp, #0x00]
 stp x2, x3,    [sp, #0x10]
 stp x4, x5,    [sp, #0x20]
@@ -154,11 +173,17 @@ stp x22, x23,  [sp, #0xb0]
 stp x24, x25,  [sp, #0xc0]
 stp x26, x27,  [sp, #0xd0]
 stp x28, x29,  [sp, #0xe0]
-str x30,       [sp, #0xf0]
+
+mrs x0, sp_el0
+stp x30, x0,   [sp, #0xf0]
+
 mrs x0, elr_el1
-str x0,        [sp, #0x100]
+mrs x1, spsr_el1
+// todo: tpidr?
+stp x0, x1,    [sp, #0x100]
+
 mrs x0, esr_el1
-str x0,        [sp, #0x108]
+str x0,        [sp, #0x110]
 
 mov x0, sp
 bl rust_lower_el_aarch64_irq
@@ -196,6 +221,14 @@ lower_el_aarch32_serror: // The exception handler for a System Error
 b .
 
 restore_exception_context:
+
+ldp x30, x0,   [sp, #0xf0]
+msr sp_el0, x0
+
+ldp x0, x1,    [sp, #0x100]
+msr elr_el1, x0
+msr spsr_el1, x1
+
 ldp x0, x1,    [sp, #0x00]
 ldp x2, x3,    [sp, #0x10]
 ldp x4, x5,    [sp, #0x20]
@@ -207,12 +240,11 @@ ldp x14, x15,  [sp, #0x70]
 ldp x16, x17,  [sp, #0x80]
 ldp x18, x19,  [sp, #0x90]
 ldp x20, x21,  [sp, #0xa0]
-stp x22, x23,  [sp, #0xb0]
+ldp x22, x23,  [sp, #0xb0]
 ldp x24, x25,  [sp, #0xc0]
 ldp x26, x27,  [sp, #0xd0]
 ldp x28, x29,  [sp, #0xe0]
-ldr x30,       [sp, #0xf0]
-add sp, sp, #0x110
+add sp, sp, #0x118
 eret
 
 .section .text

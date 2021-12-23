@@ -2,7 +2,6 @@ use super::context::ExceptionContext;
 use super::gicv2;
 use super::arch_timer;
 use crate::scheduler;
-use crate::process::get_elr_el1;
 use crate::svc;
 
 extern "C" {
@@ -25,7 +24,7 @@ const SVC_HANDLERS: [SVCHandler; 9] = [
 ];
 
 #[no_mangle]
-pub extern "C" fn rust_curr_el_spx_sync(_ctx: &ExceptionContext) -> ! {
+pub extern "C" fn rust_curr_el_spx_sync(ctx: &ExceptionContext) -> ! {
 	unsafe {
 		let esr = get_esr_el1();
 		let ec = (esr & (0x3f << 26)) >> 26;
@@ -36,7 +35,7 @@ pub extern "C" fn rust_curr_el_spx_sync(_ctx: &ExceptionContext) -> ! {
 		}
 
 		println!("Exception!!! rust_curr_el_spx_sync!\n");
-		println!("lr: {:x}, ec: {:6b}, iss: {:x}", get_elr_el1(), ec, iss);
+		println!("lr: {:x}, ec: {:6b}, iss: {:x}", ctx.saved_pc, ec, iss);
 		println!("FAR: {:x}", get_far_el1());
 
 	    loop {}
@@ -59,7 +58,7 @@ pub extern "C" fn rust_lower_el_spx_sync(ctx: &mut ExceptionContext) {
 			}
 		} else {
 			println!("Exception!!! rust_lower_el_spx_sync!\n");
-			println!("lr: {:x}, ec: {:6b}, iss: {:x}", get_elr_el1(), ec, iss);
+			println!("lr: {:x}, ec: {:6b}, iss: {:x}", ctx.saved_pc, ec, iss);
 			println!("FAR: {:x}", get_far_el1());
 			
 			loop {}
@@ -81,7 +80,7 @@ pub extern "C" fn rust_lower_el_aarch64_irq(ctx: &mut ExceptionContext) {
 	let timer_irq = 16 + 14;
 	gicv2::clear(timer_irq);
 
-	scheduler::tick(ctx);
+	scheduler::tick();
 }
 
 extern "C" {

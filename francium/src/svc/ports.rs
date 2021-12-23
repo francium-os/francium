@@ -64,7 +64,6 @@ pub fn svc_create_port(ctx: &mut ExceptionContext) {
 			let p = x.1.clone();
 			{
 				let mut process = p.lock();
-
 				let client_port = Handle::ClientPort(HandleObject::new(Box::new(ClientPort::new(&server_port))));
 
 				process.context.regs[0] = 0;
@@ -72,7 +71,7 @@ pub fn svc_create_port(ctx: &mut ExceptionContext) {
 				process.context.regs[1] = handle as usize;
 			}
 
-			scheduler::wake_process(p, ctx);
+			scheduler::wake_process(p);
 			false
 		} else {
 			true
@@ -94,17 +93,20 @@ pub fn svc_create_port(ctx: &mut ExceptionContext) {
 pub fn svc_connect_to_port(ctx: &mut ExceptionContext) {
 	let tag = ctx.regs[0] as u64;
 
-	let ports = PORT_LIST.lock();
-	for p in ports.iter() {
-		if p.obj.lock().tag == tag {
-			// Found the port we wanted.
-			ctx.regs[0] = 0;
-			ctx.regs[1] = 0;
-			return
+	{
+		let ports = PORT_LIST.lock();
+		for p in ports.iter() {
+			if p.obj.lock().tag == tag {
+				// Found the port we wanted.
+				ctx.regs[0] = 0;
+				ctx.regs[1] = 0;
+				return
+			}
 		}
 	}
 
 	// if we get here, the port isn't here yet.
 	PORT_WAITERS.lock().push((tag, scheduler::get_current_process()));
-	scheduler::suspend_current_process(ctx);
+	scheduler::suspend_current_process();
+	println!("Woke up after connect to port block!");
 }
