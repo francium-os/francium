@@ -160,8 +160,8 @@ pub extern "C" fn rust_main() -> ! {
 	arch_timer::set_frequency_us(25000);
 	arch_timer::reset_timer();
 
-	let elf_one_buf = include_bytes!("../../hydrogen/target/aarch64-unknown-francium/release/hydrogen");
-	let elf_two_buf = include_bytes!("../../cesium/target/aarch64-unknown-francium/release/cesium");
+	let elf_one_buf = include_bytes!("../../hydrogen/target/aarch64-unknown-francium-user/release/hydrogen");
+	let elf_two_buf = include_bytes!("../../cesium/target/aarch64-unknown-francium-user/release/cesium");
 
 	println!("Loading process one...");
 	let proc_one = load_process(elf_one_buf);

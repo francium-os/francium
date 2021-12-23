@@ -28,6 +28,9 @@ ldr x30,       [x0, #0xf0]
 // "x31" is SP - set it.
 ldr x1,		   [x0, #0xf8]
 mov sp, x1
+
+ldp x0, x1,    [x0, #0x0]
+
 // we loaded LR, now ret!
 ret
 

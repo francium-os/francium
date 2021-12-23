@@ -49,6 +49,11 @@ impl Scheduler {
 
 		// TODO: wow, this sucks
 		{
+			unsafe {
+				// TODO: lol
+				SCHEDULER.force_unlock();
+			}
+
 			let from_locked = MutexGuard::leak(from.lock());
 			let to_locked = MutexGuard::leak(to.lock());
 
@@ -71,6 +76,7 @@ impl Scheduler {
 
 	pub fn tick(&mut self) {
 		// todo: process things
+		println!("{:?}", self.runnable_processes);
 		if self.runnable_processes.len() == 0 {
 			return
 		}

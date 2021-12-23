@@ -25,6 +25,9 @@ use core::panic::PanicInfo;
 /// This function is called on panic.
 #[panic_handler]
 fn panic(info: &PanicInfo) -> ! {
-    println!("user {:?}", info);
+    // printing info directly seems to just die (tm)
+    // idk why, but not doing that seems to work better
+
+    println!("user mode panic: {:?}", info.message());
     loop{}
 }
