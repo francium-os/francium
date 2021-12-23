@@ -76,7 +76,6 @@ impl Scheduler {
 
 	pub fn tick(&mut self) {
 		// todo: process things
-		println!("{:?}", self.runnable_processes);
 		if self.runnable_processes.len() == 0 {
 			return
 		}
@@ -125,8 +124,7 @@ impl Scheduler {
 		let proc_index = self.processes.iter().position(|x| x.lock().id == process_id).unwrap();
 		self.processes.remove(proc_index);
 
-		let next = self.get_next_process();
-		self.switch_process(&this_process, &next);
+		self.suspend(&this_process);
 	}
 }
 
