@@ -5,7 +5,6 @@ use spin::{Mutex, MutexGuard};
 
 use crate::Process;
 use crate::process::ProcessState;
-use crate::aarch64::context::ExceptionContext;
 use crate::aarch64::context::ProcessContext;
 
 pub struct Scheduler {

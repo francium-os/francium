@@ -1,6 +1,6 @@
 use alloc::sync::Arc;
 use alloc::boxed::Box;
-use spin::Mutex;
+use spin::{Mutex,MutexGuard};
 
 use crate::process::Process;
 use crate::memory::AddressSpace;
@@ -14,6 +14,10 @@ pub struct HandleObject<T> {
 impl<T> HandleObject<T> {
 	pub fn new(x: Box<T>) -> HandleObject<T> {
 		HandleObject{obj: Arc::new(Mutex::new(x))}
+	}
+
+	pub fn lock(&self) -> MutexGuard<Box<T>> {
+		self.obj.lock()
 	}
 
 	/*fn to_box(self) -> Box<T> {

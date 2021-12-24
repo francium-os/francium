@@ -6,6 +6,5 @@ pub fn svc_close_handle(exc: &mut ExceptionContext) {
 	let p_ = scheduler::get_current_process();
 	let mut p = p_.lock();
 
-	//exc.regs[0] = 0;
 	exc.regs[0] = p.handle_table.close(exc.regs[0] as u32) as usize;
 }

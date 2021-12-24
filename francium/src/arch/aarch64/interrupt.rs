@@ -69,7 +69,7 @@ pub extern "C" fn rust_lower_el_spx_sync(ctx: &mut ExceptionContext) {
 }
 
 #[no_mangle]
-pub extern "C" fn rust_lower_el_aarch64_irq(ctx: &mut ExceptionContext) {
+pub extern "C" fn rust_lower_el_aarch64_irq(_ctx: &mut ExceptionContext) {
 	// we know it's an interrupt
 	// which one?
 	// fuck knows
