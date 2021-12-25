@@ -5,7 +5,7 @@
 #[derive(Copy, Clone, Debug)]
 #[repr(transparent)]
 pub struct Handle(u32);
-//const INVALID_HANDLE: Handle = Handle(0xffffffff);
+const INVALID_HANDLE: Handle = Handle(0xffffffff);
 
 #[derive(Debug, PartialEq)]
 #[repr(transparent)]

@@ -11,7 +11,7 @@ extern "C" {
 
 type SVCHandler = fn(&mut ExceptionContext);
 
-const SVC_HANDLERS: [SVCHandler; 9] = [
+const SVC_HANDLERS: [SVCHandler; 10] = [
 	svc::svc_break,
 	svc::svc_debug_output,
 	svc::svc_create_port,
@@ -20,7 +20,8 @@ const SVC_HANDLERS: [SVCHandler; 9] = [
 	svc::svc_close_handle,
 	svc::svc_ipc_request,
 	svc::svc_ipc_reply,
-	svc::svc_ipc_receive
+	svc::svc_ipc_receive,
+	svc::svc_ipc_accept
 ];
 
 #[no_mangle]

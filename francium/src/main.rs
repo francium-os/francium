@@ -28,6 +28,7 @@ pub mod process;
 pub mod arch;
 pub mod memory;
 pub mod scheduler;
+pub mod waitable;
 pub mod svc;
 
 use crate::mmu::PhysAddr;

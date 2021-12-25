@@ -6,6 +6,7 @@
 .global syscall_ipc_request
 .global syscall_ipc_reply
 .global syscall_ipc_receive
+.global syscall_ipc_accept
 
 .section .text
 syscall_debug_output:
@@ -41,5 +42,13 @@ svc #7
 ret
 
 syscall_ipc_receive:
+mov x9, x3
 svc #8
+str x1, [x9]
+ret
+
+syscall_ipc_accept:
+mov x9, x1
+svc #9
+str x1, [x9]
 ret

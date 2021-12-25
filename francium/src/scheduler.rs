@@ -44,7 +44,7 @@ impl Scheduler {
 	}
 
 	fn switch_process(&mut self, from: &Arc<Mutex<Box<Process>>>, to: &Arc<Mutex<Box<Process>>>) {
-		println!("Switching processes!!");
+		//println!("Switching processes!! {:?} {:?}", from.lock().id, to.lock().id);
 
 		// TODO: wow, this sucks
 		{

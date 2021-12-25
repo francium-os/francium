@@ -1,4 +1,4 @@
-use crate::{Handle,ResultCode,RESULT_OK};
+use crate::{Handle,ResultCode,RESULT_OK, INVALID_HANDLE};
 use crate::os_error::{OSError,result_to_error};
 use core::cmp::min;
 
@@ -10,7 +10,8 @@ extern "C" {
 	pub fn syscall_close_handle(h: Handle) -> ResultCode;
 	pub fn syscall_ipc_request(session_handle: Handle) -> ResultCode;
 	pub fn syscall_ipc_reply(session_handle: Handle) -> ResultCode;
-	pub fn syscall_ipc_receive(session_handle: Handle) -> ResultCode;
+	pub fn syscall_ipc_receive(session_handle: Handle, sessions: *const Handle, num_sessions: usize, index_out: *mut usize) -> ResultCode;
+	pub fn syscall_ipc_accept(session_handle: Handle, handle_out: *mut Handle) -> ResultCode;
 }
 
 pub fn print(s: &str) {
@@ -29,7 +30,7 @@ fn make_tag(s: &str) -> u64 {
 }
 
 pub fn create_port(s: &str) -> Result<Handle, OSError> {
-	let mut handle_out = Handle(0);
+	let mut handle_out = INVALID_HANDLE;
 	unsafe {
 		let res = syscall_create_port(make_tag(s), &mut handle_out);
 		if res == RESULT_OK {
@@ -41,7 +42,7 @@ pub fn create_port(s: &str) -> Result<Handle, OSError> {
 }
 
 pub fn connect_to_port(s: &str) -> Result<Handle, OSError> {
-	let mut handle_out = Handle(0);
+	let mut handle_out = INVALID_HANDLE;
 	unsafe {
 		let res = syscall_connect_to_port(make_tag(s), &mut handle_out);
 		if res == RESULT_OK {
@@ -91,11 +92,24 @@ pub fn ipc_reply(session_handle: Handle) -> Result<(), OSError> {
 	}
 }
 
-pub fn ipc_receive(session_handle: Handle) -> Result<(), OSError> {
+pub fn ipc_receive(session_handle: Handle, sessions: &[Handle]) -> Result<usize, OSError> {
 	unsafe {
-		let res = syscall_ipc_receive(session_handle);
+		let mut index_out: usize = 0;
+		let res = syscall_ipc_receive(session_handle, sessions.as_ptr(), sessions.len(), &mut index_out);
 		if res == RESULT_OK {
-			Ok(())
+			Ok(index_out)
+		} else {
+			Err(result_to_error(res))
+		}
+	}
+}
+
+pub fn ipc_accept(session_handle: Handle) -> Result<Handle, OSError> {
+	unsafe {
+		let mut handle_out: Handle = INVALID_HANDLE;
+		let res = syscall_ipc_accept(session_handle, &mut handle_out);
+		if res == RESULT_OK {
+			Ok(handle_out)
 		} else {
 			Err(result_to_error(res))
 		}
