@@ -1,7 +1,7 @@
 use crate::aarch64::context::ExceptionContext;
 use crate::scheduler;
-use crate::handle::{Handle};
-use crate::process::Process;
+use crate::handle::Handle;
+use crate::process::Thread;
 use crate::waitable::{Waiter, Waitable};
 use spin::Mutex;
 use alloc::collections::BTreeMap;
@@ -63,7 +63,7 @@ impl ClientSession {
 
 lazy_static! {
 	static ref PORT_LIST: Mutex<BTreeMap<u64, Arc<Box<Port>>>> = Mutex::new(BTreeMap::new());
-	static ref PORT_WAITERS: Mutex<Vec<(u64, Arc<Mutex<Box<Process>>>)>> = Mutex::new(Vec::new());
+	static ref PORT_WAITERS: Mutex<Vec<(u64, Arc<Box<Thread>>)>> = Mutex::new(Vec::new());
 }
 
 // request:
@@ -87,7 +87,7 @@ pub fn svc_create_port(ctx: &mut ExceptionContext) {
 		let mut port_waiters = PORT_WAITERS.lock();
 		port_waiters.retain( |x| {
 			if x.0 == tag {
-				scheduler::wake_process(x.1.clone());
+				scheduler::wake_thread(x.1.clone());
 				false
 			} else {
 				true
@@ -124,8 +124,8 @@ pub fn svc_connect_to_port(exc: &mut ExceptionContext) {
 			// make sure to drop the lock guard before suspending ourselves!
 			drop(ports);
 
-			PORT_WAITERS.lock().push((tag, scheduler::get_current_process()));
-			scheduler::suspend_current_process();
+			PORT_WAITERS.lock().push((tag, scheduler::get_current_thread()));
+			scheduler::suspend_current_thread();
 
 			// oops, try again
 			{

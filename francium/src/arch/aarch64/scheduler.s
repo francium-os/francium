@@ -1,4 +1,4 @@
-.global switch_process_asm
+.global switch_thread_asm
 .extern force_unlock_mutex
 
 // x0: from context
@@ -6,7 +6,7 @@
 // x2: from mutex
 // x3: to mutex
 
-switch_process_asm:
+switch_thread_asm:
 
 // Save callee save registers.
 stp x19, x20,  [x0, #0x98]
@@ -33,11 +33,11 @@ mov sp, x0
 // We need to save LR around these calls...
 str   lr, [sp, #-16]!
 
-// Unlock the mutex for the from process.
+// Unlock the mutex for the from context.
 mov x0, x2
 bl force_unlock_mutex
 
-// Unlock the mutex for the to process.
+// Unlock the mutex for the to context.
 mov x0, x3
 bl force_unlock_mutex
 

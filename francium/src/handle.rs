@@ -1,11 +1,10 @@
 use alloc::sync::Arc;
 use alloc::boxed::Box;
-use spin::{Mutex,MutexGuard};
+use spin::{Mutex};
 
 use crate::process::Process;
 use crate::memory::AddressSpace;
 use crate::svc::ipc::{Port,ServerSession,ClientSession};
-use crate::waitable::{Waiter, Waitable};
 
 #[derive(Debug, Clone)]
 pub enum Handle {

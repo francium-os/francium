@@ -1,10 +1,6 @@
-extern "C" {
-	fn restore_process_context(ctx: &ProcessContext);
-}
-
 #[repr(C)]
 #[derive(Debug, Clone)]
-pub struct ProcessContext {
+pub struct ThreadContext {
 	// regs includes kernel sp
 	pub regs: [usize; 32],
 }
@@ -30,14 +26,10 @@ impl ExceptionContext {
 	}
 }
 
-impl ProcessContext {
-	pub const fn new() -> ProcessContext {
-		ProcessContext {
+impl ThreadContext {
+	pub const fn new() -> ThreadContext {
+		ThreadContext {
 			regs: [0; 32],
 		}
-	}
-
-	pub unsafe fn switch(&self) {
-		restore_process_context(self);
 	}
 }

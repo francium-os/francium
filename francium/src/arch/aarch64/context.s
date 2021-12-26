@@ -1,4 +1,4 @@
-.global restore_process_context
+.global restore_thread_context
 
 .global user_thread_starter
 
@@ -7,29 +7,54 @@ get_esr_el1:
 mrs x0, esr_el1
 ret
 
-restore_process_context:
-// context in x0, x1 is scratch
-ldp x2, x3,    [x0, #0x10]
-ldp x4, x5,    [x0, #0x20]
-ldp x6, x7,    [x0, #0x30]
-ldp x8, x9,    [x0, #0x40]
-ldp x10, x11,  [x0, #0x50]
-ldp x12, x13,  [x0, #0x60]
-ldp x14, x15,  [x0, #0x70]
-ldp x16, x17,  [x0, #0x80]
-ldp x18, x19,  [x0, #0x90]
-ldp x20, x21,  [x0, #0xa0]
-ldp x22, x23,  [x0, #0xb0]
-ldp x24, x25,  [x0, #0xc0]
-ldp x26, x27,  [x0, #0xd0]
-ldp x28, x29,  [x0, #0xe0]
-ldr x30,       [x0, #0xf0]
+restore_thread_context:
+// context in x0, x1 is the mutex
 
-// "x31" is SP - set it.
-ldr x1,		   [x0, #0xf8]
-mov sp, x1
+// load lr, sp
+ldp x30, x2,   [x0, #0xf0]
+mov sp, x2
 
-ldp x0, x1,    [x0, #0x0]
+// We need to save LR around this call...
+str   lr, [sp, #-16]!
+
+// Unlock the mutex for the thread context.
+mov x0, x1
+bl force_unlock_mutex
+
+// Restore LR.
+ldr   lr, [sp], #16
+
+// ok, now zero everything
+mov x0, xzr
+mov x1, xzr
+mov x2, xzr
+mov x3, xzr
+mov x4, xzr
+mov x5, xzr
+mov x6, xzr
+mov x7, xzr
+mov x8, xzr
+mov x9, xzr
+mov x10, xzr
+mov x11, xzr
+mov x12, xzr
+mov x13, xzr
+mov x14, xzr
+mov x15, xzr
+mov x16, xzr
+mov x17, xzr
+mov x18, xzr
+mov x19, xzr
+mov x20, xzr
+mov x21, xzr
+mov x22, xzr
+mov x23, xzr
+mov x24, xzr
+mov x25, xzr
+mov x26, xzr
+mov x27, xzr
+mov x28, xzr
+mov x29, xzr
 
 // we loaded LR, now ret!
 ret

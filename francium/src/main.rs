@@ -35,12 +35,13 @@ use crate::mmu::PhysAddr;
 use crate::mmu::PagePermission;
 use crate::memory::KERNEL_ADDRESS_SPACE;
 use crate::memory::AddressSpace;
-use crate::process::Process;
+use crate::process::{Process, Thread};
 use crate::constants::*;
 
 use crate::arch::aarch64;
 use crate::arch::aarch64::gicv2;
 use crate::arch::aarch64::arch_timer;
+use crate::arch::aarch64::context::ExceptionContext;
 
 use alloc::boxed::Box;
 use alloc::sync::Arc;
@@ -51,7 +52,32 @@ extern "C" {
 	static __bss_end: i32;
 }
 
-fn load_process(elf_buf: &[u8]) -> Box<Process> {
+extern "C" {
+	fn user_thread_starter();
+}
+
+fn setup_user_context(process: Arc<Mutex<Box<Process>>>, usermode_pc: usize, usermode_sp: usize) -> Arc<Box<Thread>> {
+	let new_thread = Arc::new(Box::new(Thread::new(process.clone())));
+
+	unsafe {
+		let mut context_locked = new_thread.context.lock();
+
+		let exc_context_location = new_thread.kernel_stack_top - core::mem::size_of::<ExceptionContext>();
+		let exc_context = &mut *(exc_context_location as *mut ExceptionContext);
+
+		exc_context.regs[31] = usermode_sp;
+		exc_context.saved_pc = usermode_pc;
+		exc_context.saved_spsr = 0;
+
+		context_locked.regs[30] = user_thread_starter as usize;
+		context_locked.regs[31] = exc_context_location;
+	}
+
+	process.lock().threads.push(new_thread.clone());
+	new_thread
+}
+
+fn load_process(elf_buf: &[u8]) -> Arc<Box<Thread>> {
 	// Load the first process
 	let aspace = { 
 		let page_table_root = &KERNEL_ADDRESS_SPACE.read().page_table;
@@ -87,8 +113,10 @@ fn load_process(elf_buf: &[u8]) -> Box<Process> {
 
 		p.address_space.create(user_stack_base, user_stack_size, PagePermission::USER_READ_WRITE);
 
-		p.setup_user_context(user_code_base, user_stack_base + user_stack_size);
-		return p
+		let arc = Arc::new(Mutex::new(p));
+
+		let thread = setup_user_context(arc, user_code_base, user_stack_base + user_stack_size);
+		return thread
 	}
 	panic!("Failed to load process??");
 }
@@ -165,19 +193,17 @@ pub extern "C" fn rust_main() -> ! {
 	let elf_two_buf = include_bytes!("../../cesium/target/aarch64-unknown-francium-user/release/cesium");
 
 	println!("Loading process one...");
-	let proc_one = load_process(elf_one_buf);
-	let proc_one_arc = Arc::new(Mutex::new(proc_one));
-	scheduler::register_process(proc_one_arc.clone());
+	let one_main_thread = load_process(elf_one_buf);
+	scheduler::register_thread(one_main_thread.clone());
 
 	println!("Loading process two...");
-	let proc_two = load_process(elf_two_buf);
-	let proc_two_arc = Arc::new(Mutex::new(proc_two));
-	scheduler::register_process(proc_two_arc.clone());
+	let two_main_thread = load_process(elf_two_buf);
+	scheduler::register_thread(two_main_thread.clone());
 
 	arch_timer::enable();
 
 	println!("Running...");
-	process::force_switch_to(proc_one_arc);
+	process::force_switch_to(one_main_thread);
 	println!("We shouldn't get here, ever!!");
 
     loop {}

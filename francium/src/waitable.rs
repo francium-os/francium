@@ -2,13 +2,13 @@ use smallvec::SmallVec;
 use spin::Mutex;
 use alloc::sync::Arc;
 use alloc::boxed::Box;
-use crate::Process;
+use crate::Thread;
 use crate::scheduler;
 use core::sync::atomic::{AtomicBool,Ordering};
 
 #[derive(Debug)]
 pub struct Waiter {
-	waiters: Mutex<SmallVec<[Arc<Mutex<Box<Process>>>; 1]>>,
+	waiters: Mutex<SmallVec<[Arc<Box<Thread>>; 1]>>,
 	pending: AtomicBool,
 }
 
@@ -22,8 +22,8 @@ impl Waiter {
 
 	pub fn wait(&self) {
 		if !self.pending.load(Ordering::Acquire) {
-			self.waiters.lock().push(scheduler::get_current_process());
-			scheduler::suspend_current_process();
+			self.waiters.lock().push(scheduler::get_current_thread());
+			scheduler::suspend_current_thread();
 		} else {
 			self.pending.store(false, Ordering::Release);
 		}
@@ -31,13 +31,13 @@ impl Waiter {
 
 	pub fn signal_one(&self) {
 		match self.waiters.lock().pop() {
-			Some(waiter) => scheduler::wake_process(waiter),
+			Some(waiter) => scheduler::wake_thread(waiter),
 			None => self.pending.store(true, Ordering::Release)
 		}
 	}
 
 	pub fn signal_all(&self) {
-		self.waiters.lock().drain(..).map(|x| scheduler::wake_process(x)).collect()
+		self.waiters.lock().drain(..).map(|x| scheduler::wake_thread(x)).collect()
 	}
 }
 

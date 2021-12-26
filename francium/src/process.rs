@@ -1,72 +1,73 @@
 use crate::memory::AddressSpace;
-use crate::arch::aarch64::context::ProcessContext;
-use crate::aarch64::context::ExceptionContext;
+use crate::arch::aarch64::context::ThreadContext;
 use alloc::alloc::{alloc, Layout};
 use alloc::boxed::Box;
 use alloc::sync::Arc;
-use spin::Mutex;
+use spin::{Mutex, MutexGuard};
 use core::sync::atomic::AtomicUsize;
 use core::sync::atomic::Ordering;
 use crate::handle_table::HandleTable;
+use smallvec::SmallVec;
 
 #[derive(Debug)]
-pub enum ProcessState {
+pub enum ThreadState {
 	Created,
 	Runnable,
 	Suspended
 }
 
 #[derive(Debug)]
-pub struct Process {
-	pub address_space: Box<AddressSpace>,
-	pub context: ProcessContext,
-	pub state: ProcessState,
+pub struct Thread {
 	pub id: usize,
-	pub handle_table: HandleTable,
+	pub state: ThreadState,
+	pub context: Mutex<ThreadContext>,
+
+	// static
+	pub process: Arc<Mutex<Box<Process>>>,
 	pub kernel_stack_top: usize,
 	pub kernel_stack_size: usize
 }
 
-static PROCESS_ID: AtomicUsize = AtomicUsize::new(0);
-
-extern "C" {
-	fn user_thread_starter();
+#[derive(Debug)]
+pub struct Process {
+	pub id: usize,
+	pub address_space: Box<AddressSpace>,
+	pub threads: SmallVec<[Arc<Box<Thread>>; 1]>,
+	pub handle_table: HandleTable
 }
 
-impl Process {
-	pub fn new(aspace: Box<AddressSpace>) -> Process {
+static PROCESS_ID: AtomicUsize = AtomicUsize::new(0);
+static THREAD_ID: AtomicUsize = AtomicUsize::new(0);
+
+impl Thread {
+	pub fn new(p: Arc<Mutex<Box<Process>>>) -> Thread {
 		let kernel_stack_size = 0x1000;
 
 		let kernel_stack = unsafe {
 			alloc(Layout::from_size_align(kernel_stack_size, 0x1000).unwrap())
 		};
 
-		let p = Process {
-			address_space: aspace,
-			context: ProcessContext::new(),
-			state: ProcessState::Created,
+		Thread {
 			id: PROCESS_ID.fetch_add(1, Ordering::SeqCst),
-			handle_table: HandleTable::new(),
+			state: ThreadState::Created,
+			context: Mutex::new(ThreadContext::new()),
+			process: p,
 			kernel_stack_top: kernel_stack as *const usize as usize + kernel_stack_size,
 			kernel_stack_size: kernel_stack_size,
+		}
+	}
+}
+
+impl Process {
+	pub fn new(aspace: Box<AddressSpace>) -> Process {
+		let p = Process {
+			address_space: aspace,
+			threads: SmallVec::new(),
+			id: PROCESS_ID.fetch_add(1, Ordering::SeqCst),
+			handle_table: HandleTable::new(),
 		};
 
 		p
-	}
-
-	pub fn setup_user_context(&mut self, usermode_pc: usize, usermode_sp: usize) {
-		unsafe {
-			let exc_context_location = self.kernel_stack_top - core::mem::size_of::<ExceptionContext>();
-
-			let exc_context = &mut *(exc_context_location as *mut ExceptionContext);
-
-			exc_context.regs[31] = usermode_sp;
-			exc_context.saved_pc = usermode_pc;
-			exc_context.saved_spsr = 0;
-
-			self.context.regs[30] = user_thread_starter as usize;
-			self.context.regs[31] = exc_context_location;
-		}
 	}
 
 	pub fn use_pages(&self) {
@@ -74,13 +75,36 @@ impl Process {
 	}
 }
 
-pub fn force_switch_to(locked: Arc<Mutex<Box<Process>>>) {
-	let process_context = { 
-		let p = locked.lock();
-		p.address_space.make_active();
-		p.context.clone()
-	};
+
+/*
+	fn switch_thread(&mut self, from: &Arc<Box<Thread>>, to: &Arc<Box<Thread>>) {
+		// TODO: wow, this sucks
+		{
+			unsafe {
+				// TODO: lol
+				SCHEDULER.force_unlock();
+			}
+
+			let from_context_locked = MutexGuard::leak(from.context.lock());
+			let to_context_locked = MutexGuard::leak(to.context.lock());
+
+			unsafe {
+				switch_thread_asm(from_context_locked, to_context_locked, &from.context, &to.context);
+			}
+		}
+	}
+*/
+
+// see also: force_unlock_mutex in scheduler
+extern "C" {
+	fn restore_thread_context(ctx: &ThreadContext, mutex: &Mutex<ThreadContext>);
+}
+
+pub fn force_switch_to(thread: Arc<Box<Thread>>) {
+	thread.process.lock().use_pages();
+
+	let thread_context = MutexGuard::leak(thread.context.lock());
 	unsafe {
-		process_context.switch();
+		restore_thread_context(thread_context, &thread.context);
 	}
 }
