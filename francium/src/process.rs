@@ -75,29 +75,9 @@ impl Process {
 	}
 }
 
-
-/*
-	fn switch_thread(&mut self, from: &Arc<Box<Thread>>, to: &Arc<Box<Thread>>) {
-		// TODO: wow, this sucks
-		{
-			unsafe {
-				// TODO: lol
-				SCHEDULER.force_unlock();
-			}
-
-			let from_context_locked = MutexGuard::leak(from.context.lock());
-			let to_context_locked = MutexGuard::leak(to.context.lock());
-
-			unsafe {
-				switch_thread_asm(from_context_locked, to_context_locked, &from.context, &to.context);
-			}
-		}
-	}
-*/
-
 // see also: force_unlock_mutex in scheduler
 extern "C" {
-	fn restore_thread_context(ctx: &ThreadContext, mutex: &Mutex<ThreadContext>);
+	fn restore_thread_context(ctx: &ThreadContext, mutex: *const Mutex<ThreadContext>);
 }
 
 pub fn force_switch_to(thread: Arc<Box<Thread>>) {

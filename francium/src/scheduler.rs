@@ -2,6 +2,7 @@ use alloc::boxed::Box;
 use alloc::sync::Arc;
 use smallvec::SmallVec;
 use spin::{Mutex, MutexGuard};
+use core::ptr::NonNull;
 
 use crate::process::{Thread, Process, ThreadState};
 use crate::aarch64::context::ThreadContext;
@@ -19,13 +20,13 @@ lazy_static! {
 // rust says these are ffi unsafe
 // they're right but shut
 extern "C" {
-	fn switch_thread_asm(from_context: *mut ThreadContext, to_context: *const ThreadContext, from: &Mutex<ThreadContext>, to: &Mutex<ThreadContext>);
+	fn switch_thread_asm(from_context: *mut ThreadContext, to_context: *const ThreadContext, from: *const Mutex<ThreadContext>, to: *const Mutex<ThreadContext>);
 }
 
 #[no_mangle]
-pub extern "C" fn force_unlock_mutex(mutex: &Mutex<ThreadContext>) {
+pub extern "C" fn force_unlock_mutex(mutex: NonNull<Mutex<ThreadContext>>) {
 	unsafe {
-		mutex.force_unlock();
+		mutex.as_ref().force_unlock();
 	}
 }
 
@@ -84,8 +85,6 @@ impl Scheduler {
 
 	pub fn suspend(&mut self, p: &Arc<Box<Thread>>) {
 		//p.state = ThreadState::Suspended;
-
-		// todo ugh
 		if let Some(runnable_index) = self.runnable_threads.iter().position(|x| x.id == p.id) {
 			if runnable_index < self.current_thread_index {
 				self.current_thread_index -= 1;

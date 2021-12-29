@@ -14,11 +14,13 @@ use smallvec::SmallVec;
 #[derive(Debug)]
 pub struct ServerSession {
 	wait: Waiter,
-	port: Arc<Box<Port>>
+	port: Arc<Box<Port>>,
+	client: Option<Arc<Box<ClientSession>>>
 }
 
 #[derive(Debug)]
 pub struct ClientSession {
+	wait: Waiter,
 	server: Arc<Box<ServerSession>>
 }
 
@@ -47,7 +49,8 @@ impl ServerSession {
 	fn new(port: Arc<Box<Port>>) -> ServerSession {
 		ServerSession {
 			wait: Waiter::new(),
-			port: port
+			port: port,
+			client: None
 		}
 	}
 }
@@ -56,10 +59,12 @@ impl Waitable for ServerSession { fn get_waiter(&self) -> &Waiter { &self.wait }
 impl ClientSession {
 	fn new(server: Arc<Box<ServerSession>>) -> ClientSession {
 		ClientSession {
+			wait: Waiter::new(),
 			server: server
 		}
 	}
 }
+impl Waitable for ClientSession { fn get_waiter(&self) -> &Waiter { &self.wait } }
 
 lazy_static! {
 	static ref PORT_LIST: Mutex<BTreeMap<u64, Arc<Box<Port>>>> = Mutex::new(BTreeMap::new());
@@ -160,9 +165,12 @@ pub fn svc_ipc_request(exc: &mut ExceptionContext) {
 		x
 	};
 
-	if let Handle::ClientSession(session_handle) = ipc_session {
-		// good
+	if let Handle::ClientSession(client_session) = ipc_session {
+		// signal, then wait for reply
+		client_session.server.signal_one();
 
+		client_session.server.wait();
+		exc.regs[0] = 1;
 	} else {
 		exc.regs[0] = 1;
 		// error
@@ -184,6 +192,7 @@ pub fn svc_ipc_receive(exc: &mut ExceptionContext) {
 	};
 
 	if let Handle::Port(port) = ipc_session {
+		// TODO: this needs to be some kind of "wait_many"
 		port.wait();
 
 		if port.queue.lock().len() > 0 {
@@ -191,6 +200,7 @@ pub fn svc_ipc_receive(exc: &mut ExceptionContext) {
 			exc.regs[1] = 0; // signal the port
 		} else {
 			println!("queue = 0! what do i do now??");
+			unimplemented!();
 
 			exc.regs[0] = 1; // error
 			exc.regs[1] = 0;
@@ -198,14 +208,24 @@ pub fn svc_ipc_receive(exc: &mut ExceptionContext) {
 	} else {
 		println!("non port handle to svc_ipc_receive: {:?}", ipc_session);
 		exc.regs[0] = 1;
-		// error
 	}
 }
 
 // x0: session handle
 // x1: ipc buffer
-pub fn svc_ipc_reply(_exc: &mut ExceptionContext) {
-	unimplemented!();
+pub fn svc_ipc_reply(exc: &mut ExceptionContext) {
+	let ipc_session = {
+		let process_locked = scheduler::get_current_process();
+		let x = process_locked.lock().handle_table.get_object(exc.regs[0] as u32);
+		x
+	};
+
+	if let Handle::ServerSession(server_session) = ipc_session {
+		exc.regs[0] = 0;
+		server_session.signal_one();
+	} else {
+		exc.regs[0] = 1;
+	}
 }
 
 // x0: port
@@ -227,9 +247,7 @@ pub fn svc_ipc_accept(exc: &mut ExceptionContext) {
 		let current_process = scheduler::get_current_process();
 		let mut process = current_process.lock();
 		exc.regs[1] = process.handle_table.get_handle(Handle::ServerSession(server_session)) as usize;
-
 		exc.regs[0] = 0;
-		// todo handle
 	} else {
 		exc.regs[0] = 1;
 		// error
