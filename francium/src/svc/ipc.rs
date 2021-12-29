@@ -14,14 +14,14 @@ use smallvec::SmallVec;
 #[derive(Debug)]
 pub struct ServerSession {
 	wait: Waiter,
-	port: Arc<Box<Port>>,
-	client: Option<Arc<Box<ClientSession>>>
+	port: Arc<Port>,
+	client: Option<Arc<ClientSession>>
 }
 
 #[derive(Debug)]
 pub struct ClientSession {
 	wait: Waiter,
-	server: Arc<Box<ServerSession>>
+	server: Arc<ServerSession>
 }
 
 
@@ -30,7 +30,7 @@ pub struct Port {
 	wait: Waiter,
 	tag: u64,
 	// todo: queue default length
-	queue: Mutex<SmallVec<[Arc<Box<ServerSession>>; 1]>>
+	queue: Mutex<SmallVec<[Arc<ServerSession>; 1]>>
 }
 
 impl Port {
@@ -46,7 +46,7 @@ impl Port {
 impl Waitable for Port { fn get_waiter(&self) -> &Waiter { &self.wait } }
 
 impl ServerSession {
-	fn new(port: Arc<Box<Port>>) -> ServerSession {
+	fn new(port: Arc<Port>) -> ServerSession {
 		ServerSession {
 			wait: Waiter::new(),
 			port: port,
@@ -57,7 +57,7 @@ impl ServerSession {
 impl Waitable for ServerSession { fn get_waiter(&self) -> &Waiter { &self.wait } }
 
 impl ClientSession {
-	fn new(server: Arc<Box<ServerSession>>) -> ClientSession {
+	fn new(server: Arc<ServerSession>) -> ClientSession {
 		ClientSession {
 			wait: Waiter::new(),
 			server: server
@@ -67,8 +67,8 @@ impl ClientSession {
 impl Waitable for ClientSession { fn get_waiter(&self) -> &Waiter { &self.wait } }
 
 lazy_static! {
-	static ref PORT_LIST: Mutex<BTreeMap<u64, Arc<Box<Port>>>> = Mutex::new(BTreeMap::new());
-	static ref PORT_WAITERS: Mutex<Vec<(u64, Arc<Box<Thread>>)>> = Mutex::new(Vec::new());
+	static ref PORT_LIST: Mutex<BTreeMap<u64, Arc<Port>>> = Mutex::new(BTreeMap::new());
+	static ref PORT_WAITERS: Mutex<Vec<(u64, Arc<Thread>)>> = Mutex::new(Vec::new());
 }
 
 // request:
@@ -80,7 +80,7 @@ pub fn svc_create_port(ctx: &mut ExceptionContext) {
 	let tag = ctx.regs[0] as u64;
 
 	let server_port = Port::new(tag);
-	let server_port_handle = Arc::new(Box::new(server_port));
+	let server_port_handle = Arc::new(server_port);
 
 	// if not a private port
 	if tag != 0 {
@@ -140,8 +140,8 @@ pub fn svc_connect_to_port(exc: &mut ExceptionContext) {
 		}
 	};
 
-	let server_session = Arc::new(Box::new(ServerSession::new(port.clone())));
-	let client_session = Arc::new(Box::new(ClientSession::new(server_session.clone())));
+	let server_session = Arc::new(ServerSession::new(port.clone()));
+	let client_session = Arc::new(ClientSession::new(server_session.clone()));
 	
 	// create the session, and wait for it to be accepted by the server
 	port.queue.lock().push(server_session.clone());

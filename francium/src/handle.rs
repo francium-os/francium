@@ -10,8 +10,8 @@ use crate::svc::ipc::{Port,ServerSession,ClientSession};
 pub enum Handle {
 	Process(Arc<Mutex<Box<Process>>>),
 	AddressSpace(Arc<Mutex<Box<AddressSpace>>>),
-	Port(Arc<Box<Port>>),
-	ServerSession(Arc<Box<ServerSession>>),
-	ClientSession(Arc<Box<ClientSession>>),
+	Port(Arc<Port>),
+	ServerSession(Arc<ServerSession>),
+	ClientSession(Arc<ClientSession>),
 	Invalid
 }

@@ -8,7 +8,7 @@ use core::sync::atomic::{AtomicBool,Ordering};
 
 #[derive(Debug)]
 pub struct Waiter {
-	waiters: Mutex<SmallVec<[Arc<Box<Thread>>; 1]>>,
+	waiters: Mutex<SmallVec<[Arc<Thread>; 1]>>,
 	pending: AtomicBool,
 }
 

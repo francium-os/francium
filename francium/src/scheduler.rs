@@ -8,8 +8,8 @@ use crate::process::{Thread, Process, ThreadState};
 use crate::aarch64::context::ThreadContext;
 
 pub struct Scheduler {
-	pub threads: SmallVec<[Arc<Box<Thread>>; 4]>,
-	pub runnable_threads: SmallVec<[Arc<Box<Thread>>; 4]>,
+	pub threads: SmallVec<[Arc<Thread>; 4]>,
+	pub runnable_threads: SmallVec<[Arc<Thread>; 4]>,
 	pub current_thread_index: usize
 }
 
@@ -39,11 +39,11 @@ impl Scheduler {
 		}
 	}
 
-	fn get_current_thread(&self) -> Arc<Box<Thread>> {
+	fn get_current_thread(&self) -> Arc<Thread> {
 		self.runnable_threads[self.current_thread_index].clone()
 	}
 
-	fn switch_thread(&mut self, from: &Arc<Box<Thread>>, to: &Arc<Box<Thread>>) {
+	fn switch_thread(&mut self, from: &Arc<Thread>, to: &Arc<Thread>) {
 		// TODO: wow, this sucks
 		{
 			unsafe {
@@ -62,7 +62,7 @@ impl Scheduler {
 		}
 	}
 
-	pub fn get_next_thread(&mut self) -> Arc<Box<Thread>> {
+	pub fn get_next_thread(&mut self) -> Arc<Thread> {
 		if self.current_thread_index == self.runnable_threads.len() - 1 {
 			self.current_thread_index = 0;
 		} else {
@@ -83,7 +83,7 @@ impl Scheduler {
 		self.switch_thread(&this_thread, &next);
 	}
 
-	pub fn suspend(&mut self, p: &Arc<Box<Thread>>) {
+	pub fn suspend(&mut self, p: &Arc<Thread>) {
 		//p.state = ThreadState::Suspended;
 		if let Some(runnable_index) = self.runnable_threads.iter().position(|x| x.id == p.id) {
 			if runnable_index < self.current_thread_index {
@@ -102,7 +102,7 @@ impl Scheduler {
 		}
 	}
 
-	pub fn wake(&mut self, p: Arc<Box<Thread>>) {
+	pub fn wake(&mut self, p: Arc<Thread>) {
 		if let Some(_runnable_index) = self.runnable_threads.iter().position(|x| x.id == p.id) {
 			// wtf
 			panic!("Trying to re-wake a thread!");
@@ -126,13 +126,13 @@ pub fn tick() {
 	sched.tick();
 }
 
-pub fn register_thread(p: Arc<Box<Thread>>) {
+pub fn register_thread(p: Arc<Thread>) {
 	let mut sched = SCHEDULER.lock();
 	sched.threads.push(p.clone());
 	sched.runnable_threads.push(p.clone());
 }
 
-pub fn get_current_thread() -> Arc<Box<Thread>> {
+pub fn get_current_thread() -> Arc<Thread> {
 	let sched = SCHEDULER.lock();
 	sched.get_current_thread()
 }
@@ -141,7 +141,7 @@ pub fn get_current_process() -> Arc<Mutex<Box<Process>>> {
 	get_current_thread().process.clone()
 }
 
-pub fn suspend_process(p: Arc<Box<Thread>>) {
+pub fn suspend_process(p: Arc<Thread>) {
 	let mut sched = SCHEDULER.lock();
 	sched.suspend(&p);
 }
@@ -153,7 +153,7 @@ pub fn suspend_current_thread() {
 	sched.suspend(&curr);
 }
 
-pub fn wake_thread(p: Arc<Box<Thread>>) {
+pub fn wake_thread(p: Arc<Thread>) {
 	let mut sched = SCHEDULER.lock();
 	sched.wake(p);
 }

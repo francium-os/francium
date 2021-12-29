@@ -32,7 +32,7 @@ pub struct Thread {
 pub struct Process {
 	pub id: usize,
 	pub address_space: Box<AddressSpace>,
-	pub threads: SmallVec<[Arc<Box<Thread>>; 1]>,
+	pub threads: SmallVec<[Arc<Thread>; 1]>,
 	pub handle_table: HandleTable
 }
 
@@ -80,7 +80,7 @@ extern "C" {
 	fn restore_thread_context(ctx: &ThreadContext, mutex: *const Mutex<ThreadContext>);
 }
 
-pub fn force_switch_to(thread: Arc<Box<Thread>>) {
+pub fn force_switch_to(thread: Arc<Thread>) {
 	thread.process.lock().use_pages();
 
 	let thread_context = MutexGuard::leak(thread.context.lock());

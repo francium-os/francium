@@ -56,8 +56,8 @@ extern "C" {
 	fn user_thread_starter();
 }
 
-fn setup_user_context(process: Arc<Mutex<Box<Process>>>, usermode_pc: usize, usermode_sp: usize) -> Arc<Box<Thread>> {
-	let new_thread = Arc::new(Box::new(Thread::new(process.clone())));
+fn setup_user_context(process: Arc<Mutex<Box<Process>>>, usermode_pc: usize, usermode_sp: usize) -> Arc<Thread> {
+	let new_thread = Arc::new(Thread::new(process.clone()));
 
 	unsafe {
 		let mut context_locked = new_thread.context.lock();
@@ -77,7 +77,7 @@ fn setup_user_context(process: Arc<Mutex<Box<Process>>>, usermode_pc: usize, use
 	new_thread
 }
 
-fn load_process(elf_buf: &[u8]) -> Arc<Box<Thread>> {
+fn load_process(elf_buf: &[u8]) -> Arc<Thread> {
 	// Load the first process
 	let aspace = { 
 		let page_table_root = &KERNEL_ADDRESS_SPACE.read().page_table;
