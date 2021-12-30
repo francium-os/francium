@@ -2,6 +2,7 @@ use alloc::sync::Arc;
 use alloc::boxed::Box;
 use spin::{Mutex};
 
+use crate::scheduler;
 use crate::process::Process;
 use crate::memory::AddressSpace;
 use crate::svc::ipc::{Port,ServerSession,ClientSession};
@@ -14,4 +15,10 @@ pub enum Handle {
 	ServerSession(Arc<ServerSession>),
 	ClientSession(Arc<ClientSession>),
 	Invalid
+}
+
+pub fn get_handle(reg: usize) -> Handle {
+	let process_locked = scheduler::get_current_process();
+	let x = process_locked.lock().handle_table.get_object(reg as u32);
+	x
 }

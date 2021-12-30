@@ -1,13 +1,15 @@
 use crate::aarch64::context::ExceptionContext;
 use crate::scheduler;
+use crate::handle;
 use crate::handle::Handle;
 use crate::process::Thread;
+use crate::waitable;
 use crate::waitable::{Waiter, Waitable};
 use spin::Mutex;
 use alloc::collections::BTreeMap;
 use alloc::vec::Vec;
 use alloc::boxed::Box;
-use alloc::sync::Arc;
+use alloc::sync::{Arc, Weak};
 
 use smallvec::SmallVec;
 
@@ -15,7 +17,7 @@ use smallvec::SmallVec;
 pub struct ServerSession {
 	wait: Waiter,
 	port: Arc<Port>,
-	client: Option<Arc<ClientSession>>
+	client: Mutex<Weak<ClientSession>>
 }
 
 #[derive(Debug)]
@@ -23,7 +25,6 @@ pub struct ClientSession {
 	wait: Waiter,
 	server: Arc<ServerSession>
 }
-
 
 #[derive(Debug)]
 pub struct Port {
@@ -50,7 +51,7 @@ impl ServerSession {
 		ServerSession {
 			wait: Waiter::new(),
 			port: port,
-			client: None
+			client: Mutex::new(Weak::new())
 		}
 	}
 }
@@ -142,7 +143,10 @@ pub fn svc_connect_to_port(exc: &mut ExceptionContext) {
 
 	let server_session = Arc::new(ServerSession::new(port.clone()));
 	let client_session = Arc::new(ClientSession::new(server_session.clone()));
-	
+
+	// TODO: ugh, i really wanted OnceCell here
+	*server_session.client.lock() = Arc::downgrade(&client_session);
+		
 	// create the session, and wait for it to be accepted by the server
 	port.queue.lock().push(server_session.clone());
 	port.signal_one();
@@ -159,17 +163,11 @@ pub fn svc_connect_to_port(exc: &mut ExceptionContext) {
 
 // x0: ipc session
 pub fn svc_ipc_request(exc: &mut ExceptionContext) {
-	let ipc_session = {
-		let process_locked = scheduler::get_current_process();
-		let x = process_locked.lock().handle_table.get_object(exc.regs[0] as u32);
-		x
-	};
-
-	if let Handle::ClientSession(client_session) = ipc_session {
+	if let Handle::ClientSession(client_session) = handle::get_handle(exc.regs[0]) {
 		// signal, then wait for reply
 		client_session.server.signal_one();
+		client_session.wait();
 
-		client_session.server.wait();
 		exc.regs[0] = 1;
 	} else {
 		exc.regs[0] = 1;
@@ -184,16 +182,18 @@ pub fn svc_ipc_request(exc: &mut ExceptionContext) {
 // x1: handles[]
 // x2: handle_count
 
-pub fn svc_ipc_receive(exc: &mut ExceptionContext) {
-	let ipc_session = {
-		let process_locked = scheduler::get_current_process();
-		let x = process_locked.lock().handle_table.get_object(exc.regs[0] as u32);
-		x
-	};
+const MAX_HANDLES: usize = 128;
 
-	if let Handle::Port(port) = ipc_session {
-		// TODO: this needs to be some kind of "wait_many"
-		port.wait();
+pub fn svc_ipc_receive(exc: &mut ExceptionContext) {
+	if let Handle::Port(port) = handle::get_handle(exc.regs[0]) {
+		let handle_count = exc.regs[2];
+		let mut handles: [u32; MAX_HANDLES] = [ 0xffffffff ; MAX_HANDLES];
+
+		unsafe {
+			core::ptr::copy_nonoverlapping(exc.regs[1] as *const u32, &mut handles as *mut u32, handle_count);
+		}
+
+		waitable::wait_handles(&handles[..handle_count]);
 
 		if port.queue.lock().len() > 0 {
 			exc.regs[0] = 0; // ok
@@ -206,7 +206,7 @@ pub fn svc_ipc_receive(exc: &mut ExceptionContext) {
 			exc.regs[1] = 0;
 		}
 	} else {
-		println!("non port handle to svc_ipc_receive: {:?}", ipc_session);
+		println!("non port handle to svc_ipc_receive :(");
 		exc.regs[0] = 1;
 	}
 }
@@ -214,15 +214,11 @@ pub fn svc_ipc_receive(exc: &mut ExceptionContext) {
 // x0: session handle
 // x1: ipc buffer
 pub fn svc_ipc_reply(exc: &mut ExceptionContext) {
-	let ipc_session = {
-		let process_locked = scheduler::get_current_process();
-		let x = process_locked.lock().handle_table.get_object(exc.regs[0] as u32);
-		x
-	};
-
-	if let Handle::ServerSession(server_session) = ipc_session {
+	if let Handle::ServerSession(server_session) = handle::get_handle(exc.regs[0]) {
 		exc.regs[0] = 0;
-		server_session.signal_one();
+
+		// TODO: wtf?
+		server_session.client.lock().upgrade().unwrap().signal_one();
 	} else {
 		exc.regs[0] = 1;
 	}
@@ -232,13 +228,7 @@ pub fn svc_ipc_reply(exc: &mut ExceptionContext) {
 // x1: session handle out
 
 pub fn svc_ipc_accept(exc: &mut ExceptionContext) {
-	let port_handle = {
-		let process_locked = scheduler::get_current_process();
-		let x = process_locked.lock().handle_table.get_object(exc.regs[0] as u32);
-		x
-	};
-
-	if let Handle::Port(port) = port_handle {
+	if let Handle::Port(port) =  handle::get_handle(exc.regs[0]) {
 		let server_session = port.queue.lock().pop().unwrap();
 
 		// wake the client
