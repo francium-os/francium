@@ -68,6 +68,7 @@ fn setup_user_context(process: Arc<Mutex<Box<Process>>>, usermode_pc: usize, use
 		exc_context.regs[31] = usermode_sp;
 		exc_context.saved_pc = usermode_pc;
 		exc_context.saved_spsr = 0;
+		exc_context.saved_tpidr = new_thread.thread_local_location;
 
 		context_locked.regs[30] = user_thread_starter as usize;
 		context_locked.regs[31] = exc_context_location;

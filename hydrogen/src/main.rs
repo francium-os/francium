@@ -2,8 +2,11 @@
 
 use process::println;
 use process::syscalls;
+use process::syscalls::get_tpidr_el0;
 
 fn main() {
+	println!("[C] Hello from hydrogen! My TLS is {:x}", get_tpidr_el0());
+
 	println!("[C] Connecting to sm...");
 	let port = syscalls::connect_to_port("sm").unwrap();
 	println!("[C] Connected to sm port! {:?}", port);

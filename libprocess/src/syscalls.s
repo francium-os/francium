@@ -7,6 +7,7 @@
 .global syscall_ipc_reply
 .global syscall_ipc_receive
 .global syscall_ipc_accept
+.global get_tpidr_el0_asm
 
 .section .text
 syscall_debug_output:
@@ -51,4 +52,8 @@ syscall_ipc_accept:
 mov x9, x1
 svc #9
 str x1, [x9]
+ret
+
+get_tpidr_el0_asm:
+mrs x0, tpidr_el0
 ret

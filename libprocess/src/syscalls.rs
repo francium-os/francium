@@ -12,7 +12,16 @@ extern "C" {
 	pub fn syscall_ipc_reply(session_handle: Handle) -> ResultCode;
 	pub fn syscall_ipc_receive(sessions: *const Handle, num_sessions: usize, index_out: *mut usize) -> ResultCode;
 	pub fn syscall_ipc_accept(session_handle: Handle, handle_out: *mut Handle) -> ResultCode;
+
+	fn get_tpidr_el0_asm() -> usize;
 }
+
+pub fn get_tpidr_el0() -> usize {
+	unsafe {
+		get_tpidr_el0_asm()
+	}
+}
+
 
 pub fn print(s: &str) {
 	unsafe {
