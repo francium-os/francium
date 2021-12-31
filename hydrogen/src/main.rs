@@ -4,12 +4,14 @@ use process::println;
 use process::syscalls;
 
 fn main() {
-	println!("Connecting to sm...");
+	println!("[C] Connecting to sm...");
 	let port = syscalls::connect_to_port("sm").unwrap();
-	println!("Connected to sm port! {:?}", port);
-	println!("Doing an IPC request");
-	println!("Done with request: {:?}", syscalls::ipc_request(port).unwrap());
+	println!("[C] Connected to sm port! {:?}", port);
+	println!("[C] Doing an IPC request");
+	syscalls::ipc_request(port).unwrap();
+	println!("[C] Done with request!");
 
 	syscalls::close_handle(port).unwrap();
+	println!("[C] Client done!");
 	syscalls::exit_process();
 }

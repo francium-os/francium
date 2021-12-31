@@ -30,8 +30,8 @@ ldp x29, x30,  [x1, #0xe8]
 ldr x0, [x1, #0xf8]
 mov sp, x0
 
-// We need to save LR around these calls...
-str   lr, [sp, #-16]!
+// We need to save LR/x1 around these calls...
+stp lr, x0, [sp, #-16]!
 
 // Unlock the mutex for the from context.
 mov x0, x2
@@ -42,6 +42,9 @@ mov x0, x3
 bl force_unlock_mutex
 
 // Restore LR.
-ldr   lr, [sp], #16
+ldp  lr, x0, [sp], #16
+
+// load tag
+ldr x0, [x1, #0x00]
 
 ret

@@ -5,12 +5,12 @@ use alloc::boxed::Box;
 use crate::Thread;
 use crate::scheduler;
 use crate::handle::Handle;
-use core::sync::atomic::{AtomicBool,Ordering};
+use core::sync::atomic::{AtomicBool,AtomicUsize,Ordering};
 
 #[derive(Debug)]
 pub struct Waiter {
-	waiters: Mutex<SmallVec<[Arc<Thread>; 1]>>,
-	pending: AtomicBool,
+	waiters: Mutex<SmallVec<[(Arc<Thread>, usize); 1]>>,
+	pending: AtomicBool
 }
 
 impl Waiter {
@@ -21,20 +21,20 @@ impl Waiter {
 		}
 	}
 
-	pub fn post_wait(&self) -> bool {
+	pub fn post_wait(&self, tag: usize) -> bool {
 		let pending = self.pending.load(Ordering::Acquire);
 		if pending {
 			self.pending.store(false, Ordering::Release);
 			return true;
 		} else {
-			self.waiters.lock().push(scheduler::get_current_thread());
+			self.waiters.lock().push((scheduler::get_current_thread(), tag));
 			return false;
 		}
 	}
 
 	pub fn wait(&self) {
 		if !self.pending.load(Ordering::Acquire) {
-			self.waiters.lock().push(scheduler::get_current_thread());
+			self.waiters.lock().push((scheduler::get_current_thread(), 0));
 			scheduler::suspend_current_thread();
 		} else {
 			self.pending.store(false, Ordering::Release);
@@ -44,7 +44,7 @@ impl Waiter {
 	pub fn remove_wait(&self) {
 		let mut waiters_locked = self.waiters.lock();
 
-		let pos = waiters_locked.iter().position(|x| x.id == scheduler::get_current_thread().id);
+		let pos = waiters_locked.iter().position(|x| x.0.id == scheduler::get_current_thread().id);
 		if let Some(x) = pos {
 			waiters_locked.remove(x);
 		}
@@ -52,13 +52,13 @@ impl Waiter {
 
 	pub fn signal_one(&self) {
 		match self.waiters.lock().pop() {
-			Some(waiter) => scheduler::wake_thread(waiter),
+			Some(waiter) => scheduler::wake_thread(waiter.0, waiter.1),
 			None => self.pending.store(true, Ordering::Release)
 		}
 	}
 
 	pub fn signal_all(&self) {
-		self.waiters.lock().drain(..).map(|x| scheduler::wake_thread(x)).collect()
+		self.waiters.lock().drain(..).map(|x| scheduler::wake_thread(x.0, x.1)).collect()
 	}
 }
 
@@ -77,8 +77,8 @@ pub trait Waitable {
 		self.get_waiter().signal_all();
 	}
 
-	fn post_wait(&self) -> bool {
-		self.get_waiter().post_wait()
+	fn post_wait(&self, tag: usize) -> bool {
+		self.get_waiter().post_wait(tag)
 	}
 
 	fn remove_wait(&self) {
@@ -89,7 +89,8 @@ pub trait Waitable {
 const MAX_HANDLES: usize = 128;
 const INVALID_HANDLE: Handle = Handle::Invalid;
 
-pub fn wait_handles(handles: &[u32]) {
+// returns index
+pub fn wait_handles(handles: &[u32]) -> usize {
 	let mut handle_objects = [INVALID_HANDLE; MAX_HANDLES];
 	let mut handle_objects = &mut handle_objects[0..handles.len()];
 
@@ -103,28 +104,35 @@ pub fn wait_handles(handles: &[u32]) {
 	}
 
 	let mut any_pending = false;
+	let mut tag = 0;
 
-	for handle in handle_objects.iter() {
+	for (index, handle) in handle_objects.iter().enumerate() {
 		match handle {
 			// What handles are waitable?
 			Handle::Port(port) => {
-				any_pending = any_pending || port.post_wait();
+				any_pending = any_pending || port.post_wait(index);
 			},
 
 			Handle::ServerSession(server_session) => {
-				any_pending = any_pending || server_session.post_wait();
+				any_pending = any_pending || server_session.post_wait(index);
 			},
 
 			Handle::ClientSession(client_session) => {
-				any_pending = any_pending || client_session.post_wait();
+				any_pending = any_pending || client_session.post_wait(index);
 			},
 
 			_ => {}
 		}
+		if any_pending {
+			tag = index;
+		}
 	}
 
 	if !any_pending {
-		scheduler::suspend_current_thread();
+		tag = scheduler::suspend_current_thread();
+		println!("waited tag: {:?}", tag);
+	} else {
+		println!("pending tag: {:?}", tag);
 	}
 
 	for handle in handle_objects.iter() {
@@ -145,4 +153,6 @@ pub fn wait_handles(handles: &[u32]) {
 			_ => {}
 		}
 	}
+	
+	tag
 }

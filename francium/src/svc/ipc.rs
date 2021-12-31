@@ -93,7 +93,7 @@ pub fn svc_create_port(ctx: &mut ExceptionContext) {
 		let mut port_waiters = PORT_WAITERS.lock();
 		port_waiters.retain( |x| {
 			if x.0 == tag {
-				scheduler::wake_thread(x.1.clone());
+				scheduler::wake_thread(x.1.clone(), 0);
 				false
 			} else {
 				true
@@ -168,12 +168,11 @@ pub fn svc_ipc_request(exc: &mut ExceptionContext) {
 		client_session.server.signal_one();
 		client_session.wait();
 
-		exc.regs[0] = 1;
+		exc.regs[0] = 0;
 	} else {
-		exc.regs[0] = 1;
 		// error
+		exc.regs[0] = 1;
 	}
-	unimplemented!();
 }
 
 // todo: setup tls??
@@ -193,18 +192,11 @@ pub fn svc_ipc_receive(exc: &mut ExceptionContext) {
 			core::ptr::copy_nonoverlapping(exc.regs[1] as *const u32, &mut handles as *mut u32, handle_count);
 		}
 
-		waitable::wait_handles(&handles[..handle_count]);
+		let index = waitable::wait_handles(&handles[..handle_count]);
 
-		if port.queue.lock().len() > 0 {
-			exc.regs[0] = 0; // ok
-			exc.regs[1] = 0; // signal the port
-		} else {
-			println!("queue = 0! what do i do now??");
-			unimplemented!();
-
-			exc.regs[0] = 1; // error
-			exc.regs[1] = 0;
-		}
+		exc.regs[0] = 0;
+		exc.regs[1] = index;
+		
 	} else {
 		println!("non port handle to svc_ipc_receive :(");
 		exc.regs[0] = 1;
@@ -212,7 +204,6 @@ pub fn svc_ipc_receive(exc: &mut ExceptionContext) {
 }
 
 // x0: session handle
-// x1: ipc buffer
 pub fn svc_ipc_reply(exc: &mut ExceptionContext) {
 	if let Handle::ServerSession(server_session) = handle::get_handle(exc.regs[0]) {
 		exc.regs[0] = 0;

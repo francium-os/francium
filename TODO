@@ -2,10 +2,10 @@
 * memory attr support - map devices as device memory...
 * make alignment checks easier - VirtAddr type? just a function?
 
-* investigate NEON/FP stuff being wonky
 * actual seperate tables for ttbr0/1??
 -> meh let's not, we want to be compat with !arm eventually :l
 -> 128TiB user, 128TiB kernel.
 
 * todo: considerations for risc-v Sv39
-* todo: timer! we need a timer for scheduling.
+
+* todo: better ipc wrappers for copying slices

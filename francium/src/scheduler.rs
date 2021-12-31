@@ -20,7 +20,7 @@ lazy_static! {
 // rust says these are ffi unsafe
 // they're right but shut
 extern "C" {
-	fn switch_thread_asm(from_context: *mut ThreadContext, to_context: *const ThreadContext, from: *const Mutex<ThreadContext>, to: *const Mutex<ThreadContext>);
+	fn switch_thread_asm(from_context: *mut ThreadContext, to_context: *const ThreadContext, from: *const Mutex<ThreadContext>, to: *const Mutex<ThreadContext>) -> usize;
 }
 
 #[no_mangle]
@@ -43,7 +43,7 @@ impl Scheduler {
 		self.runnable_threads[self.current_thread_index].clone()
 	}
 
-	fn switch_thread(&mut self, from: &Arc<Thread>, to: &Arc<Thread>) {
+	fn switch_thread(&mut self, from: &Arc<Thread>, to: &Arc<Thread>) -> usize {
 		// TODO: wow, this sucks
 		{
 			unsafe {
@@ -57,7 +57,7 @@ impl Scheduler {
 			let to_context_locked = MutexGuard::leak(to.context.lock());
 
 			unsafe {
-				switch_thread_asm(from_context_locked, to_context_locked, &from.context, &to.context);
+				return switch_thread_asm(from_context_locked, to_context_locked, &from.context, &to.context)
 			}
 		}
 	}
@@ -83,7 +83,7 @@ impl Scheduler {
 		self.switch_thread(&this_thread, &next);
 	}
 
-	pub fn suspend(&mut self, p: &Arc<Thread>) {
+	pub fn suspend(&mut self, p: &Arc<Thread>) -> usize {
 		//p.state = ThreadState::Suspended;
 		if let Some(runnable_index) = self.runnable_threads.iter().position(|x| x.id == p.id) {
 			if runnable_index < self.current_thread_index {
@@ -96,17 +96,21 @@ impl Scheduler {
 					panic!("Trying to suspend everything.");
 				} else {
 					let next = self.get_next_thread();
-					self.switch_thread(p, &next);
+					return self.switch_thread(p, &next)
 				}
 			}
 		}
+		0
 	}
 
-	pub fn wake(&mut self, p: Arc<Thread>) {
+	pub fn wake(&mut self, p: Arc<Thread>, tag: usize) {
 		if let Some(_runnable_index) = self.runnable_threads.iter().position(|x| x.id == p.id) {
 			// wtf
 			panic!("Trying to re-wake a thread!");
 		} else {
+			// set x0 of the thread context
+
+			p.context.lock().regs[0] = tag;
 			self.runnable_threads.push(p);
 		}
 	}
@@ -146,16 +150,16 @@ pub fn suspend_process(p: Arc<Thread>) {
 	sched.suspend(&p);
 }
 
-pub fn suspend_current_thread() {
+pub fn suspend_current_thread() -> usize {
 	let mut sched = SCHEDULER.lock();
 	let curr = sched.get_current_thread();
 
-	sched.suspend(&curr);
+	return sched.suspend(&curr)
 }
 
-pub fn wake_thread(p: Arc<Thread>) {
+pub fn wake_thread(p: Arc<Thread>, tag: usize) {
 	let mut sched = SCHEDULER.lock();
-	sched.wake(p);
+	sched.wake(p, tag);
 }
 
 pub fn terminate_current_thread() {
@@ -164,5 +168,16 @@ pub fn terminate_current_thread() {
 }
 
 pub fn terminate_current_process() {
-	unimplemented!();
+	let mut sched = SCHEDULER.lock();
+	let current_thread = sched.get_current_thread();
+	let current_process = current_thread.process.clone();
+	let process = current_process.lock();
+
+	for thread in &process.threads {
+		if thread.id != current_thread.id {
+			sched.suspend(&thread);
+		}
+	}
+
+	sched.terminate_current_thread();
 }
