@@ -130,9 +130,6 @@ pub fn wait_handles(handles: &[u32]) -> usize {
 
 	if !any_pending {
 		tag = scheduler::suspend_current_thread();
-		println!("waited tag: {:?}", tag);
-	} else {
-		println!("pending tag: {:?}", tag);
 	}
 
 	for handle in handle_objects.iter() {
