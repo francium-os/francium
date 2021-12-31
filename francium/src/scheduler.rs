@@ -17,10 +17,8 @@ lazy_static! {
 	static ref SCHEDULER: Mutex<Scheduler> = Mutex::new(Scheduler::new());
 }
 
-// rust says these are ffi unsafe
-// they're right but shut
 extern "C" {
-	fn switch_thread_asm(from_context: *mut ThreadContext, to_context: *const ThreadContext, from: *const Mutex<ThreadContext>, to: *const Mutex<ThreadContext>) -> usize;
+	fn switch_thread_asm(from_context: *mut ThreadContext, to_context: *const ThreadContext, from: usize, to: usize) -> usize;
 }
 
 #[no_mangle]
@@ -56,8 +54,11 @@ impl Scheduler {
 			let from_context_locked = MutexGuard::leak(from.context.lock());
 			let to_context_locked = MutexGuard::leak(to.context.lock());
 
+			let from_context_ptr = &from.context as *const Mutex<ThreadContext>;
+			let to_context_ptr = &to.context as *const Mutex<ThreadContext>;
+
 			unsafe {
-				return switch_thread_asm(from_context_locked, to_context_locked, &from.context, &to.context)
+				return switch_thread_asm(from_context_locked, to_context_locked, from_context_ptr as usize, to_context_ptr as usize)
 			}
 		}
 	}
