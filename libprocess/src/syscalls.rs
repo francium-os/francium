@@ -10,7 +10,7 @@ extern "C" {
 	pub fn syscall_close_handle(h: Handle) -> ResultCode;
 	pub fn syscall_ipc_request(session_handle: Handle) -> ResultCode;
 	pub fn syscall_ipc_reply(session_handle: Handle) -> ResultCode;
-	pub fn syscall_ipc_receive(session_handle: Handle, sessions: *const Handle, num_sessions: usize, index_out: *mut usize) -> ResultCode;
+	pub fn syscall_ipc_receive(sessions: *const Handle, num_sessions: usize, index_out: *mut usize) -> ResultCode;
 	pub fn syscall_ipc_accept(session_handle: Handle, handle_out: *mut Handle) -> ResultCode;
 }
 
@@ -92,10 +92,10 @@ pub fn ipc_reply(session_handle: Handle) -> Result<(), OSError> {
 	}
 }
 
-pub fn ipc_receive(session_handle: Handle, sessions: &[Handle]) -> Result<usize, OSError> {
+pub fn ipc_receive(sessions: &[Handle]) -> Result<usize, OSError> {
 	unsafe {
 		let mut index_out: usize = 0;
-		let res = syscall_ipc_receive(session_handle, sessions.as_ptr(), sessions.len(), &mut index_out);
+		let res = syscall_ipc_receive(sessions.as_ptr(), sessions.len(), &mut index_out);
 		if res == RESULT_OK {
 			Ok(index_out)
 		} else {

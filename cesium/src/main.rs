@@ -11,14 +11,14 @@ fn main() {
 	//syscalls::ipc_receive(port).unwrap();
 
 	let handles: [Handle; 1] = [port];
-	let index = syscalls::ipc_receive(port, &handles).unwrap();
+	let index = syscalls::ipc_receive(&handles).unwrap();
 	println!("[S] Got index? {:?}", index);
 	if index == 0 {
 		let new_session = syscalls::ipc_accept(port).unwrap();
 		println!("[S] Got new session {:?}", new_session);
 
 		let handles: [Handle; 2] = [port, new_session];
-		let index = syscalls::ipc_receive(port, &handles).unwrap();
+		let index = syscalls::ipc_receive(&handles).unwrap();
 		println!("[S] Got ipc result {:?}", index);
 		if index == 1 {
 			syscalls::ipc_reply(new_session).unwrap();

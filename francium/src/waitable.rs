@@ -1,11 +1,10 @@
 use smallvec::SmallVec;
 use spin::Mutex;
 use alloc::sync::Arc;
-use alloc::boxed::Box;
 use crate::Thread;
 use crate::scheduler;
 use crate::handle::Handle;
-use core::sync::atomic::{AtomicBool,AtomicUsize,Ordering};
+use core::sync::atomic::{AtomicBool,Ordering};
 
 #[derive(Debug)]
 pub struct Waiter {
@@ -92,7 +91,7 @@ const INVALID_HANDLE: Handle = Handle::Invalid;
 // returns index
 pub fn wait_handles(handles: &[u32]) -> usize {
 	let mut handle_objects = [INVALID_HANDLE; MAX_HANDLES];
-	let mut handle_objects = &mut handle_objects[0..handles.len()];
+	let handle_objects = &mut handle_objects[0..handles.len()];
 
 	{
 		let process_locked = scheduler::get_current_process();

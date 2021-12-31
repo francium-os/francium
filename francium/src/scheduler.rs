@@ -4,7 +4,7 @@ use smallvec::SmallVec;
 use spin::{Mutex, MutexGuard};
 use core::ptr::NonNull;
 
-use crate::process::{Thread, Process, ThreadState};
+use crate::process::{Thread, Process};
 use crate::aarch64::context::ThreadContext;
 
 pub struct Scheduler {

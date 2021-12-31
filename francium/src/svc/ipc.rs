@@ -8,7 +8,6 @@ use crate::waitable::{Waiter, Waitable};
 use spin::Mutex;
 use alloc::collections::BTreeMap;
 use alloc::vec::Vec;
-use alloc::boxed::Box;
 use alloc::sync::{Arc, Weak};
 
 use smallvec::SmallVec;
@@ -16,7 +15,7 @@ use smallvec::SmallVec;
 #[derive(Debug)]
 pub struct ServerSession {
 	wait: Waiter,
-	port: Arc<Port>,
+	//port: Arc<Port>,
 	client: Mutex<Weak<ClientSession>>
 }
 
@@ -29,16 +28,14 @@ pub struct ClientSession {
 #[derive(Debug)]
 pub struct Port {
 	wait: Waiter,
-	tag: u64,
 	// todo: queue default length
 	queue: Mutex<SmallVec<[Arc<ServerSession>; 1]>>
 }
 
 impl Port {
-	fn new(tag: u64) -> Port {
+	fn new() -> Port {
 		Port {
 			wait: Waiter::new(),
-			tag: tag,
 			queue: Mutex::new(SmallVec::new())
 		}
 	}
@@ -47,10 +44,10 @@ impl Port {
 impl Waitable for Port { fn get_waiter(&self) -> &Waiter { &self.wait } }
 
 impl ServerSession {
-	fn new(port: Arc<Port>) -> ServerSession {
+	fn new() -> ServerSession {
 		ServerSession {
 			wait: Waiter::new(),
-			port: port,
+			//port: port,
 			client: Mutex::new(Weak::new())
 		}
 	}
@@ -80,7 +77,7 @@ lazy_static! {
 pub fn svc_create_port(ctx: &mut ExceptionContext) {
 	let tag = ctx.regs[0] as u64;
 
-	let server_port = Port::new(tag);
+	let server_port = Port::new();
 	let server_port_handle = Arc::new(server_port);
 
 	// if not a private port
@@ -110,9 +107,9 @@ pub fn svc_create_port(ctx: &mut ExceptionContext) {
 	ctx.regs[1] = 0;
 }
 
-fn svc_create_session() {
-
-}
+//fn svc_create_session() {
+//
+//}
 
 // request:
 // x0 contains port name directly (as an 8 byte tag)
@@ -141,7 +138,7 @@ pub fn svc_connect_to_port(exc: &mut ExceptionContext) {
 		}
 	};
 
-	let server_session = Arc::new(ServerSession::new(port.clone()));
+	let server_session = Arc::new(ServerSession::new());
 	let client_session = Arc::new(ClientSession::new(server_session.clone()));
 
 	// TODO: ugh, i really wanted OnceCell here
@@ -177,30 +174,21 @@ pub fn svc_ipc_request(exc: &mut ExceptionContext) {
 
 // todo: setup tls??
 
-// x0: ipc session
-// x1: handles[]
-// x2: handle_count
+// x0: handles[]
+// x1: handle_count
 
 const MAX_HANDLES: usize = 128;
-
 pub fn svc_ipc_receive(exc: &mut ExceptionContext) {
-	if let Handle::Port(port) = handle::get_handle(exc.regs[0]) {
-		let handle_count = exc.regs[2];
-		let mut handles: [u32; MAX_HANDLES] = [ 0xffffffff ; MAX_HANDLES];
+	let handle_count = exc.regs[1];
+	let mut handles: [u32; MAX_HANDLES] = [ 0xffffffff ; MAX_HANDLES];
 
-		unsafe {
-			core::ptr::copy_nonoverlapping(exc.regs[1] as *const u32, &mut handles as *mut u32, handle_count);
-		}
-
-		let index = waitable::wait_handles(&handles[..handle_count]);
-
-		exc.regs[0] = 0;
-		exc.regs[1] = index;
-		
-	} else {
-		println!("non port handle to svc_ipc_receive :(");
-		exc.regs[0] = 1;
+	unsafe {
+		core::ptr::copy_nonoverlapping(exc.regs[0] as *const u32, &mut handles as *mut u32, handle_count);
 	}
+
+	let index = waitable::wait_handles(&handles[..handle_count]);
+	exc.regs[0] = 0;
+	exc.regs[1] = index;
 }
 
 // x0: session handle

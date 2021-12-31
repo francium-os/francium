@@ -48,7 +48,7 @@ impl Thread {
 		};
 
 		Thread {
-			id: PROCESS_ID.fetch_add(1, Ordering::SeqCst),
+			id: THREAD_ID.fetch_add(1, Ordering::SeqCst),
 			state: ThreadState::Created,
 			context: Mutex::new(ThreadContext::new()),
 			process: p,

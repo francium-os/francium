@@ -42,7 +42,7 @@ svc #7
 ret
 
 syscall_ipc_receive:
-mov x9, x3
+mov x9, x2
 svc #8
 str x1, [x9]
 ret
