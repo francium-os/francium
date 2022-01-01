@@ -42,6 +42,12 @@ impl Scheduler {
 	}
 
 	fn switch_thread(&mut self, from: &Arc<Thread>, to: &Arc<Thread>) -> usize {
+		if from.id == to.id {
+			// don't do this, it'll deadlock
+			println!("Trying to switch to the same thread!");
+			return 0
+		}
+
 		// TODO: wow, this sucks
 		{
 			unsafe {
@@ -87,20 +93,29 @@ impl Scheduler {
 	pub fn suspend(&mut self, p: &Arc<Thread>) -> usize {
 		//p.state = ThreadState::Suspended;
 		if let Some(runnable_index) = self.runnable_threads.iter().position(|x| x.id == p.id) {
-			if runnable_index < self.current_thread_index {
-				self.current_thread_index -= 1;
-			}
+			let idx = self.current_thread_index;
 			self.runnable_threads.remove(runnable_index);
+			
+			if self.runnable_threads.len() == 0 {
+				panic!("Trying to suspend everything!");
+			}
 
-			if runnable_index == self.current_thread_index {
-				if self.runnable_threads.len() == 0 {
-					panic!("Trying to suspend everything.");
-				} else {
-					let next = self.get_next_thread();
-					return self.switch_thread(p, &next)
-				}
+			// adjust for threads that shifted
+			if self.current_thread_index > runnable_index {
+				self.current_thread_index -= 1;
+			} else if self.current_thread_index > self.runnable_threads.len() - 1 {
+				self.current_thread_index = 0;
+			}
+
+			assert!(self.current_thread_index < self.runnable_threads.len());
+
+			// If we got switched out, switch to the new current process.
+			if runnable_index == idx {
+				let next = self.get_current_thread();
+				return self.switch_thread(p, &next)
 			}
 		}
+
 		0
 	}
 

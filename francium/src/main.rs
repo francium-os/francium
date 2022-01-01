@@ -184,7 +184,7 @@ pub extern "C" fn rust_main() -> ! {
 	let timer_irq = 16 + 14; // ARCH_TIMER_NS_EL1_IRQ + 16 because "lol no u"
 	gicv2::init();
 	gicv2::enable(timer_irq);
-	aarch64::enable_interrupts();
+	//aarch64::enable_interrupts();
 
 	// enable arch timer
 	arch_timer::set_frequency_us(25000);
