@@ -24,6 +24,45 @@ const SVC_HANDLERS: [SVCHandler; 10] = [
 	svc::svc_ipc_accept
 ];
 
+fn stringify_ec(ec: usize) -> &'static str {
+	match ec {
+		0b000000 => "unknown",
+		0b000001 => "trapped wfi/wfe",
+		0b000011 => "trapped mcr/mrc",
+		0b000100 => "trapped mcrr/mrrc",
+		0b000101 => "trapped mcr/mrc",
+		0b000110 => "trapped ldc/stc",
+		0b000111 => "floating point trap",
+		0b001010 => "trapped 64 byte load",
+		0b001100 => "trapped mrrc",
+		0b001101 => "branch target exception",
+		0b001110 => "illegal execution state",
+		0b010001 => "aarch32 svc",
+		0b010101 => "aarch64 svc",
+		0b011000 => "trapped msr/mrs",
+		0b011001 => "trapped sve instruction",
+		0b011100 => "pac failure",
+		0b100000 => "instruction abort from lower level",
+		0b100001 => "instruction abort from same level",
+		0b100010 => "pc alignment",
+		0b100100 => "data abort from lower level",
+		0b100101 => "data abort from same level",
+		0b100110 => "sp alignment",
+		0b101000 => "floating point exception (aarch32)",
+		0b101100 => "floating point exception (aarch64)",
+		0b101111 => "serror",
+		0b110000 => "breakpoint from lower level",
+		0b110001 => "breakpoint from same level",
+		0b110010 => "software step from lower level",
+		0b110011 => "software step from same level",
+		0b110100 => "watchpoint from lower level",
+		0b110101 => "watchpoint from same level",
+		0b111000 => "aarch32 bkpt",
+		0b111100 => "aarch64 brk",
+		_ => "unknown ?"
+	}
+}
+
 #[no_mangle]
 pub extern "C" fn rust_curr_el_spx_sync(ctx: &ExceptionContext) -> ! {
 	unsafe {
@@ -36,7 +75,7 @@ pub extern "C" fn rust_curr_el_spx_sync(ctx: &ExceptionContext) -> ! {
 		}
 
 		println!("Exception!!! rust_curr_el_spx_sync!\n");
-		println!("lr: {:x}, ec: {:6b}, iss: {:x}", ctx.saved_pc, ec, iss);
+		println!("lr: {:x}, ec: {:}, iss: {:x}", ctx.saved_pc, stringify_ec(ec), iss);
 		println!("FAR: {:x}", get_far_el1());
 
 	    loop {}
@@ -59,7 +98,7 @@ pub extern "C" fn rust_lower_el_spx_sync(ctx: &mut ExceptionContext) {
 			}
 		} else {
 			println!("Exception!!! rust_lower_el_spx_sync!\n");
-			println!("pc: {:x}, ec: {:6b}, iss: {:x}", ctx.saved_pc, ec, iss);
+			println!("pc: {:x}, ec: {:}, iss: {:x}", ctx.saved_pc, stringify_ec(ec), iss);
 			println!("FAR: {:x}", get_far_el1());
 			
 			println!("LR: {:x}", ctx.regs[30]);
