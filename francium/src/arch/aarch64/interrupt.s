@@ -262,3 +262,4 @@ ret
 get_esr_el1:
 mrs x0, esr_el1
 ret
+

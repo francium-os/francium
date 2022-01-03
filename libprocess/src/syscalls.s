@@ -57,3 +57,4 @@ ret
 get_tpidr_el0_asm:
 mrs x0, tpidr_el0
 ret
+

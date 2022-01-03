@@ -33,3 +33,4 @@ __bootstrap_stack_guard:
 __bootstrap_stack_bottom:
 .space 0x80000
 __bootstrap_stack_top:
+

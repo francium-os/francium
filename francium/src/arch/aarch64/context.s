@@ -62,3 +62,4 @@ ret
 // As defined in interrupt.s
 user_thread_starter:
 b restore_exception_context
+

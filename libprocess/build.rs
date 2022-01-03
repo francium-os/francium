@@ -1,8 +1,7 @@
 fn main() {
     cc::Build::new()
-        .compiler("clang")
+        .compiler("aarch64-none-elf-gcc")
         .no_default_flags(true)
-        .flag("--target=aarch64-none-unknown-elf") 
         .file("src/syscalls.s")
         .compile("asm");
 }

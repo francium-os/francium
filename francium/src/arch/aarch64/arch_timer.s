@@ -13,3 +13,4 @@ set_cntp_tval_el0:
 set_cntp_ctl_el0:
     msr CNTP_CTL_EL0, x0
     ret
+
