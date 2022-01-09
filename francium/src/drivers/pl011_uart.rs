@@ -10,10 +10,18 @@ impl Pl011Uart {
 	pub fn new(base_address: PhysAddr, baud: u32) -> Pl011Uart {
 		// todo: set up baud, etc
 
-		Pl011Uart {
+		let mut uart = Pl011Uart {
 			base_address: base_address,
 			baud: baud
-		}
+		};
+		uart.init();
+		uart
+	}
+
+	fn init(&mut self) {
+		// setup baud
+		// blah blah
+
 	}
 
 	pub fn write_string(&mut self, a: &str) {

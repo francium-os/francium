@@ -6,12 +6,12 @@
 # needs to be ~ position independent
 
 # regions of interest:
-# ram starts at 1GB or 0x40000000
+# ram starts at 0GB
 # arm says No, you can't have a block mapping at level 0
 # so we have to make a level 1 table with the blocks in it...
 
 .equ KERNEL_BASE, 0xfffffff800000000
-.equ PHYS_BASE, 0x40000000
+.equ PHYS_BASE, 0
 
 .equ SCTLR_LSMAOE, (1<<29)
 .equ SCTLR_NTLSMD, 1<<28
@@ -72,7 +72,7 @@ initial_kernel_map:
 .rept 512-32
 .quad 0
 .endr
-.quad 0x40000000 + (1<<10) + 1
+.quad 0 + (1<<10) + 1
 .rept 31
 .quad 0
 .endr

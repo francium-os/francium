@@ -35,4 +35,6 @@ SECTIONS
     *(.bss .bss.*)
     __bss_end = .;
   }
+  
+  /DISCARD/ : { *(.comment) *(.gnu*) *(.note*) *(.eh_frame*) }
 }

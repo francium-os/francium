@@ -3,6 +3,7 @@ name = "francium"
 version = "0.1.0"
 authors = ["Ezekiel Bethel <zek@9net.org>"]
 edition = "2018"
+autobins = false
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -23,3 +24,17 @@ panic = "abort"
 panic = "abort"
 debug = true
 overflow-checks = true
+
+[features]
+platform_virt = []
+platform_raspi4 = []
+
+[[bin]]
+name = "francium_virt"
+required-features = ["platform_virt"]
+path = "src/main.rs"
+
+[[bin]]
+name = "francium_raspi4"
+required-features = ["platform_raspi4"]
+path = "src/main.rs"
