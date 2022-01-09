@@ -1,4 +1,4 @@
-use crate::uart::write_uart;
+use crate::platform::DEFAULT_UART;
 
 #[macro_export]
 macro_rules! print {
@@ -29,7 +29,7 @@ macro_rules! println {
 pub struct Writer;
 impl core::fmt::Write for Writer {
     fn write_str(&mut self, s: &str) -> core::fmt::Result {
-        write_uart(s);
+        DEFAULT_UART.lock().write_string(s);
         Ok(())
     }
 }

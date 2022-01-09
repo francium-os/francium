@@ -14,16 +14,21 @@ extern crate smallvec;
 extern crate elf_rs;
 use elf_rs::*;
 
+
+pub mod constants;
+pub mod drivers;
+pub mod platform;
+pub mod panic;
+
 #[macro_use]
 pub mod print;
+
 pub mod handle;
 pub mod handle_table;
 pub mod mmu;
 pub mod bump_allocator;
 pub mod phys_allocator;
-pub mod uart;
-pub mod panic;
-pub mod constants;
+
 pub mod process;
 pub mod arch;
 pub mod memory;
