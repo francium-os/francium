@@ -5,6 +5,7 @@
 .global get_tcr_el1
 .global set_tcr_el1
 .global wfe
+.global invalidate_tlb
 
 .section .text
 set_ttbr0_el1:
@@ -21,6 +22,8 @@ msr ttbr1_el1, x0
 tlbi vmalle1
 dsb ish
 isb
+IC IALLUIS
+
 ret
 
 get_sctlr_el1:
@@ -37,6 +40,10 @@ ret
 
 set_tcr_el1:
 msr tcr_el1, x0
+ret
+
+invalidate_tlb:
+tlbi vmalle1
 ret
 
 wfe:

@@ -28,6 +28,8 @@ kernel_start:
 	b rust_main
 
 .section .bss.bootstrap_stack
+// Stack must be 0x10 aligned!
+.align 4
 __bootstrap_stack_guard:
 .space 0x10
 __bootstrap_stack_bottom:

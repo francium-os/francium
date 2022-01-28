@@ -89,6 +89,12 @@ bitflags! {
 	}
 }
 
+pub enum MapType {
+	NormalCachable,
+	NormalUncachable,
+	Device
+}
+
 impl PageTableEntry {
 	const fn new() -> PageTableEntry {
 		PageTableEntry { entry: 0 }
@@ -146,6 +152,14 @@ fn map_perms(perm: PagePermission) -> EntryFlags {
 	flags
 }
 
+fn map_type(ty: MapType) -> EntryFlags {
+	match ty {
+		MapType::NormalCachable => EntryFlags::ATTR_INDEX_0,
+		MapType::NormalUncachable => EntryFlags::ATTR_INDEX_1,
+		MapType::Device => EntryFlags::ATTR_INDEX_2
+	}
+}
+
 impl PageTable {
 	pub const fn new() -> PageTable {
 		PageTable {
@@ -157,16 +171,18 @@ impl PageTable {
 		// TODO: is there a better way to do this
 
 		let mut pg = PageTable::new();
+		pg.entries[508] = self.entries[508];
+		pg.entries[509] = self.entries[509];
 		pg.entries[510] = self.entries[510];
 		pg.entries[511] = self.entries[511];
 
 		pg
 	}
 
-	pub fn map_4k(&mut self, phys: PhysAddr, virt: usize, perm: PagePermission) {
+	pub fn map_4k(&mut self, phys: PhysAddr, virt: usize, perm: PagePermission, ty: MapType) {
 		let mut entry = PageTableEntry::new();
 
-		entry.set_flags(EntryFlags::VALID | EntryFlags::TYPE_PAGE | EntryFlags::ATTR_ACCESS | map_perms(perm));
+		entry.set_flags(EntryFlags::VALID | EntryFlags::TYPE_PAGE | EntryFlags::ATTR_ACCESS | map_perms(perm) | map_type(ty));
 		entry.set_addr(phys);
 
 		unsafe {
@@ -179,13 +195,13 @@ impl PageTable {
 		}
 	}
 
-	pub fn map_2mb(&mut self, phys: PhysAddr, virt: usize, perm: PagePermission) {
+	pub fn map_2mb(&mut self, phys: PhysAddr, virt: usize, perm: PagePermission, ty: MapType) {
 		assert!(phys.is_aligned(0x200000));
 		assert!((virt & (0x200000-1)) == 0);
 
 		let mut entry = PageTableEntry::new();
 
-		entry.set_flags(EntryFlags::VALID | EntryFlags::TYPE_BLOCK | EntryFlags::ATTR_ACCESS | map_perms(perm));
+		entry.set_flags(EntryFlags::VALID | EntryFlags::TYPE_BLOCK | EntryFlags::ATTR_ACCESS | map_perms(perm) | map_type(ty));
 		entry.set_addr(phys);
 
 		unsafe {
@@ -198,12 +214,12 @@ impl PageTable {
 		}
 	}
 
-	pub fn map_1gb(&mut self, phys: PhysAddr, virt: usize, perm: PagePermission) {
+	pub fn map_1gb(&mut self, phys: PhysAddr, virt: usize, perm: PagePermission, ty: MapType) {
 		assert!(phys.is_aligned(0x40000000));
 		assert!((virt & (0x40000000-1)) == 0);
 		let mut entry = PageTableEntry::new();
 
-		entry.set_flags(EntryFlags::VALID | EntryFlags::TYPE_BLOCK | EntryFlags::ATTR_ACCESS | map_perms(perm));
+		entry.set_flags(EntryFlags::VALID | EntryFlags::TYPE_BLOCK | EntryFlags::ATTR_ACCESS | map_perms(perm) | map_type(ty));
 		entry.set_addr(phys);
 
 		unsafe {

@@ -75,7 +75,7 @@ pub extern "C" fn rust_curr_el_spx_sync(ctx: &ExceptionContext) -> ! {
 		}
 
 		println!("Exception!!! rust_curr_el_spx_sync!\n");
-		println!("lr: {:x}, ec: {:}, iss: {:x}", ctx.saved_pc, stringify_ec(ec), iss);
+		println!("lr: {:x}, ec: {:} ({}), iss: {:x}", ctx.saved_pc, stringify_ec(ec),ec, iss);
 		println!("FAR: {:x}", get_far_el1());
 
 	    loop {}
@@ -98,7 +98,7 @@ pub extern "C" fn rust_lower_el_spx_sync(ctx: &mut ExceptionContext) {
 			}
 		} else {
 			println!("Exception!!! rust_lower_el_spx_sync!\n");
-			println!("pc: {:x}, ec: {:}, iss: {:x}", ctx.saved_pc, stringify_ec(ec), iss);
+			println!("pc: {:x}, ec: {:} ({}), iss: {:x}", ctx.saved_pc, stringify_ec(ec), ec, iss);
 			println!("FAR: {:x}", get_far_el1());
 			
 			println!("LR: {:x}", ctx.regs[30]);

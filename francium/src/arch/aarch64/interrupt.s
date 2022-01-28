@@ -39,7 +39,7 @@ b .
 curr_el_spx_sync:        // The exception handler for a synchrous 
                          // exception from the current EL using the
                          // current SP.
-sub sp, sp,    #0x118
+sub sp, sp,    #0x120
 stp x0, x1,    [sp, #0x00]
 stp x2, x3,    [sp, #0x10]
 stp x4, x5,    [sp, #0x20]
@@ -73,7 +73,7 @@ b restore_exception_context
 .balign 0x80
 curr_el_spx_irq:         // The exception handler for an IRQ exception from 
                          // the current EL using the current SP.
-sub sp, sp,    #0x118
+sub sp, sp,    #0x120
 stp x0, x1,    [sp, #0x00]
 stp x2, x3,    [sp, #0x10]
 stp x4, x5,    [sp, #0x20]
@@ -119,7 +119,7 @@ b .
 .balign 0x80
 lower_el_aarch64_sync:   // The exception handler for a synchronous 
                          // exception from a lower EL (AArch64).
-sub sp, sp,    #0x118
+sub sp, sp,    #0x120
 stp x0, x1,    [sp, #0x00]
 stp x2, x3,    [sp, #0x10]
 stp x4, x5,    [sp, #0x20]
@@ -154,7 +154,7 @@ b .
 .balign 0x80
 lower_el_aarch64_irq:    // The exception handler for an IRQ from a lower EL
                          // (AArch64).
-sub sp, sp,    #0x118
+sub sp, sp,    #0x120
 stp x0, x1,    [sp, #0x00]
 stp x2, x3,    [sp, #0x10]
 stp x4, x5,    [sp, #0x20]
@@ -243,7 +243,7 @@ ldp x22, x23,  [sp, #0xb0]
 ldp x24, x25,  [sp, #0xc0]
 ldp x26, x27,  [sp, #0xd0]
 ldp x28, x29,  [sp, #0xe0]
-add sp, sp, #0x118
+add sp, sp, #0x120
 eret
 
 .section .text
@@ -262,4 +262,3 @@ ret
 get_esr_el1:
 mrs x0, esr_el1
 ret
-

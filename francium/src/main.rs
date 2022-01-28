@@ -36,8 +36,7 @@ pub mod scheduler;
 pub mod waitable;
 pub mod svc;
 
-use crate::mmu::PhysAddr;
-use crate::mmu::PagePermission;
+use crate::mmu::{PhysAddr, PagePermission, MapType};
 use crate::memory::KERNEL_ADDRESS_SPACE;
 use crate::memory::AddressSpace;
 use crate::process::{Process, Thread};
@@ -59,6 +58,8 @@ extern "C" {
 
 extern "C" {
 	fn user_thread_starter();
+	fn invalidate_tlb();
+	fn clear_cache_for_address(addr: usize);
 }
 
 fn setup_user_context(process: Arc<Mutex<Box<Process>>>, usermode_pc: usize, usermode_sp: usize) -> Arc<Thread> {
@@ -67,7 +68,7 @@ fn setup_user_context(process: Arc<Mutex<Box<Process>>>, usermode_pc: usize, use
 	unsafe {
 		let mut context_locked = new_thread.context.lock();
 
-		let exc_context_location = new_thread.kernel_stack_top - core::mem::size_of::<ExceptionContext>();
+		let exc_context_location = new_thread.kernel_stack_top - core::mem::size_of::<ExceptionContext>() - 8; // XXX: align
 		let exc_context = &mut *(exc_context_location as *mut ExceptionContext);
 
 		exc_context.regs[31] = usermode_sp;
@@ -105,8 +106,19 @@ fn load_process(elf_buf: &[u8]) -> Arc<Thread> {
 					else {
 						p.address_space.create(sh.addr() as usize, sh.size() as usize, PagePermission::USER_READ_WRITE);
 					}
+					
+					// TODO: proper TLB management
+					unsafe { invalidate_tlb(); }
+
 					unsafe {
 						core::ptr::copy_nonoverlapping(elf_buf.as_ptr().offset(sh.offset() as isize), sh.addr() as *mut u8, sh.size() as usize);
+					}
+
+					// TODO: proper cache management
+					let section_start: usize = sh.addr() as usize;
+					let section_end: usize = section_start + sh.size() as usize;
+					for addr in (section_start .. section_end).step_by(64) {
+						unsafe { clear_cache_for_address(addr); }
 					}
 					println!("{:x?}", section);
 				}
@@ -129,6 +141,8 @@ fn load_process(elf_buf: &[u8]) -> Arc<Thread> {
 
 #[no_mangle]
 pub extern "C" fn rust_main() -> ! {
+	platform::platform_specific_init();
+
 	println!("hello from rust!");
 
 	// set up physical allocator
@@ -155,13 +169,17 @@ pub extern "C" fn rust_main() -> ! {
 	{
 		let page_table_root = &mut KERNEL_ADDRESS_SPACE.write().page_table;
 
-		// map virt peripherals into physmap
-		// TODO: seperate device mapping under kernel somewhere
-		page_table_root.map_1gb(PhysAddr(0), PHYSMAP_BASE, PagePermission::KERNEL_RWX);
+		// map first 4gb into physmap
+		page_table_root.map_1gb(PhysAddr(0), PHYSMAP_BASE, PagePermission::KERNEL_RWX, MapType::NormalUncachable);
+		page_table_root.map_1gb(PhysAddr(0x40000000), PHYSMAP_BASE + 0x40000000, PagePermission::KERNEL_RWX, MapType::NormalUncachable);
+		page_table_root.map_1gb(PhysAddr(0x80000000), PHYSMAP_BASE + 0x80000000, PagePermission::KERNEL_RWX, MapType::NormalUncachable);
+		page_table_root.map_1gb(PhysAddr(0xc0000000), PHYSMAP_BASE + 0xc0000000, PagePermission::KERNEL_RWX, MapType::NormalUncachable);
 
-		// 1 gb is enough for anyone
-		// TODO: know physical memory size
-		page_table_root.map_1gb(PhysAddr(0x40000000), PHYSMAP_BASE + 0x40000000, PagePermission::KERNEL_RWX);
+		// map first 4gb into devicemap
+		page_table_root.map_1gb(PhysAddr(0), PERIPHERAL_BASE, PagePermission::KERNEL_RWX, MapType::Device);
+		page_table_root.map_1gb(PhysAddr(0x40000000), PERIPHERAL_BASE + 0x40000000, PagePermission::KERNEL_RWX, MapType::Device);
+		page_table_root.map_1gb(PhysAddr(0x80000000), PERIPHERAL_BASE + 0x80000000, PagePermission::KERNEL_RWX, MapType::Device);
+		page_table_root.map_1gb(PhysAddr(0xc0000000), PERIPHERAL_BASE + 0xc0000000, PagePermission::KERNEL_RWX, MapType::Device);
 
 		// map kernel in
 		unsafe {
@@ -171,7 +189,7 @@ pub extern "C" fn rust_main() -> ! {
 			let kernel_length = bss_end_virt - text_start_virt;
 
 			for i in (0x0000000..kernel_length).step_by(0x200000) {
-				page_table_root.map_2mb(PhysAddr(0x40000000 + i), KERNEL_BASE + i, PagePermission::KERNEL_RWX);
+				page_table_root.map_2mb(PhysAddr(platform::PHYS_MEM_BASE + i), KERNEL_BASE + i, PagePermission::KERNEL_RWX, MapType::NormalCachable);
 			}
 		}
 	}
@@ -183,7 +201,7 @@ pub extern "C" fn rust_main() -> ! {
 	{ 
 		let kernel_aspace = &mut KERNEL_ADDRESS_SPACE.write();
 		kernel_aspace.create(KERNEL_HEAP_BASE, KERNEL_HEAP_INITIAL_SIZE, PagePermission::KERNEL_READ_WRITE);
-	};
+	}
 
 	// enable GIC
 	let timer_irq = 16 + 14; // ARCH_TIMER_NS_EL1_IRQ + 16 because "lol no u"

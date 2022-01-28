@@ -21,7 +21,7 @@ macro_rules! println {
             writer,
             format_args!($($arg)*)
         );
-        let _ = core::fmt::Write::write_str(writer, "\n");
+        let _ = core::fmt::Write::write_str(writer, "\r\n");
     }}
 }
 

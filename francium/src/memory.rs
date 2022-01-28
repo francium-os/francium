@@ -1,5 +1,5 @@
 use crate::phys_allocator;
-use crate::mmu::{PageTable, PagePermission};
+use crate::mmu::{PageTable, PagePermission, MapType};
 use crate::PhysAddr;
 use spin::RwLock;
 use smallvec::SmallVec;
@@ -57,7 +57,7 @@ impl AddressSpace {
 	pub fn alias(&mut self, start_phys: PhysAddr, start_addr: usize, size: usize, perm: PagePermission) {
 		for addr in (start_addr..(start_addr+size)).step_by(0x1000) {
 			let page = PhysAddr(start_phys.0 + (addr - start_addr));
-			self.page_table.map_4k(page, addr, perm);
+			self.page_table.map_4k(page, addr, perm, MapType::NormalCachable);
 		}
 
 		self.regions.push(Block{
@@ -71,7 +71,7 @@ impl AddressSpace {
 		unsafe {
 			for addr in (start_addr..(start_addr+size)).step_by(0x1000) {
 				let page = phys_allocator::alloc().unwrap();
-				self.page_table.map_4k(page, addr, perm);
+				self.page_table.map_4k(page, addr, perm, MapType::NormalCachable);
 			}
 		}
 
@@ -98,7 +98,7 @@ impl AddressSpace {
 				unsafe {
 					for offset in (r.size .. new_size).step_by(0x1000) {
 						let page = phys_allocator::alloc().unwrap();
-						self.page_table.map_4k(page, r.address+offset, r.permissions);
+						self.page_table.map_4k(page, r.address+offset, r.permissions, MapType::NormalCachable);
 					}
 				}
 

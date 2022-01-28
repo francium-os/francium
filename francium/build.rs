@@ -27,7 +27,8 @@ fn main() {
         .file("src/arch/aarch64/context.s")
         .file("src/arch/aarch64/scheduler.s")
         .file("src/arch/aarch64/interrupt.s")
-        .file("src/arch/aarch64/arch_timer.s");
+        .file("src/arch/aarch64/arch_timer.s")
+        .file("src/arch/aarch64/misc.s");
 
     if platform == "virt" {
         cc_builder.file("src/stub_virt.s");
