@@ -143,7 +143,7 @@ pub fn svc_connect_to_port(exc: &mut ExceptionContext) {
 
 	// TODO: ugh, i really wanted OnceCell here
 	*server_session.client.lock() = Arc::downgrade(&client_session);
-		
+
 	// create the session, and wait for it to be accepted by the server
 	port.queue.lock().push(server_session.clone());
 	port.signal_one();

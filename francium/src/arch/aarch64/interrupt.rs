@@ -11,7 +11,7 @@ extern "C" {
 
 type SVCHandler = fn(&mut ExceptionContext);
 
-const SVC_HANDLERS: [SVCHandler; 10] = [
+const SVC_HANDLERS: [SVCHandler; 11] = [
 	svc::svc_break,
 	svc::svc_debug_output,
 	svc::svc_create_port,
@@ -21,7 +21,8 @@ const SVC_HANDLERS: [SVCHandler; 10] = [
 	svc::svc_ipc_request,
 	svc::svc_ipc_reply,
 	svc::svc_ipc_receive,
-	svc::svc_ipc_accept
+	svc::svc_ipc_accept,
+	svc::svc_get_process_id
 ];
 
 fn stringify_ec(ec: usize) -> &'static str {

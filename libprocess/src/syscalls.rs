@@ -12,6 +12,7 @@ extern "C" {
 	pub fn syscall_ipc_reply(session_handle: Handle) -> ResultCode;
 	pub fn syscall_ipc_receive(sessions: *const Handle, num_sessions: usize, index_out: *mut usize) -> ResultCode;
 	pub fn syscall_ipc_accept(session_handle: Handle, handle_out: *mut Handle) -> ResultCode;
+	pub fn syscall_get_process_id() -> usize;
 
 	fn get_tpidr_el0_asm() -> usize;
 }
@@ -122,5 +123,11 @@ pub fn ipc_accept(session_handle: Handle) -> Result<Handle, OSError> {
 		} else {
 			Err(result_to_error(res))
 		}
+	}
+}
+
+pub fn get_process_id() -> usize {
+	unsafe {
+		syscall_get_process_id()
 	}
 }

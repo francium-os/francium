@@ -7,6 +7,7 @@
 .global syscall_ipc_reply
 .global syscall_ipc_receive
 .global syscall_ipc_accept
+.global syscall_get_process_id
 .global get_tpidr_el0_asm
 
 .section .text
@@ -54,7 +55,10 @@ svc #9
 str x1, [x9]
 ret
 
+syscall_get_process_id:
+svc #0x0a
+ret
+
 get_tpidr_el0_asm:
 mrs x0, tpidr_el0
 ret
-
