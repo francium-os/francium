@@ -310,7 +310,7 @@ pub fn phys_to_virt(phys: PhysAddr) -> usize {
 	phys.0 + PHYSMAP_BASE
 }
 
-use crate::arch::aarch64;
+use crate::arch::mmu;
 pub fn enable_mmu() {
-	aarch64::enable_mmu();
+	mmu::enable_mmu();
 }

@@ -9,7 +9,7 @@ SECTIONS
   {
     __text_start = .;
     *(.text.entry)
-    KEEP(*(.text.exceptions))
+    KEEP(*(.text.multiboot))
 
     . = ALIGN(0x1000);
     *(.text .text.*);

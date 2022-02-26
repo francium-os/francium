@@ -46,3 +46,8 @@ pub fn enable_mmu() {
 		set_sctlr_el1(sctlr);
 	}
 }
+
+pub fn switch_to_page_table(phys_addr: usize) {
+	set_ttbr0_el1(self.page_table_phys);
+	set_ttbr1_el1(self.page_table_phys);
+}

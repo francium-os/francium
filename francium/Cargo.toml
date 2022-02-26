@@ -26,6 +26,7 @@ debug = true
 overflow-checks = true
 
 [features]
+platform_pc = []
 platform_virt = []
 platform_raspi4 = []
 
@@ -37,4 +38,9 @@ path = "src/main.rs"
 [[bin]]
 name = "francium_raspi4"
 required-features = ["platform_raspi4"]
+path = "src/main.rs"
+
+[[bin]]
+name = "francium_pc"
+required-features = ["platform_pc"]
 path = "src/main.rs"

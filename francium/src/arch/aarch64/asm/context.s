@@ -3,9 +3,6 @@
 .global user_thread_starter
 
 .section .text
-get_esr_el1:
-mrs x0, esr_el1
-ret
 
 restore_thread_context:
 // context in x0, x1 is the mutex

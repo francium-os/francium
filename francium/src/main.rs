@@ -42,11 +42,6 @@ use crate::memory::AddressSpace;
 use crate::process::{Process, Thread};
 use crate::constants::*;
 
-use crate::arch::aarch64;
-use crate::arch::aarch64::gicv2;
-use crate::arch::aarch64::arch_timer;
-use crate::arch::aarch64::context::ExceptionContext;
-
 use alloc::boxed::Box;
 use alloc::sync::Arc;
 use spin::Mutex;
@@ -62,6 +57,7 @@ extern "C" {
 	fn clear_cache_for_address(addr: usize);
 }
 
+#[cfg(target_arch = "aarch64")]
 fn setup_user_context(process: Arc<Mutex<Box<Process>>>, usermode_pc: usize, usermode_sp: usize) -> Arc<Thread> {
 	let new_thread = Arc::new(Thread::new(process.clone()));
 
@@ -82,6 +78,11 @@ fn setup_user_context(process: Arc<Mutex<Box<Process>>>, usermode_pc: usize, use
 
 	process.lock().threads.push(new_thread.clone());
 	new_thread
+}
+
+#[cfg(target_arch = "x86_64")]
+fn setup_user_context(process: Arc<Mutex<Box<Process>>>, usermode_pc: usize, usermode_sp: usize) -> Arc<Thread> {
+	unimplemented!();
 }
 
 fn load_process(elf_buf: &[u8]) -> Arc<Thread> {
@@ -203,18 +204,10 @@ pub extern "C" fn rust_main() -> ! {
 		kernel_aspace.create(KERNEL_HEAP_BASE, KERNEL_HEAP_INITIAL_SIZE, PagePermission::KERNEL_READ_WRITE);
 	}
 
-	// enable GIC
-	let timer_irq = 16 + 14; // ARCH_TIMER_NS_EL1_IRQ + 16 because "lol no u"
-	gicv2::init();
-	gicv2::enable(timer_irq);
-	//aarch64::enable_interrupts();
+	platform::scheduler_pre_init();
 
-	// enable arch timer
-	arch_timer::set_frequency_us(25000);
-	arch_timer::reset_timer();
-
-	let elf_one_buf = include_bytes!("../../hydrogen/target/aarch64-unknown-francium-user/release/hydrogen");
-	let elf_two_buf = include_bytes!("../../cesium/target/aarch64-unknown-francium-user/release/cesium");
+	let elf_one_buf = include_bytes!("../../modules/fs/target/aarch64-unknown-francium-user/release/fs");
+	let elf_two_buf = include_bytes!("../../modules/test/target/aarch64-unknown-francium-user/release/test");
 
 	println!("Loading process one...");
 	let one_main_thread = load_process(elf_one_buf);
@@ -224,7 +217,7 @@ pub extern "C" fn rust_main() -> ! {
 	let two_main_thread = load_process(elf_two_buf);
 	scheduler::register_thread(two_main_thread.clone());
 
-	arch_timer::enable();
+	platform::scheduler_post_init();
 
 	println!("Running...");
 	process::force_switch_to(one_main_thread);

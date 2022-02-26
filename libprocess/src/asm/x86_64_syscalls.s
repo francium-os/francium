@@ -10,55 +10,44 @@
 .global syscall_get_process_id
 .global get_tpidr_el0_asm
 
+.global syscall_break
+
 .section .text
+syscall_break:
+syscall #0
+ret
+
 syscall_debug_output:
-svc #1
+syscall #0
 ret
 
 syscall_create_port:
-mov x9, x1
-svc #2
-str w1, [x9]
+syscall #0
 ret
 
 syscall_connect_to_port:
-mov x9, x1
-svc #3
-str w1, [x9]
+syscall #0
 ret
 
 syscall_exit_process:
-svc #4
+syscall #0
 ret
 
 syscall_close_handle:
-svc #5
+syscall #0
 ret
-
 syscall_ipc_request:
-svc #6
+syscall #0
 ret
-
 syscall_ipc_reply:
-svc #7
+syscall #0
 ret
-
 syscall_ipc_receive:
-mov x9, x2
-svc #8
-str x1, [x9]
+syscall #0
 ret
-
 syscall_ipc_accept:
-mov x9, x1
-svc #9
-str x1, [x9]
+syscall #0
 ret
-
 syscall_get_process_id:
-svc #0x0a
-ret
-
-get_tpidr_el0_asm:
-mrs x0, tpidr_el0
+syscall #0
 ret

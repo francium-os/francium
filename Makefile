@@ -1,45 +1,73 @@
-francium = francium/target/aarch64-unknown-francium-kernel/release/francium
-cesium = cesium/target/aarch64-unknown-francium-user/release/cesium
-hydrogen = hydrogen/target/aarch64-unknown-francium-user/release/hydrogen
+board ?= virt
 
-QEMU_ARGS := -M virt -cpu cortex-a53 -kernel $(francium)_virt -serial stdio -m 512
+ifeq ($(board), virt)
+arch=aarch64
+target=aarch64-unknown-francium
+else ifeq ($(board), raspi4)
+target=aarch64-unknown-francium
+else ifeq ($(board), pc)
+arch=x86_64
+target=x86_64-unknown-francium
+else
+$(error Bad board!)
+endif
 
-.PHONY: qemu gdb $(francium)_virt $(francium)_raspi4 $(cesium) $(hydrogen) clean
+francium = francium/target/$(target)-kernel/release/francium_$(board)
+sm = modules/sm/target/$(target)-user/release/sm
+fs = modules/fs/target/$(target)-user/release/fs
+test = modules/test/target/$(target)-user/release/test
 
-all: $(francium)_virt kernel8.bin
+ifeq ($(arch), aarch64)
+target=aarch64-unknown-francium
+gdb=aarch64-none-elf-gdb
+qemu_args=-M virt -cpu cortex-a53 -kernel $(francium) -serial stdio -m 512
+else ifeq ($(arch), x86_64)
+target=x86_64-unknown-francium
+qemu_args=-M pc-q35-6.1 -kernel $(francium) -serial stdio -m 512
+gdb=gdb
+endif
 
-$(francium)_virt: $(cesium) $(hydrogen)
-	cd francium && cargo build --release --features=platform_virt
+.PHONY: qemu gdb $(francium) $(fs) $(test) clean
 
-$(francium)_raspi4: $(cesium) $(hydrogen)
-	cd francium && cargo build --release --features=platform_raspi4
+all: $(francium)
+$(francium): $(fs) $(sm) $(test)
+	echo $(target); \
+	cd francium && cargo build --release --features=platform_$(board) --target=../$(target)-kernel.json
 
-kernel8.bin: $(francium)_raspi4
-	aarch64-none-elf-objcopy -O binary $(francium)_raspi4 kernel8.bin
+# todo rpi4 only
+kernel8.bin: $(francium)
+	aarch64-none-elf-objcopy -O binary $(francium) kernel8.bin
 
-$(cesium):
-	cd cesium && cargo build --release
+$(fs):
+	cd modules/fs && cargo build --release --target=../../$(target)-user.json
 
-$(hydrogen):
-	cd hydrogen && cargo build --release
+$(sm):
+	cd modules/sm && cargo build --release --target=../../$(target)-user.json
 
-qemu: $(francium)_virt
-	qemu-system-aarch64 $(QEMU_ARGS) -s
+$(test):
+	cd modules/test && cargo build --release --target=../../$(target)-user.json
 
-qemu-gdb: $(francium)_virt
-	qemu-system-aarch64 $(QEMU_ARGS) -s -S
+qemu: $(francium)
+	qemu-system-$(arch) $(qemu_args) -s
+
+qemu-gdb: $(francium)
+	qemu-system-$(arch) $(qemu_args) -s -S
 
 gdb:
-	aarch64-none-elf-gdb $(francium)_virt -ex 'target extended-remote localhost:1234'
+	$(gdb) $(francium) -ex 'target extended-remote localhost:1234'
 
 openocd:
 	sudo openocd -f interface/ftdi/minimodule.cfg -f pi4_openocd.cfg
 
+openocd-dap:
+	sudo openocd -f interface/cmsis-dap.cfg -f pi4_openocd.cfg
+
 openocd-gdb:
-	aarch64-none-elf-gdb $(francium)_raspi4 -ex 'target extended-remote localhost:3333'
+	aarch64-none-elf-gdb $(francium) -ex 'target extended-remote localhost:3333'
 
 clean:
 	cd francium && cargo clean && cd ..; \
-	cd cesium && cargo clean && cd ..; \
-	cd hydrogen && cargo clean && cd ..; \
 	cd libprocess && cargo clean && cd ..
+	cd modules/fs && cargo clean && cd ../..; \
+	cd modules/sm && cargo clean && cd ../..; \
+	cd modules/test && cargo clean && cd ../..

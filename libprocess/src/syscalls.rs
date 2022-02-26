@@ -13,16 +13,7 @@ extern "C" {
 	pub fn syscall_ipc_receive(sessions: *const Handle, num_sessions: usize, index_out: *mut usize) -> ResultCode;
 	pub fn syscall_ipc_accept(session_handle: Handle, handle_out: *mut Handle) -> ResultCode;
 	pub fn syscall_get_process_id() -> usize;
-
-	fn get_tpidr_el0_asm() -> usize;
 }
-
-pub fn get_tpidr_el0() -> usize {
-	unsafe {
-		get_tpidr_el0_asm()
-	}
-}
-
 
 pub fn print(s: &str) {
 	unsafe {
@@ -131,3 +122,10 @@ pub fn get_process_id() -> usize {
 		syscall_get_process_id()
 	}
 }
+
+use core::arch::global_asm;
+#[cfg(target_arch = "x86_64")]
+global_asm!(include_str!("asm/x86_64_syscalls.s"));
+
+#[cfg(target_arch = "aarch64")]
+global_asm!(include_str!("asm/aarch64_syscalls.s"));

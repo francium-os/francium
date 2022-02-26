@@ -3,7 +3,8 @@ use crate::mmu::{PageTable, PagePermission, MapType};
 use crate::PhysAddr;
 use spin::RwLock;
 use smallvec::SmallVec;
-use crate::arch::aarch64;
+
+use crate::arch;
 
 lazy_static! {
 	pub static ref KERNEL_ADDRESS_SPACE: RwLock<AddressSpace> = RwLock::new(AddressSpace::new(PageTable::new()));
@@ -111,8 +112,7 @@ impl AddressSpace {
 
 	pub fn make_active(&self) {
 		unsafe {
-			aarch64::set_ttbr0_el1(self.page_table_phys);
-			aarch64::set_ttbr1_el1(self.page_table_phys);
+			arch::mmu::switch_to_page_table(self.page_table_phys);
 		}
 	}
 }

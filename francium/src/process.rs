@@ -1,5 +1,5 @@
 use crate::memory::AddressSpace;
-use crate::arch::aarch64::context::ThreadContext;
+use crate::arch::context::ThreadContext;
 use crate::handle_table::HandleTable;
 use crate::mmu::PagePermission;
 use alloc::alloc::{alloc, Layout};

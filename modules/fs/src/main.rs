@@ -3,10 +3,9 @@
 use process::println;
 use process::syscalls;
 use process::Handle;
-use process::syscalls::get_tpidr_el0;
 
 fn main() {
-	println!("[C] Hello from cesium! My TLS is {:x} and my process id is {:?}", get_tpidr_el0(), syscalls::get_process_id());
+	println!("[C] Hello from cesium! My process id is {:?}", syscalls::get_process_id());
 	println!("[S] Creating sm port...");
 	let port = syscalls::create_port("sm").unwrap();
 	println!("[S] Created sm port: {:?}.", port);
