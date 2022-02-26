@@ -1,5 +1,6 @@
 use spin::Mutex;
 use crate::PhysAddr;
+use crate::arch::{gicv2, arch_timer};
 use crate::drivers::pl011_uart::Pl011Uart;
 
 lazy_static! {

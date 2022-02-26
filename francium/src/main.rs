@@ -57,6 +57,7 @@ extern "C" {
 	fn clear_cache_for_address(addr: usize);
 }
 
+use arch::context::ExceptionContext;
 #[cfg(target_arch = "aarch64")]
 fn setup_user_context(process: Arc<Mutex<Box<Process>>>, usermode_pc: usize, usermode_sp: usize) -> Arc<Thread> {
 	let new_thread = Arc::new(Thread::new(process.clone()));

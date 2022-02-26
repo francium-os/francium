@@ -47,7 +47,7 @@ pub fn enable_mmu() {
 	}
 }
 
-pub fn switch_to_page_table(phys_addr: usize) {
-	set_ttbr0_el1(self.page_table_phys);
-	set_ttbr1_el1(self.page_table_phys);
+pub unsafe fn switch_to_page_table(phys_addr: PhysAddr) {
+	set_ttbr0_el1(phys_addr);
+	set_ttbr1_el1(phys_addr);
 }

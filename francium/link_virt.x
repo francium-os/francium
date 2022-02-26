@@ -9,6 +9,9 @@ SECTIONS
   {
     __text_start = .;
     *(.text.entry)
+    . = KERNEL_BASE + 0x800;
+    __vbar = .;
+
     KEEP(*(.text.exceptions))
 
     . = ALIGN(0x1000);

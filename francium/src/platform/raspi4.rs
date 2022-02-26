@@ -1,6 +1,7 @@
 use spin::Mutex;
 use crate::constants::*;
 use crate::PhysAddr;
+use crate::arch::{gicv2, arch_timer};
 use crate::drivers::pl011_uart::Pl011Uart;
 
 pub const PHYS_MEM_BASE: usize = 0;
