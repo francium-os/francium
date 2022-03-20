@@ -9,3 +9,4 @@
 * todo: considerations for risc-v Sv39
 
 * todo: better ipc wrappers for copying slices
+* todo: proper AddressSpace object

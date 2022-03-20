@@ -51,6 +51,7 @@ extern "C" {
 	static __bss_end: i32;
 }
 
+// XXX make rust
 extern "C" {
 	fn user_thread_starter();
 	fn invalidate_tlb();
@@ -139,6 +140,14 @@ fn load_process(elf_buf: &[u8]) -> Arc<Thread> {
 		return thread
 	}
 	panic!("Failed to load process??");
+}
+
+#[cfg(feature = "platform_pc")]
+bootloader::entry_point!(bootloader_main);
+
+#[cfg(feature = "platform_pc")]
+fn bootloader_main(info: &'static mut bootloader::BootInfo) -> ! {
+  rust_main();
 }
 
 #[no_mangle]

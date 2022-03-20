@@ -1,3 +1,5 @@
+use core::arch::asm;
+
 use spin::Mutex;
 use crate::constants::*;
 use crate::PhysAddr;
@@ -6,8 +8,22 @@ pub const PHYS_MEM_BASE: usize = 0;
 
 pub struct COMPort {}
 impl COMPort {
+	pub fn write_byte(&mut self, byte: u8) {
+		unsafe {
+			asm!("out dx, al", in("dx") 0x3f8, in("al") byte);
+		}
+	}
+
 	pub fn write_string(&mut self, a: &str) {
-		// todo
+		for c in a.chars() {
+			self.write_byte(c as u8);
+		}
+	}
+
+	pub fn write_bytes(&mut self, a: &[u8]) {
+		for c in a {
+			self.write_byte(*c);
+		}
 	}
 }
 
@@ -26,6 +42,3 @@ pub fn scheduler_pre_init() {
 pub fn scheduler_post_init() {
 	unimplemented!();
 }
-
-use core::arch::global_asm;
-global_asm!(include_str!("../arch/x86_64/asm/stub.s"));

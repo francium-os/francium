@@ -9,12 +9,3 @@ edition = "2018"
 [dependencies]
 
 [build-dependencies]
-cc = "1.0"
-
-[profile.dev]
-panic = "abort"
-
-[profile.release]
-panic = "abort"
-#debug = true
-overflow-checks = true

@@ -10,11 +10,3 @@ edition = "2018"
 "process" = { path = "../../libprocess" }
 
 [build-dependencies]
-
-[profile.dev]
-panic = "abort"
-
-[profile.release]
-panic = "abort"
-debug = true
-overflow-checks = true

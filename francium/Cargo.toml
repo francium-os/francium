@@ -13,20 +13,12 @@ elf_rs = "0.1.3"
 lazy_static = { version = "1.4.0", features=["spin_no_std"]}
 smallvec = "1.6.1"
 spin = "0.9.0"
+bootloader = { version = "0.10.12", optional = true }
 
 [build-dependencies]
-cc = "1.0"
-
-[profile.dev]
-panic = "abort"
-
-[profile.release]
-panic = "abort"
-debug = true
-overflow-checks = true
 
 [features]
-platform_pc = []
+platform_pc = ["bootloader"]
 platform_virt = []
 platform_raspi4 = []
 

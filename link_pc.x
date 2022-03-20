@@ -21,12 +21,19 @@ SECTIONS
     *(.rodata .rodata.*)
     __rodata_end = .;
   }
+
   .data : ALIGN(0x1000)
   {
     __data_start = .;
     *(.data .data.*)
     __data_end = .;
+
+    // Why do we have a GOT?????
+    __got = .;
+    *(.got)
+    __got_end = .;
   }
+
   .bss : ALIGN(0x1000)
   {
     __bss_start = .;

@@ -1,0 +1,16 @@
+[workspace]
+members = [
+  "francium",
+  "francium/pc_bootloader",
+  "modules/fs",
+  "modules/sm",
+  "modules/test"
+]
+
+[profile.dev]
+panic = "abort"
+
+[profile.release]
+panic = "abort"
+debug = true
+overflow-checks = true
