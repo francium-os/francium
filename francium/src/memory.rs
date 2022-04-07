@@ -1,6 +1,5 @@
 use crate::phys_allocator;
-use crate::mmu::{PageTable, PagePermission, MapType};
-use crate::PhysAddr;
+use crate::mmu::{PhysAddr, PageTable, PagePermission, MapType};
 use spin::RwLock;
 use smallvec::SmallVec;
 

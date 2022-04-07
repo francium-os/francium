@@ -2,7 +2,7 @@ extern crate alloc;
 use alloc::alloc::{GlobalAlloc, Layout};
 use crate::constants::*;
 
-use crate::KERNEL_ADDRESS_SPACE;
+use crate::memory::KERNEL_ADDRESS_SPACE;
 
 static mut ALLOC_START: usize = KERNEL_HEAP_BASE;
 static mut ALLOC_PRESENT: usize = KERNEL_HEAP_BASE + KERNEL_HEAP_INITIAL_SIZE;

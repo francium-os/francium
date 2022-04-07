@@ -1,10 +1,11 @@
 use spin::Mutex;
 use crate::constants::*;
-use crate::PhysAddr;
+use crate::mmu::PhysAddr;
 use crate::arch::{gicv2, arch_timer};
 use crate::drivers::pl011_uart::Pl011Uart;
 
 pub const PHYS_MEM_BASE: usize = 0;
+pub const PHYS_MEM_SIZE: usize = 0x80000000; // 2gb for now
 
 // uart0 is at 0x7e201000 which i think is at 0xfe201000 in low peri mode
 

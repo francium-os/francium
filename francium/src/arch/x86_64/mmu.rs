@@ -1,4 +1,4 @@
-use crate::PhysAddr;
+use crate::mmu::PhysAddr;
 
 pub fn enable_mmu() {
 	unimplemented!();

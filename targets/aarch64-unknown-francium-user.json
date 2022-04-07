@@ -12,5 +12,5 @@
   "panic-strategy": "abort",
   "relocation-model": "static",
   "target-pointer-width": "64",
-  "pre-link-args": { "ld.lld": ["-Tuser.x"] }
+  "pre-link-args": { "ld.lld": ["-Ttargets/user.x"] }
 }

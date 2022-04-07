@@ -18,5 +18,5 @@ fn main() {
         panic!("No platform specified!");
     }
 
-    println!("cargo:rustc-link-arg=-Tlink_{}.x", platform);
+    println!("cargo:rustc-link-arg=-Ttargets/link_{}.x", platform);
 }

@@ -1,12 +1,13 @@
 use core::ptr;
 use crate::constants;
+
 // VIRT_GIC_DIST = 0x08000000
 // VIRT_GIC_CPU = 0x08010000
 
 const GICD_BASE: usize = constants::PHYSMAP_BASE + 0x08000000;
 const GICC_BASE: usize = constants::PHYSMAP_BASE + 0x08010000;
 
-// Distributor registors
+// Distributor registers
 const GICD_CTLR: *mut u32 = GICD_BASE as *mut u32;
 const GICD_ISENABLER: *mut u32 = (GICD_BASE + 0x0100) as *mut u32;
 const GICD_ICPENDR: *mut u32 = (GICD_BASE + 0x280) as *mut u32;

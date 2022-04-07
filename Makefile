@@ -24,7 +24,7 @@ gdb=aarch64-none-elf-gdb
 qemu_args=-M virt -cpu cortex-a53 -kernel $(francium) -serial stdio -m 2048
 else ifeq ($(arch), x86_64)
 target=x86_64-unknown-francium
-qemu_args=-drive format=raw,file=$(bootimg) -serial stdio -m 2048 --trace "exec_tb"
+qemu_args=-drive format=raw,file=$(bootimg) -serial stdio -m 2048 -no-reboot -d int
 gdb=gdb
 endif
 
@@ -34,25 +34,25 @@ CARGO_FLAGS = -Zbuild-std=core,alloc,compiler_builtins -Zbuild-std-features=comp
 
 all: $(francium)
 $(francium): $(fs) $(sm) $(test)
-	cd francium && cargo build $(CARGO_FLAGS) --release --features=platform_$(board) --target=../$(target)-kernel.json
+	cargo build $(CARGO_FLAGS) --package=francium --release --features=platform_$(board) --target=targets/$(target)-kernel.json
 
 $(bootimg): $(francium)
-	cd francium && cargo run --package=simple_boot ../target/x86_64-unknown-francium-kernel/release/francium_pc
+	cargo run --package=simple_boot target/x86_64-unknown-francium-kernel/release/francium_pc
 
 # todo rpi4 only
 kernel8.bin: $(francium)
 	aarch64-none-elf-objcopy -O binary $(francium) kernel8.bin
 
 $(fs):
-	cd modules/fs && cargo build $(CARGO_FLAGS) --release --target=../../$(target)-user.json
+	cargo build $(CARGO_FLAGS) --package=fs --release --target=targets/$(target)-user.json
 
 $(sm):
-	cd modules/sm && cargo build $(CARGO_FLAGS) --release --target=../../$(target)-user.json
+	cargo build $(CARGO_FLAGS) --package=sm --release --target=targets/$(target)-user.json
 
 $(test):
-	cd modules/test && cargo build $(CARGO_FLAGS) --release --target=../../$(target)-user.json
+	cargo build $(CARGO_FLAGS) --package=test --release --target=targets/$(target)-user.json
 
-qemu: $(francium)
+qemu: $(francium) $(bootimg)
 	qemu-system-$(arch) $(qemu_args) -s
 
 qemu-gdb: $(francium)

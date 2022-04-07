@@ -1,5 +1,5 @@
 use crate::constants::*;
-use crate::PhysAddr;
+use crate::mmu::PhysAddr;
 
 pub struct Pl011Uart {
 	base_address: usize,

@@ -1,50 +1,15 @@
-#![no_std]
-#![no_main]
-#![feature(default_alloc_error_handler)]
-#![feature(linked_list_cursors)]
-
-#[macro_use]
-extern crate bitflags;
-
-#[macro_use]
-extern crate lazy_static;
-
-extern crate alloc;
-extern crate smallvec;
-extern crate elf_rs;
-use elf_rs::*;
-
-
-pub mod constants;
-pub mod drivers;
-pub mod platform;
-pub mod panic;
-
-#[macro_use]
-pub mod print;
-
-pub mod handle;
-pub mod handle_table;
-pub mod mmu;
-pub mod bump_allocator;
-pub mod phys_allocator;
-
-pub mod process;
-pub mod arch;
-pub mod memory;
-pub mod scheduler;
-pub mod waitable;
-pub mod svc;
-
+use crate::platform;
 use crate::mmu::{PhysAddr, PagePermission, MapType};
 use crate::memory::KERNEL_ADDRESS_SPACE;
 use crate::memory::AddressSpace;
 use crate::process::{Process, Thread};
 use crate::constants::*;
+use crate::phys_allocator;
 
 use alloc::boxed::Box;
 use alloc::sync::Arc;
 use spin::Mutex;
+use elf_rs::*;
 
 extern "C" {
 	static __text_start: i32;
@@ -58,7 +23,7 @@ extern "C" {
 	fn clear_cache_for_address(addr: usize);
 }
 
-use arch::context::ExceptionContext;
+use crate::arch::context::ExceptionContext;
 #[cfg(target_arch = "aarch64")]
 fn setup_user_context(process: Arc<Mutex<Box<Process>>>, usermode_pc: usize, usermode_sp: usize) -> Arc<Thread> {
 	let new_thread = Arc::new(Thread::new(process.clone()));
@@ -87,7 +52,7 @@ fn setup_user_context(process: Arc<Mutex<Box<Process>>>, usermode_pc: usize, use
 	unimplemented!();
 }
 
-fn load_process(elf_buf: &[u8]) -> Arc<Thread> {
+pub fn load_process(elf_buf: &[u8]) -> Arc<Thread> {
 	// Load the first process
 	let aspace = { 
 		let page_table_root = &KERNEL_ADDRESS_SPACE.read().page_table;
@@ -142,27 +107,13 @@ fn load_process(elf_buf: &[u8]) -> Arc<Thread> {
 	panic!("Failed to load process??");
 }
 
-#[cfg(feature = "platform_pc")]
-bootloader::entry_point!(bootloader_main);
-
-#[cfg(feature = "platform_pc")]
-fn bootloader_main(info: &'static mut bootloader::BootInfo) -> ! {
-  rust_main();
-}
-
-#[no_mangle]
-pub extern "C" fn rust_main() -> ! {
-	platform::platform_specific_init();
-
-	println!("hello from rust!");
-
-	// set up physical allocator
+pub fn setup_physical_allocator() {
 	unsafe {
 		// TODO: know physical memory base
-		let phys_mem_start = 0x40000000;
+		let phys_mem_start = platform::PHYS_MEM_BASE;
 
 		// TODO: know physical memory size
-		let phys_mem_end = 0x40000000 + 0x20000000; // hardcoded 512MiB
+		let phys_mem_end = platform::PHYS_MEM_BASE + platform::PHYS_MEM_SIZE;
 
 		let text_start_virt = &__text_start as *const i32 as usize;
 		let bss_end_virt = &__bss_end as *const i32 as usize;
@@ -176,62 +127,32 @@ pub extern "C" fn rust_main() -> ! {
 			}
 		}
 	}
+}
 
-	{
-		let page_table_root = &mut KERNEL_ADDRESS_SPACE.write().page_table;
+pub fn setup_virtual_memory() {
+	let page_table_root = &mut KERNEL_ADDRESS_SPACE.write().page_table;
 
-		// map first 4gb into physmap
-		page_table_root.map_1gb(PhysAddr(0), PHYSMAP_BASE, PagePermission::KERNEL_RWX, MapType::NormalUncachable);
-		page_table_root.map_1gb(PhysAddr(0x40000000), PHYSMAP_BASE + 0x40000000, PagePermission::KERNEL_RWX, MapType::NormalUncachable);
-		page_table_root.map_1gb(PhysAddr(0x80000000), PHYSMAP_BASE + 0x80000000, PagePermission::KERNEL_RWX, MapType::NormalUncachable);
-		page_table_root.map_1gb(PhysAddr(0xc0000000), PHYSMAP_BASE + 0xc0000000, PagePermission::KERNEL_RWX, MapType::NormalUncachable);
+	// map first 4gb into physmap
+	page_table_root.map_1gb(PhysAddr(0), PHYSMAP_BASE, PagePermission::KERNEL_RWX, MapType::NormalUncachable);
+	page_table_root.map_1gb(PhysAddr(0x40000000), PHYSMAP_BASE + 0x40000000, PagePermission::KERNEL_RWX, MapType::NormalUncachable);
+	page_table_root.map_1gb(PhysAddr(0x80000000), PHYSMAP_BASE + 0x80000000, PagePermission::KERNEL_RWX, MapType::NormalUncachable);
+	page_table_root.map_1gb(PhysAddr(0xc0000000), PHYSMAP_BASE + 0xc0000000, PagePermission::KERNEL_RWX, MapType::NormalUncachable);
 
-		// map first 4gb into devicemap
-		page_table_root.map_1gb(PhysAddr(0), PERIPHERAL_BASE, PagePermission::KERNEL_RWX, MapType::Device);
-		page_table_root.map_1gb(PhysAddr(0x40000000), PERIPHERAL_BASE + 0x40000000, PagePermission::KERNEL_RWX, MapType::Device);
-		page_table_root.map_1gb(PhysAddr(0x80000000), PERIPHERAL_BASE + 0x80000000, PagePermission::KERNEL_RWX, MapType::Device);
-		page_table_root.map_1gb(PhysAddr(0xc0000000), PERIPHERAL_BASE + 0xc0000000, PagePermission::KERNEL_RWX, MapType::Device);
+	// map first 4gb into devicemap
+	page_table_root.map_1gb(PhysAddr(0), PERIPHERAL_BASE, PagePermission::KERNEL_RWX, MapType::Device);
+	page_table_root.map_1gb(PhysAddr(0x40000000), PERIPHERAL_BASE + 0x40000000, PagePermission::KERNEL_RWX, MapType::Device);
+	page_table_root.map_1gb(PhysAddr(0x80000000), PERIPHERAL_BASE + 0x80000000, PagePermission::KERNEL_RWX, MapType::Device);
+	page_table_root.map_1gb(PhysAddr(0xc0000000), PERIPHERAL_BASE + 0xc0000000, PagePermission::KERNEL_RWX, MapType::Device);
 
-		// map kernel in
-		unsafe {
-			let text_start_virt = &__text_start as *const i32 as usize;
-			let bss_end_virt = &__bss_end as *const i32 as usize;
+	// map kernel in
+	unsafe {
+		let text_start_virt = &__text_start as *const i32 as usize;
+		let bss_end_virt = &__bss_end as *const i32 as usize;
 
-			let kernel_length = bss_end_virt - text_start_virt;
+		let kernel_length = bss_end_virt - text_start_virt;
 
-			for i in (0x0000000..kernel_length).step_by(0x200000) {
-				page_table_root.map_2mb(PhysAddr(platform::PHYS_MEM_BASE + i), KERNEL_BASE + i, PagePermission::KERNEL_RWX, MapType::NormalCachable);
-			}
+		for i in (0x0000000..kernel_length).step_by(0x200000) {
+			page_table_root.map_2mb(PhysAddr(platform::PHYS_MEM_BASE + i), KERNEL_BASE + i, PagePermission::KERNEL_RWX, MapType::NormalCachable);
 		}
 	}
-	println!("hello from rust before enabling mmu!");
-	mmu::enable_mmu();
-	println!("hello from rust after enabling mmu!");
-
-	// Set up kernel heap
-	{ 
-		let kernel_aspace = &mut KERNEL_ADDRESS_SPACE.write();
-		kernel_aspace.create(KERNEL_HEAP_BASE, KERNEL_HEAP_INITIAL_SIZE, PagePermission::KERNEL_READ_WRITE);
-	}
-
-	platform::scheduler_pre_init();
-
-	let elf_one_buf = include_bytes!("../../modules/fs/target/aarch64-unknown-francium-user/release/fs");
-	let elf_two_buf = include_bytes!("../../modules/test/target/aarch64-unknown-francium-user/release/test");
-
-	println!("Loading process one...");
-	let one_main_thread = load_process(elf_one_buf);
-	scheduler::register_thread(one_main_thread.clone());
-
-	println!("Loading process two...");
-	let two_main_thread = load_process(elf_two_buf);
-	scheduler::register_thread(two_main_thread.clone());
-
-	platform::scheduler_post_init();
-
-	println!("Running...");
-	process::force_switch_to(one_main_thread);
-	println!("We shouldn't get here, ever!!");
-
-    loop {}
 }

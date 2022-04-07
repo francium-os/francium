@@ -1,5 +1,5 @@
 use spin::Mutex;
-use crate::PhysAddr;
+use crate::mmu::PhysAddr;
 use crate::arch::{gicv2, arch_timer};
 use crate::drivers::pl011_uart::Pl011Uart;
 
@@ -9,6 +9,7 @@ lazy_static! {
 }
 
 pub const PHYS_MEM_BASE: usize = 0x40000000;
+pub const PHYS_MEM_SIZE: usize = 0x80000000; // idk 2 gig
 
 pub fn platform_specific_init() {
 	// nothing, for now

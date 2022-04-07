@@ -1,8 +1,8 @@
 use smallvec::SmallVec;
 use spin::Mutex;
 use alloc::sync::Arc;
-use crate::Thread;
 use crate::scheduler;
+use crate::process::Thread;
 use crate::handle::Handle;
 use core::sync::atomic::{AtomicBool,Ordering};
 

@@ -1,5 +1,5 @@
-use crate::KERNEL_ADDRESS_SPACE;
-use crate::PhysAddr;
+use crate::memory::KERNEL_ADDRESS_SPACE;
+use crate::mmu::PhysAddr;
 
 extern "C" {
 	pub fn set_ttbr0_el1(ttbr: PhysAddr);

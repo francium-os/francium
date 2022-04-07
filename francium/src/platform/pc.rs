@@ -2,9 +2,10 @@ use core::arch::asm;
 
 use spin::Mutex;
 use crate::constants::*;
-use crate::PhysAddr;
+use crate::mmu::PhysAddr;
 
 pub const PHYS_MEM_BASE: usize = 0;
+pub const PHYS_MEM_SIZE: usize = 0x80000000; // 2gb?? for now
 
 pub struct COMPort {}
 impl COMPort {

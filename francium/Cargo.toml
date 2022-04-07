@@ -25,14 +25,14 @@ platform_raspi4 = []
 [[bin]]
 name = "francium_virt"
 required-features = ["platform_virt"]
-path = "src/main.rs"
+path = "src/main_virt.rs"
 
 [[bin]]
 name = "francium_raspi4"
 required-features = ["platform_raspi4"]
-path = "src/main.rs"
+path = "src/main_raspi4.rs"
 
 [[bin]]
 name = "francium_pc"
 required-features = ["platform_pc"]
-path = "src/main.rs"
+path = "src/main_pc.rs"
