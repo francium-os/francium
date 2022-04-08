@@ -3,8 +3,6 @@ use std::{
     process::Command,
 };
 
-const RUN_ARGS: &[&str] = &["--no-reboot", "-s"];
-
 fn main() {
     let mut args = std::env::args().skip(1); // skip executable name
 
@@ -12,32 +10,9 @@ fn main() {
         let path = PathBuf::from(args.next().unwrap());
         path.canonicalize().unwrap()
     };
-    let no_boot = if let Some(arg) = args.next() {
-        match arg.as_str() {
-            "--no-run" => true,
-            other => panic!("unexpected argument `{}`", other),
-        }
-    } else {
-        false
-    };
 
     let bios = create_disk_images(&kernel_binary_path);
-
-    //if no_boot {
-        println!("Created disk image at `{}`", bios.display());
-    //    return;
-   // }
-
-    /*let mut run_cmd = Command::new("qemu-system-x86_64");
-    run_cmd
-        .arg("-drive")
-        .arg(format!("format=raw,file={}", bios.display()));
-    run_cmd.args(RUN_ARGS);
-
-    let exit_status = run_cmd.status().unwrap();
-    if !exit_status.success() {
-        std::process::exit(exit_status.code().unwrap_or(1));
-    }*/
+    println!("Created disk image at `{}`", bios.display());
 }
 
 pub fn create_disk_images(kernel_binary_path: &Path) -> PathBuf {

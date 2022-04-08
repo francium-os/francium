@@ -2,6 +2,8 @@
 members = [
   "francium",
   "francium/pc_bootloader",
+  "libprocess",
+  "libcommon",
   "modules/fs",
   "modules/sm",
   "modules/test"

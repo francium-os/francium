@@ -1,5 +1,5 @@
-use crate::{Handle,ResultCode,RESULT_OK, INVALID_HANDLE};
-use crate::os_error::{OSError,result_to_error};
+use crate::{Handle, INVALID_HANDLE};
+use common::os_error::{OSError,ResultCode,RESULT_OK};
 use core::cmp::min;
 
 extern "C" {
@@ -37,7 +37,7 @@ pub fn create_port(s: &str) -> Result<Handle, OSError> {
 		if res == RESULT_OK {
 			Ok(handle_out)
 		} else {
-			Err(result_to_error(res))
+			Err(OSError::from_result_code(res))
 		}
 	}
 }
@@ -49,7 +49,7 @@ pub fn connect_to_port(s: &str) -> Result<Handle, OSError> {
 		if res == RESULT_OK {
 			Ok(handle_out)
 		} else {
-			Err(result_to_error(res))
+			Err(OSError::from_result_code(res))
 		}
 	}
 }
@@ -60,7 +60,7 @@ pub fn close_handle(h: Handle) -> Result<(), OSError> {
 		if res == RESULT_OK {
 			Ok(())
 		} else {
-			Err(result_to_error(res))
+			Err(OSError::from_result_code(res))
 		}
 	}
 }
@@ -77,7 +77,7 @@ pub fn ipc_request(session_handle: Handle) -> Result<(), OSError> {
 		if res == RESULT_OK {
 			Ok(())
 		} else {
-			Err(result_to_error(res))
+			Err(OSError::from_result_code(res))
 		}
 	}
 }
@@ -88,7 +88,7 @@ pub fn ipc_reply(session_handle: Handle) -> Result<(), OSError> {
 		if res == RESULT_OK {
 			Ok(())
 		} else {
-			Err(result_to_error(res))
+			Err(OSError::from_result_code(res))
 		}
 	}
 }
@@ -100,7 +100,7 @@ pub fn ipc_receive(sessions: &[Handle]) -> Result<usize, OSError> {
 		if res == RESULT_OK {
 			Ok(index_out)
 		} else {
-			Err(result_to_error(res))
+			Err(OSError::from_result_code(res))
 		}
 	}
 }
@@ -112,7 +112,7 @@ pub fn ipc_accept(session_handle: Handle) -> Result<Handle, OSError> {
 		if res == RESULT_OK {
 			Ok(handle_out)
 		} else {
-			Err(result_to_error(res))
+			Err(OSError::from_result_code(res))
 		}
 	}
 }

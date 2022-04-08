@@ -32,16 +32,17 @@ CARGO_FLAGS = -Zbuild-std=core,alloc,compiler_builtins -Zbuild-std-features=comp
 
 .PHONY: qemu gdb $(francium) $(bootimg) $(fs) $(test) clean 
 
-all: $(francium)
+all: $(francium) $(if $(filter $(board),raspi4), kernel8.bin)
 $(francium): $(fs) $(sm) $(test)
 	cargo build $(CARGO_FLAGS) --package=francium --release --features=platform_$(board) --target=targets/$(target)-kernel.json
 
 $(bootimg): $(francium)
 	cargo run --package=simple_boot target/x86_64-unknown-francium-kernel/release/francium_pc
 
-# todo rpi4 only
+ifeq ($(board), raspi4)
 kernel8.bin: $(francium)
 	aarch64-none-elf-objcopy -O binary $(francium) kernel8.bin
+endif
 
 $(fs):
 	cargo build $(CARGO_FLAGS) --package=fs --release --target=targets/$(target)-user.json
@@ -52,7 +53,7 @@ $(sm):
 $(test):
 	cargo build $(CARGO_FLAGS) --package=test --release --target=targets/$(target)-user.json
 
-qemu: $(francium) $(bootimg)
+qemu: $(francium) $(if $(filter $(board),pc), $(bootimg))
 	qemu-system-$(arch) $(qemu_args) -s
 
 qemu-gdb: $(francium)

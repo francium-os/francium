@@ -9,7 +9,6 @@ fn main() {
 	println!("[S] Creating sm port...");
 	let port = syscalls::create_port("sm").unwrap();
 	println!("[S] Created sm port: {:?}.", port);
-	//syscalls::ipc_receive(port).unwrap();
 
 	let handles: [Handle; 1] = [port];
 	let index = syscalls::ipc_receive(&handles).unwrap();
