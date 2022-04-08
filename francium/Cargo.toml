@@ -36,3 +36,7 @@ path = "src/main_raspi4.rs"
 name = "francium_pc"
 required-features = ["platform_pc"]
 path = "src/main_pc.rs"
+
+[package.metadata.bootloader]
+map-physical-memory = true
+physical-memory-offset = "0xffff_ff00_0000_0000"

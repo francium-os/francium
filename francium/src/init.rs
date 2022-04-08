@@ -107,21 +107,18 @@ pub fn load_process(elf_buf: &[u8]) -> Arc<Thread> {
 	panic!("Failed to load process??");
 }
 
-pub fn setup_physical_allocator() {
+pub fn setup_physical_allocator(start: usize, end: usize) {
 	unsafe {
-		// TODO: know physical memory base
 		let phys_mem_start = platform::PHYS_MEM_BASE;
-
-		// TODO: know physical memory size
-		let phys_mem_end = platform::PHYS_MEM_BASE + platform::PHYS_MEM_SIZE;
 
 		let text_start_virt = &__text_start as *const i32 as usize;
 		let bss_end_virt = &__bss_end as *const i32 as usize;
 
+		// TODO: This assumes the kernel elf is loaded at the start of physical memory directly, which is kind of nasty.
 		let text_start: usize = text_start_virt - KERNEL_BASE + phys_mem_start;
 		let bss_end: usize = bss_end_virt - KERNEL_BASE + phys_mem_start;
 
-		for i in (phys_mem_start .. phys_mem_end).step_by(0x1000).rev() {
+		for i in (start .. end).step_by(0x1000).rev() {
 			if !(i >= text_start && i <= bss_end) {
 				phys_allocator::free(PhysAddr(i))
 			}

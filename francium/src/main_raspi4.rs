@@ -44,7 +44,10 @@ use crate::memory::KERNEL_ADDRESS_SPACE;
 pub extern "C" fn rust_main() -> ! {
 	platform::platform_specific_init();
 
-	init::setup_physical_allocator();
+	let phys_mem_start = platform::PHYS_MEM_BASE;
+	let phys_mem_end = platform::PHYS_MEM_BASE + platform::PHYS_MEM_SIZE;
+
+	init::setup_physical_allocator(phys_mem_start, phys_mem_end);
 	init::setup_virtual_memory();
 
 	println!("hello from rust before enabling mmu!");

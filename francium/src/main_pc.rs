@@ -39,22 +39,25 @@ pub mod init;
 use crate::constants::*;
 use crate::mmu::PagePermission;
 use crate::memory::KERNEL_ADDRESS_SPACE;
+use core::arch::asm;
 
 #[cfg(feature = "platform_pc")]
 bootloader::entry_point!(bootloader_main);
 
 #[cfg(feature = "platform_pc")]
 fn bootloader_main(info: &'static mut bootloader::BootInfo) -> ! {
-  rust_main();
-}
 
-#[no_mangle]
-pub extern "C" fn rust_main() -> ! {
 	platform::platform_specific_init();
 
-	println!("hello from rust before setting up anything!");
-
-	init::setup_physical_allocator();
+	println!("{:?}", info);
+	for m in info.memory_regions.iter() {
+		println!("{:?}", m);
+		if m.kind == bootloader::boot_info::MemoryRegionKind::Usable {
+			init::setup_physical_allocator(m.start as usize, m.end as usize);
+		}
+	}
+ 
+	println!("hello from rust before setting up anything!");	
 	init::setup_virtual_memory();
 
 	println!("hello from rust before enabling mmu!");
@@ -69,8 +72,8 @@ pub extern "C" fn rust_main() -> ! {
 
 	platform::scheduler_pre_init();
 
-	let elf_one_buf = include_bytes!("../../target/aarch64-unknown-francium-user/release/fs");
-	let elf_two_buf = include_bytes!("../../target/aarch64-unknown-francium-user/release/test");
+	let elf_one_buf = include_bytes!("../../target/x86_64-unknown-francium-user/release/fs");
+	let elf_two_buf = include_bytes!("../../target/x86_64-unknown-francium-user/release/test");
 
 	println!("Loading process one...");
 	let one_main_thread = init::load_process(elf_one_buf);
