@@ -30,7 +30,7 @@ endif
 
 CARGO_FLAGS = -Zbuild-std=core,alloc,compiler_builtins -Zbuild-std-features=compiler-builtins-mem
 
-.PHONY: qemu gdb $(francium) $(bootimg) $(fs) $(test) clean 
+.PHONY: qemu gdb bochs $(francium) $(bootimg) $(fs) $(test) clean
 
 all: $(francium) $(if $(filter $(board),raspi4), kernel8.bin)
 $(francium): $(fs) $(sm) $(test)
@@ -55,6 +55,14 @@ $(test):
 
 qemu: $(francium) $(if $(filter $(board),pc), $(bootimg))
 	qemu-system-$(arch) $(qemu_args) -s
+
+ifeq ($(board), pc)
+bochs: $(bootimg)
+	cp $(bootimg) $(bootimg)_bochs; \
+	dd if=/dev/zero of=$(bootimg)_bochs conv=notrunc bs=1 seek=67092479 count=1; \
+	rm $(bootimg)_bochs.lock; \
+	bochs
+endif
 
 qemu-gdb: $(francium)
 	qemu-system-$(arch) $(qemu_args) -s -S
