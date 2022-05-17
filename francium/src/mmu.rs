@@ -27,6 +27,7 @@ pub struct PageTableEntry {
 	entry: u64
 }
 
+#[cfg(target_arch = "aarch64")]
 bitflags! {
 	struct EntryFlags: u64 {
 		// Descriptor bit[0] identifies whether the descriptor is valid, and is 1 for a valid descriptor. I
@@ -70,6 +71,35 @@ bitflags! {
 	// Blocks at level 3 are illegal
 }
 
+#[cfg(target_arch = "x86_64")]
+bitflags! {
+	struct EntryFlags: u64 {
+		const VALID = 1 << 0;
+		const WRITABLE = 1<<1;
+		const USER = 1<<2;
+
+		const WRITE_THROUGH = 1<<3;
+		const UNCACHEABLE = 1<<4;
+		const ACCESS = 1 << 5;
+
+		const DIRTY = 1<<6;
+
+		// Set this to map a (2mb, 1gb) block, leave unset for tables
+		// Intel calls it PAGE_SIZE?
+		const TYPE_BLOCK = 1 << 7;
+		const TYPE_TABLE = 0 << 7;
+
+		// Except for pages, where..
+		const PAT = 1<<7;
+
+		// global?? something something kernel
+		const GLOBAL = 1<<8;
+
+		const XN = 1<<63;
+	}
+}
+
+
 bitflags! {
 	pub struct PagePermission : u64 {
 		const READ_ONLY = 0;
@@ -84,7 +114,7 @@ bitflags! {
 
 		const KERNEL_READ_ONLY = Self::READ_ONLY.bits | Self::KERNEL.bits;
 		const KERNEL_READ_WRITE = Self::READ_ONLY.bits | Self::WRITE.bits | Self::KERNEL.bits;
-		const KERNEL_READ_EXECUTE = Self::READ_ONLY.bits | Self::WRITE.bits | Self::KERNEL.bits;
+		const KERNEL_READ_EXECUTE = Self::READ_ONLY.bits| Self::EXECUTE.bits | Self::KERNEL.bits;
 		const KERNEL_RWX = Self::KERNEL_READ_EXECUTE.bits | Self::WRITE.bits; 
 	}
 }
@@ -131,7 +161,10 @@ pub struct PageTable {
     entries: [PageTableEntry; 512],
 }
 
+// Big hack time!
+
 // https://9net.org/screenshots/1627760764.png
+#[cfg(target_arch = "aarch64")]
 fn map_perms(perm: PagePermission) -> EntryFlags {
 	let mut flags: EntryFlags = EntryFlags::empty();
 
@@ -152,6 +185,27 @@ fn map_perms(perm: PagePermission) -> EntryFlags {
 	flags
 }
 
+#[cfg(target_arch = "x86_64")]
+fn map_perms(perm: PagePermission) -> EntryFlags {
+	let mut flags: EntryFlags = EntryFlags::empty();
+
+	if !perm.contains(PagePermission::KERNEL) {
+		flags |= EntryFlags::USER;
+	}
+
+	if perm.contains(PagePermission::WRITE) {
+		println!("Writable!");
+		flags |= EntryFlags::WRITABLE;
+	}
+
+	if !perm.contains(PagePermission::EXECUTE) {
+		flags |= EntryFlags::XN;
+	}
+
+	flags
+}
+
+#[cfg(target_arch = "aarch64")]
 fn map_type(ty: MapType) -> EntryFlags {
 	match ty {
 		MapType::NormalCachable => EntryFlags::ATTR_INDEX_0,
@@ -159,6 +213,47 @@ fn map_type(ty: MapType) -> EntryFlags {
 		MapType::Device => EntryFlags::ATTR_INDEX_2
 	}
 }
+
+#[cfg(target_arch = "x86_64")]
+fn map_type(ty: MapType) -> EntryFlags {
+	match ty {
+		MapType::NormalCachable => EntryFlags::empty(),
+		MapType::NormalUncachable => EntryFlags::UNCACHEABLE,
+		MapType::Device => EntryFlags::UNCACHEABLE // ???
+	}
+}
+
+#[cfg(target_arch = "aarch64")]
+fn get_default_flags() -> EntryFlags {
+	EntryFlags::VALID | EntryFlags::TYPE_PAGE | EntryFlags::ATTR_ACCESS
+}
+
+#[cfg(target_arch = "x86_64")]
+fn get_default_flags() -> EntryFlags {
+	EntryFlags::VALID |  EntryFlags::ACCESS
+}
+
+#[cfg(target_arch = "aarch64")]
+fn get_table_default_flags() -> EntryFlags {
+	EntryFlags::VALID | EntryFlags::TYPE_TABLE
+}
+
+#[cfg(target_arch = "x86_64")]
+fn get_table_default_flags() -> EntryFlags {
+	EntryFlags::VALID | EntryFlags::TYPE_TABLE | EntryFlags::WRITABLE
+}
+
+#[cfg(target_arch = "aarch64")]
+fn get_block_default_flags() -> EntryFlags {
+	EntryFlags::VALID | EntryFlags::TYPE_BLOCK| EntryFlags::ATTR_ACCESS
+}
+
+#[cfg(target_arch = "x86_64")]
+fn get_block_default_flags() -> EntryFlags {
+	EntryFlags::VALID | EntryFlags::TYPE_BLOCK | EntryFlags::ACCESS
+}
+
+
 
 impl PageTable {
 	pub const fn new() -> PageTable {
@@ -182,7 +277,7 @@ impl PageTable {
 	pub fn map_4k(&mut self, phys: PhysAddr, virt: usize, perm: PagePermission, ty: MapType) {
 		let mut entry = PageTableEntry::new();
 
-		entry.set_flags(EntryFlags::VALID | EntryFlags::TYPE_PAGE | EntryFlags::ATTR_ACCESS | map_perms(perm) | map_type(ty));
+		entry.set_flags(get_default_flags() | map_perms(perm) | map_type(ty));
 		entry.set_addr(phys);
 
 		unsafe {
@@ -201,7 +296,7 @@ impl PageTable {
 
 		let mut entry = PageTableEntry::new();
 
-		entry.set_flags(EntryFlags::VALID | EntryFlags::TYPE_BLOCK | EntryFlags::ATTR_ACCESS | map_perms(perm) | map_type(ty));
+		entry.set_flags(get_block_default_flags() | map_perms(perm) | map_type(ty));
 		entry.set_addr(phys);
 
 		unsafe {
@@ -219,7 +314,7 @@ impl PageTable {
 		assert!((virt & (0x40000000-1)) == 0);
 		let mut entry = PageTableEntry::new();
 
-		entry.set_flags(EntryFlags::VALID | EntryFlags::TYPE_BLOCK | EntryFlags::ATTR_ACCESS | map_perms(perm) | map_type(ty));
+		entry.set_flags(get_block_default_flags() | map_perms(perm) | map_type(ty));
 		entry.set_addr(phys);
 
 		unsafe {
@@ -245,7 +340,7 @@ impl PageTable {
 				*page_table = PageTable::new();
 
 				let mut new_entry = PageTableEntry::new();
-				new_entry.set_flags(EntryFlags::VALID | EntryFlags::TYPE_TABLE);
+				new_entry.set_flags(get_table_default_flags());
 				new_entry.set_addr(new_table_phys); // uh
 				self.entries[index] = new_entry;
 			}

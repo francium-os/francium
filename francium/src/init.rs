@@ -148,6 +148,7 @@ pub fn setup_virtual_memory() {
 
 		let kernel_length = bss_end_virt - text_start_virt;
 
+		// TODO: Figure out the proper physical location of the kernel!
 		for i in (0x0000000..kernel_length).step_by(0x200000) {
 			page_table_root.map_2mb(PhysAddr(platform::PHYS_MEM_BASE + i), KERNEL_BASE + i, PagePermission::KERNEL_RWX, MapType::NormalCachable);
 		}
