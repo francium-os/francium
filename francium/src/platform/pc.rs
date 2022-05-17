@@ -10,7 +10,17 @@ pub const PHYS_MEM_SIZE: usize = 0x80000000; // 2gb?? for now
 pub struct COMPort {}
 impl COMPort {
 	pub fn write_byte(&mut self, byte: u8) {
+		let port_base = 0x3f8;
+
 		unsafe {
+			let line_status_reg = port_base+5;
+
+			let mut line_status: u8 = 0;
+			asm!("in al, dx", out("al") line_status, in("dx") line_status_reg);
+			while (line_status & (1<<5)) != (1<<5) {
+				asm!("in al, dx", out("al") line_status, in("dx") line_status_reg);
+			}
+
 			asm!("out dx, al", in("dx") 0x3f8, in("al") byte);
 		}
 	}
@@ -34,6 +44,12 @@ lazy_static! {
 
 pub fn platform_specific_init() {
 	// Nothing, for now
+
+	// XXX: gross hack
+	let port_base = 0x3f8;
+	unsafe {
+		asm!("out dx, al", in("dx") port_base + 3, in("al") 3 as u8);
+	}
 }
 
 pub fn scheduler_pre_init() {
