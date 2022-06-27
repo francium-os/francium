@@ -41,13 +41,29 @@ use crate::mmu::PagePermission;
 use crate::memory::KERNEL_ADDRESS_SPACE;
 use core::arch::asm;
 
+extern "C" {
+	fn switch_stacks();
+	static __bootstrap_stack_top: i32;
+}
+
 #[cfg(feature = "platform_pc")]
-bootloader::entry_point!(bootloader_main);
+bootloader::entry_point!(bootloader_main_thunk);
+
+#[cfg(feature = "platform_pc")]
+fn bootloader_main_thunk(info: &'static mut bootloader::BootInfo) -> ! {
+	// TODO: uh, not this, please.
+	// I think we need a thunk so that locals don't get allocated in the wrong stack. Maybe.
+	// This is probably some kind of undefined.
+
+	unsafe { switch_stacks(); }
+	bootloader_main(info);
+}
 
 #[cfg(feature = "platform_pc")]
 fn bootloader_main(info: &'static mut bootloader::BootInfo) -> ! {
-
 	platform::platform_specific_init();
+
+	unsafe { println!("{:?}", (&__bootstrap_stack_top) as *const i32); }
 
 	println!("{:?}", info);
 	for m in info.memory_regions.iter() {

@@ -126,6 +126,11 @@ pub fn setup_physical_allocator(start: usize, end: usize) {
 	}
 }
 
+extern "C" {
+	fn read_cr3() -> PhysAddr;
+}
+use crate::mmu::PageTable;
+
 pub fn setup_virtual_memory() {
 	let page_table_root = &mut KERNEL_ADDRESS_SPACE.write().page_table;
 
@@ -141,16 +146,24 @@ pub fn setup_virtual_memory() {
 	page_table_root.map_1gb(PhysAddr(0x80000000), PERIPHERAL_BASE + 0x80000000, PagePermission::KERNEL_RWX, MapType::Device);
 	page_table_root.map_1gb(PhysAddr(0xc0000000), PERIPHERAL_BASE + 0xc0000000, PagePermission::KERNEL_RWX, MapType::Device);
 
-	// map kernel in
+	// hack
 	unsafe {
+        // Some bootloaders (cough x86) might not put us in the right place.
+        // Figure it out.
+
+		let current_pages_phys = read_cr3();
+		let current_pages_virt: *const PageTable = crate::mmu::phys_to_virt(current_pages_phys) as *const PageTable;
+        let current_pages_ref = current_pages_virt.as_ref().unwrap();
+
+		let kernel_phys_base = current_pages_ref.virt_to_phys(KERNEL_BASE).unwrap().0;
+
 		let text_start_virt = &__text_start as *const i32 as usize;
 		let bss_end_virt = &__bss_end as *const i32 as usize;
 
 		let kernel_length = bss_end_virt - text_start_virt;
 
-		// TODO: Figure out the proper physical location of the kernel!
-		for i in (0x0000000..kernel_length).step_by(0x200000) {
-			page_table_root.map_2mb(PhysAddr(platform::PHYS_MEM_BASE + i), KERNEL_BASE + i, PagePermission::KERNEL_RWX, MapType::NormalCachable);
+		for i in (0x0000000..kernel_length).step_by(0x1000) {
+			page_table_root.map_4k(current_pages_ref.virt_to_phys(KERNEL_BASE+i).unwrap(), KERNEL_BASE + i, PagePermission::KERNEL_RWX, MapType::NormalCachable);
 		}
 	}
 }

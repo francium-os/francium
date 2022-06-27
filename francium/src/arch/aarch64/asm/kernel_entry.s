@@ -2,8 +2,6 @@
 .global set_ttbr0_el1
 
 .extern rust_main
-.extern __bootstrap_stack_bottom
-.extern __bootstrap_stack_top
 
 .section .text
 kernel_start:

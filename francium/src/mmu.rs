@@ -194,7 +194,6 @@ fn map_perms(perm: PagePermission) -> EntryFlags {
 	}
 
 	if perm.contains(PagePermission::WRITE) {
-		println!("Writable!");
 		flags |= EntryFlags::WRITABLE;
 	}
 
