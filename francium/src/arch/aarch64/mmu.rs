@@ -1,5 +1,7 @@
 use crate::memory::KERNEL_ADDRESS_SPACE;
 use crate::mmu::PhysAddr;
+use crate::mmu::PageTable;
+use core::arch::asm;
 
 extern "C" {
 	pub fn set_ttbr0_el1(ttbr: PhysAddr);
@@ -9,6 +11,18 @@ extern "C" {
 
 	//fn get_tcr_el1() -> usize;
 	fn set_tcr_el1(tcr: usize);
+}
+
+unsafe fn get_ttbr0_el1() -> PhysAddr {
+	let mut value: usize;
+	asm!("mrs {ttbr0_el1}, ttbr0_el1", ttbr0_el1 = out(reg) value);
+	PhysAddr(value)
+}
+
+unsafe fn get_ttbr1_el1() -> PhysAddr {
+	let mut value: usize;
+	asm!("mrs {ttbr1_el1}, ttbr1_el1", ttbr1_el1 = out(reg) value);
+	PhysAddr(value)
 }
 
 pub fn enable_mmu() {
@@ -45,6 +59,16 @@ pub fn enable_mmu() {
 		sctlr |= SCTLR_I | SCTLR_SPAN | SCTLR_C | SCTLR_M;
 		set_sctlr_el1(sctlr);
 	}
+}
+
+// > &'static
+pub unsafe fn get_current_page_table() -> &'static PageTable {
+	let ttbr0 = get_ttbr0_el1();
+	let ttbr1 = get_ttbr1_el1();
+	assert!(ttbr0.0 == ttbr1.0);
+	
+	let current_pages_virt: *const PageTable = crate::mmu::phys_to_virt(ttbr1) as *const PageTable;
+	current_pages_virt.as_ref().unwrap()
 }
 
 pub unsafe fn switch_to_page_table(phys_addr: PhysAddr) {

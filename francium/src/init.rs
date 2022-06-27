@@ -5,6 +5,7 @@ use crate::memory::AddressSpace;
 use crate::process::{Process, Thread};
 use crate::constants::*;
 use crate::phys_allocator;
+use crate::arch::mmu::get_current_page_table;
 
 use alloc::boxed::Box;
 use alloc::sync::Arc;
@@ -126,11 +127,6 @@ pub fn setup_physical_allocator(start: usize, end: usize) {
 	}
 }
 
-extern "C" {
-	fn read_cr3() -> PhysAddr;
-}
-use crate::mmu::PageTable;
-
 pub fn setup_virtual_memory() {
 	let page_table_root = &mut KERNEL_ADDRESS_SPACE.write().page_table;
 
@@ -151,11 +147,8 @@ pub fn setup_virtual_memory() {
         // Some bootloaders (cough x86) might not put us in the right place.
         // Figure it out.
 
-		let current_pages_phys = read_cr3();
-		let current_pages_virt: *const PageTable = crate::mmu::phys_to_virt(current_pages_phys) as *const PageTable;
-        let current_pages_ref = current_pages_virt.as_ref().unwrap();
-
-		let kernel_phys_base = current_pages_ref.virt_to_phys(KERNEL_BASE).unwrap().0;
+		let current_pages = get_current_page_table();
+		//let kernel_phys_base = current_pages.virt_to_phys(KERNEL_BASE).unwrap().0;
 
 		let text_start_virt = &__text_start as *const i32 as usize;
 		let bss_end_virt = &__bss_end as *const i32 as usize;
@@ -163,7 +156,7 @@ pub fn setup_virtual_memory() {
 		let kernel_length = bss_end_virt - text_start_virt;
 
 		for i in (0x0000000..kernel_length).step_by(0x1000) {
-			page_table_root.map_4k(current_pages_ref.virt_to_phys(KERNEL_BASE+i).unwrap(), KERNEL_BASE + i, PagePermission::KERNEL_RWX, MapType::NormalCachable);
+			page_table_root.map_4k(current_pages.virt_to_phys(KERNEL_BASE+i).unwrap(), KERNEL_BASE + i, PagePermission::KERNEL_RWX, MapType::NormalCachable);
 		}
 	}
 }
