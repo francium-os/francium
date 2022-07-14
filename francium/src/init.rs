@@ -5,7 +5,8 @@ use crate::memory::AddressSpace;
 use crate::process::{Process, Thread};
 use crate::constants::*;
 use crate::phys_allocator;
-use crate::arch::mmu::get_current_page_table;
+use crate::arch::mmu::{get_current_page_table, invalidate_tlb_for_range};
+use crate::arch::cache::clear_cache_for_address;
 
 use alloc::boxed::Box;
 use alloc::sync::Arc;
@@ -20,8 +21,6 @@ extern "C" {
 // XXX make rust
 extern "C" {
 	fn user_thread_starter();
-	fn invalidate_tlb();
-	fn clear_cache_for_address(addr: usize);
 }
 
 use crate::arch::context::ExceptionContext;
@@ -50,7 +49,45 @@ fn setup_user_context(process: Arc<Mutex<Box<Process>>>, usermode_pc: usize, use
 
 #[cfg(target_arch = "x86_64")]
 fn setup_user_context(process: Arc<Mutex<Box<Process>>>, usermode_pc: usize, usermode_sp: usize) -> Arc<Thread> {
-	unimplemented!();
+	let new_thread = Arc::new(Thread::new(process.clone()));
+
+	unsafe {
+		let mut context_locked = new_thread.context.lock();
+
+		let exc_context_location = new_thread.kernel_stack_top - core::mem::size_of::<ExceptionContext>(); // XXX: align
+		let exc_context = &mut *(exc_context_location as *mut ExceptionContext);
+
+		println!("exc context {:x}", exc_context_location);
+
+		exc_context.regs.rsp = usermode_sp;
+		exc_context.regs.rip = usermode_pc;
+
+		exc_context.regs.rax = 1;
+		exc_context.regs.rbx = 2;
+		exc_context.regs.rbx = 3;
+		exc_context.regs.rdx = 4;
+		exc_context.regs.rbp = 5;
+		exc_context.regs.rsi = 6;
+		exc_context.regs.rdi = 7;
+
+		exc_context.regs.r8 = 8;
+		exc_context.regs.r9 = 9;
+		exc_context.regs.r10 = 10;
+		exc_context.regs.r11 = 11;
+		exc_context.regs.r12 = 12;
+		exc_context.regs.r13 = 13;
+		exc_context.regs.r14 = 14;
+		exc_context.regs.r15 = 15;
+
+		// TODO: Thread locals?
+
+		context_locked.regs.rip = user_thread_starter as usize;
+		context_locked.regs.rsp = exc_context_location;
+		println!("thread context rsp: {:x}", context_locked.regs.rsp);
+	}
+
+	process.lock().threads.push(new_thread.clone());
+	new_thread
 }
 
 pub fn load_process(elf_buf: &[u8]) -> Arc<Thread> {
@@ -69,15 +106,17 @@ pub fn load_process(elf_buf: &[u8]) -> Arc<Thread> {
 			let sh = section.sh;
 			if sh.sh_type() == SectionType::SHT_PROGBITS {
 				if sh.flags().contains(SectionHeaderFlags::SHF_ALLOC) {
+					let section_start = sh.addr() as usize;
+					let section_size = sh.size() as usize;
+
 					if sh.flags().contains(SectionHeaderFlags::SHF_EXECINSTR) {
-						p.address_space.create(sh.addr() as usize, sh.size() as usize, PagePermission::USER_RWX);
+						p.address_space.create(section_start, section_size, PagePermission::USER_RWX);
 					}
 					else {
-						p.address_space.create(sh.addr() as usize, sh.size() as usize, PagePermission::USER_READ_WRITE);
+						p.address_space.create(section_start, section_size, PagePermission::USER_READ_WRITE);
 					}
 					
-					// TODO: proper TLB management
-					unsafe { invalidate_tlb(); }
+					unsafe { invalidate_tlb_for_range(section_start, section_size); }
 
 					unsafe {
 						core::ptr::copy_nonoverlapping(elf_buf.as_ptr().offset(sh.offset() as isize), sh.addr() as *mut u8, sh.size() as usize);

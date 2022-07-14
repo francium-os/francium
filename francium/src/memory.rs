@@ -83,7 +83,6 @@ impl AddressSpace {
 	}
 
 	pub fn expand(&mut self, start_addr: usize, new_size: usize) {
-
 		for r in &mut self.regions {
 			if r.address == start_addr {
 				// etc

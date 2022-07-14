@@ -7,13 +7,22 @@ use crate::mmu::PhysAddr;
 pub const PHYS_MEM_BASE: usize = 0;
 pub const PHYS_MEM_SIZE: usize = 0x80000000; // 2gb?? for now
 
-pub struct COMPort {}
-impl COMPort {
-	pub fn write_byte(&mut self, byte: u8) {
-		let port_base = 0x3f8;
+pub struct COMPort {
+	port_base: u16
+}
 
+impl COMPort {
+	pub fn new(port_base: u16) -> COMPort {
 		unsafe {
-			let line_status_reg = port_base+5;
+			asm!("out dx, al", in("dx") port_base + 3, in("al") 3 as u8);
+		}
+
+		COMPort{port_base}
+	}
+
+	pub fn write_byte(&mut self, byte: u8) {
+		unsafe {
+			let line_status_reg = self.port_base+5;
 
 			let mut line_status: u8 = 0;
 			asm!("in al, dx", out("al") line_status, in("dx") line_status_reg);
@@ -39,23 +48,16 @@ impl COMPort {
 }
 
 lazy_static! {
-	pub static ref DEFAULT_UART: Mutex<COMPort> = Mutex::new(COMPort{});
+	pub static ref DEFAULT_UART: Mutex<COMPort> = Mutex::new(COMPort::new(0x3f8));
 }
 
 pub fn platform_specific_init() {
-	// Nothing, for now
-
-	// XXX: gross hack
-	let port_base = 0x3f8;
-	unsafe {
-		asm!("out dx, al", in("dx") port_base + 3, in("al") 3 as u8);
-	}
 }
 
 pub fn scheduler_pre_init() {
-	unimplemented!();
+	//unimplemented!();
 }
 
 pub fn scheduler_post_init() {
-	unimplemented!();
+	//unimplemented!();
 }

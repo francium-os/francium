@@ -115,7 +115,7 @@ impl Process {
 
 // see also: force_unlock_mutex in scheduler
 extern "C" {
-	fn restore_thread_context(ctx: &ThreadContext, mutex: usize);
+	fn setup_initial_thread_context(ctx: &ThreadContext, mutex: usize);
 }
 
 pub fn force_switch_to(thread: Arc<Thread>) {
@@ -123,6 +123,10 @@ pub fn force_switch_to(thread: Arc<Thread>) {
 
 	let thread_context = MutexGuard::leak(thread.context.lock());
 	unsafe {
-		restore_thread_context(thread_context, &thread.context as *const Mutex<ThreadContext> as usize);
+		println!("thread context: {:x}", thread_context as *const ThreadContext as usize);
+		println!("exc context? {:x}", thread_context.regs.rsp);
+
+
+		setup_initial_thread_context(thread_context, &thread.context as *const Mutex<ThreadContext> as usize);
 	}
 }

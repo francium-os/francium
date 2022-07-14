@@ -1,10 +1,9 @@
-.global restore_thread_context
-
+.global setup_initial_thread_context
 .global user_thread_starter
 
 .section .text
 
-restore_thread_context:
+setup_initial_thread_context:
 // context in x0, x1 is the mutex
 
 // load lr, sp

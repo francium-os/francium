@@ -28,6 +28,16 @@ pub extern "C" fn force_unlock_mutex(mutex: NonNull<Mutex<ThreadContext>>) {
 	}
 }
 
+#[cfg(target_arch = "aarch64")]
+fn set_thread_context_tag(p: &Arc<Thread>, tag: usize) {
+	p.context.lock().regs[0] = tag;
+}
+
+#[cfg(target_arch = "x86_64")]
+fn set_thread_context_tag(p: &Arc<Thread>, tag: usize) {
+	p.context.lock().regs.rax = tag;
+}
+
 impl Scheduler {
 	fn new() -> Scheduler {
 		Scheduler {
@@ -125,8 +135,7 @@ impl Scheduler {
 			panic!("Trying to re-wake a thread!");
 		} else {
 			// set x0 of the thread context
-
-			p.context.lock().regs[0] = tag;
+			set_thread_context_tag(&p, tag);
 			self.runnable_threads.push(p);
 		}
 	}

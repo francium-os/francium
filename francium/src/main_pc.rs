@@ -63,18 +63,17 @@ fn bootloader_main_thunk(info: &'static mut bootloader::BootInfo) -> ! {
 fn bootloader_main(info: &'static mut bootloader::BootInfo) -> ! {
 	platform::platform_specific_init();
 
-	unsafe { println!("{:?}", (&__bootstrap_stack_top) as *const i32); }
-
-	println!("{:?}", info);
 	for m in info.memory_regions.iter() {
-		println!("{:?}", m);
 		if m.kind == bootloader::boot_info::MemoryRegionKind::Usable {
+			println!("using {:?} for memory", m);
 			init::setup_physical_allocator(m.start as usize, m.end as usize);
 		}
 	}
  
 	println!("hello from rust before setting up anything!");	
 	init::setup_virtual_memory();
+	arch::gdt::setup_gdt();
+	arch::idt::setup_idt();
 
 	println!("hello from rust before enabling mmu!");
 	mmu::enable_mmu();
@@ -95,14 +94,17 @@ fn bootloader_main(info: &'static mut bootloader::BootInfo) -> ! {
 	let one_main_thread = init::load_process(elf_one_buf);
 	scheduler::register_thread(one_main_thread.clone());
 
-	println!("Loading process two...");
+	/*println!("Loading process two...");
 	let two_main_thread = init::load_process(elf_two_buf);
-	scheduler::register_thread(two_main_thread.clone());
+	scheduler::register_thread(two_main_thread.clone());*/
 
 	platform::scheduler_post_init();
 
 	println!("Running...");
-	process::force_switch_to(one_main_thread);
+	unsafe {
+		asm!("xchg bx, bx; int 3");
+	}
+	//process::force_switch_to(one_main_thread);
 	println!("We shouldn't get here, ever!!");
 
 	loop {}
