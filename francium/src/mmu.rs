@@ -364,8 +364,6 @@ impl PageTable {
 		// either block (done) or table (not done), or page (done)
 		let entry_flags = self.entries[index].flags();
 
-		println!("Walk: {:?} {:?}", level, entry_flags);
-
 		if entry_flags.contains(EntryFlags::VALID) {
 			if entry_flags.contains(EntryFlags::TYPE_TABLE) {
 				if level < final_level {
