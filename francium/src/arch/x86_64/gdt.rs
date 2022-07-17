@@ -89,6 +89,10 @@ static mut TSS_STORAGE: TSS = TSS {
 	iomap_base: 104
 };
 
+extern "C" {
+	static interrupt_stack_top: i32;
+}
+
 pub fn setup_gdt() {
 	unsafe {
 		// setup tss
@@ -125,7 +129,7 @@ pub fn setup_gdt() {
 		core::arch::asm!("mov ax, 0x2b; ltr ax");
 
 		unsafe {
-			TSS_STORAGE.rsp0 = 0xaaaaaaaaaaaaaaaa;
+			TSS_STORAGE.rsp0 = &interrupt_stack_top as *const i32 as u64;
 			TSS_STORAGE.rsp1 = 0xaaaaaaaaaaaaaaaa;
 			TSS_STORAGE.rsp2 = 0xaaaaaaaaaaaaaaaa;
 

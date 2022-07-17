@@ -95,7 +95,8 @@ bitflags! {
 		// global?? something something kernel
 		const GLOBAL = 1<<8;
 
-		const XN = 1<<63;
+		const XN = 0;
+		//const XN = 1<<63;
 	}
 }
 
@@ -280,7 +281,7 @@ impl PageTable {
 		entry.set_addr(phys);
 
 		unsafe {
-			match self.map_internal(virt, entry, 0, 3) {
+			match self.map_internal(virt, entry, perm, 0, 3) {
 				Some(_) => (),
 				None => {
 					panic!("4k map failed!");
@@ -299,7 +300,7 @@ impl PageTable {
 		entry.set_addr(phys);
 
 		unsafe {
-			match self.map_internal(virt, entry, 0, 2) {
+			match self.map_internal(virt, entry, perm, 0, 2) {
 				Some(_) => (),
 				None => {
 					panic!("2mb map failed!");
@@ -317,7 +318,7 @@ impl PageTable {
 		entry.set_addr(phys);
 
 		unsafe {
-			match self.map_internal(virt, entry, 0, 1) {
+			match self.map_internal(virt, entry, perm, 0, 1) {
 				Some(_) => (),
 				None => { 
 					panic!("1gb map failed!");
@@ -326,7 +327,7 @@ impl PageTable {
 		}
 	}
 
-	unsafe fn map_internal(&mut self, virt: usize, entry: PageTableEntry, level: i32, final_level: i32) -> Option<()> {
+	unsafe fn map_internal(&mut self, virt: usize, entry: PageTableEntry, perm: PagePermission, level: i32, final_level: i32) -> Option<()> {
 		let off = (3-level) * 9 + 12;
 
 		let index = (virt & (0x1ff << off)) >> off;
@@ -339,14 +340,14 @@ impl PageTable {
 				*page_table = PageTable::new();
 
 				let mut new_entry = PageTableEntry::new();
-				new_entry.set_flags(get_table_default_flags());
+				new_entry.set_flags(get_table_default_flags() | map_perms(perm));
 				new_entry.set_addr(new_table_phys); // uh
 				self.entries[index] = new_entry;
 			}
 
 			let x: usize = phys_to_virt(self.entries[index].addr());
 			let page_table = x as *mut PageTable;
-			page_table.as_mut()?.map_internal(virt, entry, level + 1, final_level)
+			page_table.as_mut()?.map_internal(virt, entry, perm, level + 1, final_level)
 		} else {
 			// We are the final table! good.
 			self.entries[index] = entry;
@@ -362,6 +363,9 @@ impl PageTable {
 
 		// either block (done) or table (not done), or page (done)
 		let entry_flags = self.entries[index].flags();
+
+		println!("Walk: {:?} {:?}", level, entry_flags);
+
 		if entry_flags.contains(EntryFlags::VALID) {
 			if entry_flags.contains(EntryFlags::TYPE_TABLE) {
 				if level < final_level {

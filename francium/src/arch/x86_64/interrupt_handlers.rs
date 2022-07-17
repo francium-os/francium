@@ -1,4 +1,5 @@
 use core::arch::{asm, global_asm};
+use crate::arch::context::ExceptionContext;
 
 macro_rules! interrupt_noerror {
 	($interrupt_name:ident, $interrupt_number:expr) => {
@@ -46,10 +47,12 @@ global_asm!("
 // rflags (+32)
 // cs  (+24)
 // rip (+16)
-// interrupt number (+8)
-// error code (+0)
+// error code (+8)
+// interrupt number (+0)
 
 exception_error:
+// error code
+// interrupt number
 push r15
 push r14
 push r13
@@ -67,11 +70,10 @@ push rbx
 push rax
 
 // Reach back into the stack to grab the error code...
-mov rsi, rsp
-mov rdi, [rsp - 16*8]
-mov rdx, [rsp - 17*8]
+mov rdi, rsp
+mov rsi, [rsp + 16*8]
+mov rdx, [rsp + 15*8]
 call handle_exception
-xchg bx, bx
 
 // falls through
 restore_exception_context:
@@ -93,7 +95,6 @@ pop r15
 
 // Drop error code + interrupt number off stack
 add rsp, 16
-xchg bx, bx
 iretq");
 
 interrupt_noerror!(interrupt_0, 0);
@@ -202,7 +203,65 @@ pub const INTERRUPT_HANDLERS: [unsafe extern "C" fn(); 48] = [
 ];
 
 #[no_mangle]
-unsafe extern "C" fn handle_exception() {
-	println!("exception");
+unsafe extern "C" fn handle_exception(ctx: &ExceptionContext, error_code: u64, interrupt_number: u64) {
+	match interrupt_number {
+		0xe => {
+			// todo: grab cr2
+			println!("Page fault!");
+			if (error_code & (1<<0)) == (1<<0) {
+				print!("protection violation");
+			} else {
+				print!("not present")
+			}
+
+			if (error_code & (1<<1)) == (1<<1) {
+				print!(", write");
+			} else {
+				print!(", read");
+			}
+
+			if (error_code & (1<<2)) == (1<<2) {
+				print!(", user");
+			} else {
+				print!(", supervisor");
+			}
+
+			if (error_code & (1<<4)) == (1<<4) {
+				print!(" instruction fetch");
+			} else {
+				print!(" data fetch");
+			}
+
+			if (error_code & (1<<3)) == (1<<3) {
+				print!(" (reserved bit violation)");
+			}
+
+			println!("");
+
+			/*let process = &crate::scheduler::get_current_process();
+			let process_locked = process.lock();
+			let pg = &process_locked.address_space.page_table;
+
+			println!("Walk: {:x}", pg.virt_to_phys(cr2, 0).unwrap().0);*/
+
+			/*if error_code & (1<<5) {
+				// protection key
+			}
+			if error_code & (1<<6) {
+				// shadow stack
+			}
+			if error_code & (1<<7) {
+				// hlat
+			}
+			if error_code & (1<<15) {
+				// sgx
+			}*/
+
+			panic!("Can't handle page fault!");
+		},
+		_ => { 
+			panic!("Unhandled interrupt {:?}", interrupt_number);
+		}
+	}
 	unimplemented!();
 }
