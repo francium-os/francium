@@ -75,3 +75,8 @@ pub unsafe fn switch_to_page_table(phys_addr: PhysAddr) {
 	set_ttbr0_el1(phys_addr);
 	set_ttbr1_el1(phys_addr);
 }
+
+pub unsafe fn invalidate_tlb_for_range(_start: usize, _size: usize) {
+	// TODO: actual TLB management
+	asm!("tlbi vmalle1");
+}

@@ -1,7 +1,6 @@
 #![no_std]
 #![no_main]
 #![feature(default_alloc_error_handler)]
-#![feature(linked_list_cursors)]
 
 #[macro_use]
 extern crate bitflags;

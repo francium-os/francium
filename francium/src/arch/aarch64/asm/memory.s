@@ -42,10 +42,6 @@ set_tcr_el1:
 msr tcr_el1, x0
 ret
 
-invalidate_tlb:
-tlbi vmalle1
-ret
-
 wfe:
 wfe
 ret

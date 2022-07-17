@@ -61,10 +61,12 @@ fn setup_user_context(process: Arc<Mutex<Box<Process>>>, usermode_pc: usize, use
 
 		exc_context.regs.rsp = usermode_sp;
 		exc_context.regs.rip = usermode_pc;
+		exc_context.regs.cs = 0x18 | 3;
+		exc_context.regs.ss = 0x20 | 3;
 
 		exc_context.regs.rax = 1;
 		exc_context.regs.rbx = 2;
-		exc_context.regs.rbx = 3;
+		exc_context.regs.rcx = 3;
 		exc_context.regs.rdx = 4;
 		exc_context.regs.rbp = 5;
 		exc_context.regs.rsi = 6;

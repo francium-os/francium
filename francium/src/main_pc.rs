@@ -1,7 +1,7 @@
 #![no_std]
 #![no_main]
 #![feature(default_alloc_error_handler)]
-#![feature(linked_list_cursors)]
+#![feature(naked_functions)]
 
 #[macro_use]
 extern crate bitflags;
@@ -94,17 +94,14 @@ fn bootloader_main(info: &'static mut bootloader::BootInfo) -> ! {
 	let one_main_thread = init::load_process(elf_one_buf);
 	scheduler::register_thread(one_main_thread.clone());
 
-	/*println!("Loading process two...");
+	println!("Loading process two...");
 	let two_main_thread = init::load_process(elf_two_buf);
-	scheduler::register_thread(two_main_thread.clone());*/
+	scheduler::register_thread(two_main_thread.clone());
 
 	platform::scheduler_post_init();
 
 	println!("Running...");
-	unsafe {
-		asm!("xchg bx, bx; int 3");
-	}
-	//process::force_switch_to(one_main_thread);
+	process::force_switch_to(one_main_thread);
 	println!("We shouldn't get here, ever!!");
 
 	loop {}

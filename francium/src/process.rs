@@ -123,10 +123,6 @@ pub fn force_switch_to(thread: Arc<Thread>) {
 
 	let thread_context = MutexGuard::leak(thread.context.lock());
 	unsafe {
-		println!("thread context: {:x}", thread_context as *const ThreadContext as usize);
-		println!("exc context? {:x}", thread_context.regs.rsp);
-
-
 		setup_initial_thread_context(thread_context, &thread.context as *const Mutex<ThreadContext> as usize);
 	}
 }

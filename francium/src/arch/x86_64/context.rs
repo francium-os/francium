@@ -17,6 +17,7 @@ pub struct X86Regs {
 	pub r14: usize,
 	pub r15: usize,
 
+	pub interrupt_number: usize,
 	pub error_code: usize,
 
 	pub rip: usize,
@@ -35,6 +36,7 @@ impl X86Regs {
 			rsp: 0,
 			ss: 0,
 
+			interrupt_number: 0,
 			error_code: 0,
 
 			rax: 0,

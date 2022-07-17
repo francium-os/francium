@@ -5,17 +5,16 @@
 .section .text
 setup_initial_thread_context:
 // args: ctx: rdi, mutex: rsi
-xchg bx, bx
 
 // store ctx in rbx which is saved
 mov rbx, rdi
-mov rsp, [rbx + 152]
+mov rsp, [rbx + 152 + 8]
 
 mov rdi, rsi
 call force_unlock_mutex
 
 // push return addr
-mov rax, [rbx + 128]
+mov rax, [rbx + 128 + 8]
 push rax
 
 // now zero everything
@@ -34,8 +33,6 @@ mov r12, 0
 mov r13, 0
 mov r14, 0
 mov r15, 0
-
-xchg bx, bx
 ret
 
 // As defined in interrupt.s
