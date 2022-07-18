@@ -240,7 +240,7 @@ fn get_table_default_flags() -> EntryFlags {
 
 #[cfg(target_arch = "x86_64")]
 fn get_table_default_flags() -> EntryFlags {
-	EntryFlags::VALID | EntryFlags::TYPE_TABLE | EntryFlags::WRITABLE
+	EntryFlags::VALID | EntryFlags::TYPE_TABLE | EntryFlags::WRITABLE | EntryFlags::USER
 }
 
 #[cfg(target_arch = "aarch64")]
@@ -340,7 +340,8 @@ impl PageTable {
 				*page_table = PageTable::new();
 
 				let mut new_entry = PageTableEntry::new();
-				new_entry.set_flags(get_table_default_flags() | map_perms(perm));
+
+				new_entry.set_flags(get_table_default_flags());
 				new_entry.set_addr(new_table_phys); // uh
 				self.entries[index] = new_entry;
 			}
