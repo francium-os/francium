@@ -74,6 +74,7 @@ fn bootloader_main(info: &'static mut bootloader::BootInfo) -> ! {
 	init::setup_virtual_memory();
 	arch::gdt::setup_gdt();
 	arch::idt::setup_idt();
+	arch::syscall::setup_syscall();
 
 	println!("hello from rust before enabling mmu!");
 	mmu::enable_mmu();

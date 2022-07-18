@@ -202,12 +202,20 @@ pub const INTERRUPT_HANDLERS: [unsafe extern "C" fn(); 48] = [
 	irq_15
 ];
 
+pub fn read_cr2() -> usize {
+	unsafe {
+		let cr2: usize;
+		asm!("mov {cr2}, cr2", cr2 = out (reg) (cr2));
+		cr2
+	}
+}
+
 #[no_mangle]
 unsafe extern "C" fn handle_exception(ctx: &ExceptionContext, error_code: u64, interrupt_number: u64) {
 	match interrupt_number {
 		0xe => {
-			// todo: grab cr2
-			println!("Page fault!");
+			let cr2 = read_cr2();
+			println!("Page fault at {:x}!", cr2);
 			if (error_code & (1<<0)) == (1<<0) {
 				print!("protection violation");
 			} else {
