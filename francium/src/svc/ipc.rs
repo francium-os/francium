@@ -1,4 +1,3 @@
-use crate::arch::context::ExceptionContext;
 use crate::scheduler;
 use crate::handle;
 use crate::handle::Handle;
@@ -75,9 +74,7 @@ lazy_static! {
 // x0 contains result
 // x1 contains port handle (on success)
 #[cfg(target_arch = "aarch64")]
-pub fn svc_create_port(ctx: &mut ExceptionContext) {
-	let tag = ctx.regs[0] as u64;
-
+pub fn svc_create_port(tag: u64) -> (u32, u32) {
 	let server_port = Port::new();
 	let server_port_handle = Arc::new(server_port);
 
@@ -104,13 +101,8 @@ pub fn svc_create_port(ctx: &mut ExceptionContext) {
 	let proc_locked = scheduler::get_current_process();
 	let mut process = proc_locked.lock();
 
-	ctx.regs[0] = process.handle_table.get_handle(Handle::Port(server_port_handle)) as usize;
-	ctx.regs[1] = 0;
-}
-
-#[cfg(target_arch = "x86_64")]
-pub fn svc_create_port(exc: &mut ExceptionContext) {
-	unimplemented!();
+	let handle_value = process.handle_table.get_handle(Handle::Port(server_port_handle));
+	(0, handle_value)
 }
 
 //fn svc_create_session() {
@@ -123,9 +115,7 @@ pub fn svc_create_port(exc: &mut ExceptionContext) {
 // x0 contains result
 // x1 contains port handle (on success)
 #[cfg(target_arch = "aarch64")]
-pub fn svc_connect_to_port(exc: &mut ExceptionContext) {
-	let tag = exc.regs[0] as u64;
-
+pub fn svc_connect_to_port(tag: u64) -> (u32, u32) {
 	let port = {
 		let ports = PORT_LIST.lock();
 		if let Some(server_port) = ports.get(&tag) {
@@ -160,28 +150,21 @@ pub fn svc_connect_to_port(exc: &mut ExceptionContext) {
 	{
 		let current_process = scheduler::get_current_process();
 		let mut process = current_process.lock();
-		exc.regs[0] = 0;
-		exc.regs[1] = process.handle_table.get_handle(Handle::ClientSession(client_session)) as usize;
+		let handle_value = process.handle_table.get_handle(Handle::ClientSession(client_session));
+		(0, handle_value)
 	}
 }
 
-#[cfg(target_arch = "x86_64")]
-pub fn svc_connect_to_port(exc: &mut ExceptionContext) {
-	unimplemented!();
-}
-
 // x0: ipc session
-#[cfg(target_arch = "aarch64")]
-pub fn svc_ipc_request(exc: &mut ExceptionContext) {
-	if let Handle::ClientSession(client_session) = handle::get_handle(exc.regs[0]) {
+pub fn svc_ipc_request(session_handle: u32) -> u32 {
+	if let Handle::ClientSession(client_session) = handle::get_handle(session_handle) {
 		// signal, then wait for reply
 		client_session.server.signal_one();
 		client_session.wait();
-
-		exc.regs[0] = 0;
+		0
 	} else {
 		// error
-		exc.regs[0] = 1;
+		1
 	}
 }
 
@@ -197,47 +180,32 @@ pub fn svc_ipc_request(exc: &mut ExceptionContext) {
 
 const MAX_HANDLES: usize = 128;
 #[cfg(target_arch = "aarch64")]
-pub fn svc_ipc_receive(exc: &mut ExceptionContext) {
-	let handle_count = exc.regs[1];
+pub fn svc_ipc_receive(handles_ptr: *const u32, handle_count: usize) -> (u32, usize) {
 	let mut handles: [u32; MAX_HANDLES] = [ 0xffffffff ; MAX_HANDLES];
 
 	unsafe {
-		core::ptr::copy_nonoverlapping(exc.regs[0] as *const u32, &mut handles as *mut u32, handle_count);
+		core::ptr::copy_nonoverlapping(handles_ptr, &mut handles as *mut u32, handle_count);
 	}
 
 	let index = waitable::wait_handles(&handles[..handle_count]);
-	exc.regs[0] = 0;
-	exc.regs[1] = index;
-}
-
-#[cfg(target_arch = "x86_64")]
-pub fn svc_ipc_receive(exc: &mut ExceptionContext) {
-	unimplemented!();
+	(0, index)
 }
 
 // x0: session handle
-#[cfg(target_arch = "aarch64")]
-pub fn svc_ipc_reply(exc: &mut ExceptionContext) {
-	if let Handle::ServerSession(server_session) = handle::get_handle(exc.regs[0]) {
-		exc.regs[0] = 0;
-
+pub fn svc_ipc_reply(session_handle: u32) -> u32 {
+	if let Handle::ServerSession(server_session) = handle::get_handle(session_handle) {
 		// TODO: wtf?
 		server_session.client.lock().upgrade().unwrap().signal_one();
+		0
 	} else {
-		exc.regs[0] = 1;
+		1
 	}
-}
-
-#[cfg(target_arch = "x86_64")]
-pub fn svc_ipc_reply(exc: &mut ExceptionContext) {
-	unimplemented!();
 }
 
 // x0: port
 // x1: session handle out
-#[cfg(target_arch = "aarch64")]
-pub fn svc_ipc_accept(exc: &mut ExceptionContext) {
-	if let Handle::Port(port) =  handle::get_handle(exc.regs[0]) {
+pub fn svc_ipc_accept(port_handle: u32) -> (u32, u32) {
+	if let Handle::Port(port) =  handle::get_handle(port_handle) {
 		let server_session = port.queue.lock().pop().unwrap();
 
 		// wake the client
@@ -245,15 +213,9 @@ pub fn svc_ipc_accept(exc: &mut ExceptionContext) {
 
 		let current_process = scheduler::get_current_process();
 		let mut process = current_process.lock();
-		exc.regs[1] = process.handle_table.get_handle(Handle::ServerSession(server_session)) as usize;
-		exc.regs[0] = 0;
+		let handle_value = process.handle_table.get_handle(Handle::ServerSession(server_session));
+		(0, handle_value)
 	} else {
-		exc.regs[0] = 1;
-		// error
+		(1, 0xffffffff)
 	}
-}
-
-#[cfg(target_arch = "x86_64")]
-pub fn svc_ipc_accept(exc: &mut ExceptionContext) {
-	unimplemented!();
 }

@@ -17,8 +17,8 @@ pub enum Handle {
 	Invalid
 }
 
-pub fn get_handle(reg: usize) -> Handle {
+pub fn get_handle(reg: u32) -> Handle {
 	let process_locked = scheduler::get_current_process();
-	let x = process_locked.lock().handle_table.get_object(reg as u32);
+	let x = process_locked.lock().handle_table.get_object(reg);
 	x
 }

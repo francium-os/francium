@@ -1,6 +1,5 @@
-use crate::arch::context::ExceptionContext;
 use crate::scheduler;
 
-pub fn svc_exit_process(_exc: &mut ExceptionContext) {
+pub fn svc_exit_process() {
 	scheduler::terminate_current_process();
 }

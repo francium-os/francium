@@ -2,28 +2,12 @@ use super::context::ExceptionContext;
 use super::gicv2;
 use super::arch_timer;
 use crate::scheduler;
-use crate::svc;
+use crate::arch::aarch64::svc_wrappers;
 
 extern "C" {
 	fn get_esr_el1() -> usize;
 	fn get_far_el1() -> usize;
 }
-
-type SVCHandler = fn(&mut ExceptionContext);
-
-const SVC_HANDLERS: [SVCHandler; 11] = [
-	svc::svc_break,
-	svc::svc_debug_output,
-	svc::svc_create_port,
-	svc::svc_connect_to_port,
-	svc::svc_exit_process,
-	svc::svc_close_handle,
-	svc::svc_ipc_request,
-	svc::svc_ipc_reply,
-	svc::svc_ipc_receive,
-	svc::svc_ipc_accept,
-	svc::svc_get_process_id
-];
 
 fn stringify_ec(ec: usize) -> &'static str {
 	match ec {
@@ -92,8 +76,8 @@ pub extern "C" fn rust_lower_el_spx_sync(ctx: &mut ExceptionContext) {
 
 		// 0b010101 SVC instruction execution in AArch64 state.
 		if ec == 0b010101 {
-			if iss < SVC_HANDLERS.len() {
-				SVC_HANDLERS[iss](ctx);
+			if iss < svc_wrappers::SVC_HANDLERS.len() {
+				svc_wrappers::SVC_HANDLERS[iss](ctx);
 			} else {
 				panic!("Invalid SVC!");
 			}

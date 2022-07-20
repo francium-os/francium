@@ -1,4 +1,5 @@
 pub mod context;
+pub mod svc_wrappers;
 pub mod interrupt;
 pub mod gicv2;
 pub mod mmu;

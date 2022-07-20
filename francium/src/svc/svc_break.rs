@@ -1,5 +1,3 @@
-use crate::arch::context::ExceptionContext;
-
-pub fn svc_break(_: &mut ExceptionContext) {
+pub fn svc_break() {
 	panic!("svcBreak called!");
 }
