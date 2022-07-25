@@ -128,18 +128,17 @@ pub fn setup_gdt() {
 		core::arch::asm!("lgdt [{gdtr_loc}]", gdtr_loc = in (reg) (gdtr_loc));
 		core::arch::asm!("mov ax, 0x2b; ltr ax");
 
-		unsafe {
-			TSS_STORAGE.rsp0 = &interrupt_stack_top as *const i32 as u64;
-			TSS_STORAGE.rsp1 = 0xaaaaaaaaaaaaaaaa;
-			TSS_STORAGE.rsp2 = 0xaaaaaaaaaaaaaaaa;
+		TSS_STORAGE.rsp0 = &interrupt_stack_top as *const i32 as u64;
+		TSS_STORAGE.rsp1 = 0xaaaaaaaaaaaaaaaa;
+		TSS_STORAGE.rsp2 = 0xaaaaaaaaaaaaaaaa;
 
-			TSS_STORAGE.ist[0] = 0xaaaaaaaaaaaaaaaa;
-			TSS_STORAGE.ist[1] = 0xaaaaaaaaaaaaaaaa;
-			TSS_STORAGE.ist[2] = 0xaaaaaaaaaaaaaaaa;
-			TSS_STORAGE.ist[3] = 0xaaaaaaaaaaaaaaaa;
-			TSS_STORAGE.ist[4] = 0xaaaaaaaaaaaaaaaa;
-			TSS_STORAGE.ist[5] = 0xaaaaaaaaaaaaaaaa;
-			TSS_STORAGE.ist[6] = 0xaaaaaaaaaaaaaaaa;
-		}
+		TSS_STORAGE.ist[0] = 0xaaaaaaaaaaaaaaaa;
+		TSS_STORAGE.ist[1] = 0xaaaaaaaaaaaaaaaa;
+		TSS_STORAGE.ist[2] = 0xaaaaaaaaaaaaaaaa;
+		TSS_STORAGE.ist[3] = 0xaaaaaaaaaaaaaaaa;
+		TSS_STORAGE.ist[4] = 0xaaaaaaaaaaaaaaaa;
+		TSS_STORAGE.ist[5] = 0xaaaaaaaaaaaaaaaa;
+		TSS_STORAGE.ist[6] = 0xaaaaaaaaaaaaaaaa;
+
 	}
 }

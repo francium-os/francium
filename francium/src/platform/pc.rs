@@ -1,8 +1,6 @@
 use core::arch::asm;
 
 use spin::Mutex;
-use crate::constants::*;
-use crate::mmu::PhysAddr;
 
 pub const PHYS_MEM_BASE: usize = 0;
 pub const PHYS_MEM_SIZE: usize = 0x80000000; // 2gb?? for now
@@ -24,7 +22,7 @@ impl COMPort {
 		unsafe {
 			let line_status_reg = self.port_base+5;
 
-			let mut line_status: u8 = 0;
+			let mut line_status: u8;
 			asm!("in al, dx", out("al") line_status, in("dx") line_status_reg);
 			while (line_status & (1<<5)) != (1<<5) {
 				asm!("in al, dx", out("al") line_status, in("dx") line_status_reg);

@@ -2,6 +2,7 @@
 .global __bootstrap_stack_bottom
 .global __bootstrap_stack_top
 .global interrupt_stack_top
+.global syscall_stack_top
 
 .section .text
 switch_stacks:
@@ -25,3 +26,9 @@ interrupt_stack_guard:
 interrupt_stack_bottom:
 .space 0x1000
 interrupt_stack_top:
+
+syscall_stack_guard:
+.space 0x10
+syscall_stack_bottom:
+.space 0x1000
+syscall_stack_top:

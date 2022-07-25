@@ -68,12 +68,6 @@ lazy_static! {
 	static ref PORT_WAITERS: Mutex<Vec<(u64, Arc<Thread>)>> = Mutex::new(Vec::new());
 }
 
-// request:
-// x0 contains port name directly (as an 8 byte tag)
-// response:
-// x0 contains result
-// x1 contains port handle (on success)
-#[cfg(target_arch = "aarch64")]
 pub fn svc_create_port(tag: u64) -> (u32, u32) {
 	let server_port = Port::new();
 	let server_port_handle = Arc::new(server_port);
@@ -105,16 +99,6 @@ pub fn svc_create_port(tag: u64) -> (u32, u32) {
 	(0, handle_value)
 }
 
-//fn svc_create_session() {
-//
-//}
-
-// request:
-// x0 contains port name directly (as an 8 byte tag)
-// response:
-// x0 contains result
-// x1 contains port handle (on success)
-#[cfg(target_arch = "aarch64")]
 pub fn svc_connect_to_port(tag: u64) -> (u32, u32) {
 	let port = {
 		let ports = PORT_LIST.lock();
@@ -168,18 +152,9 @@ pub fn svc_ipc_request(session_handle: u32) -> u32 {
 	}
 }
 
-#[cfg(target_arch = "x86_64")]
-pub fn svc_ipc_request(exc: &mut ExceptionContext) {
-	unimplemented!();
-}
-
 // todo: setup tls??
 
-// x0: handles[]
-// x1: handle_count
-
 const MAX_HANDLES: usize = 128;
-#[cfg(target_arch = "aarch64")]
 pub fn svc_ipc_receive(handles_ptr: *const u32, handle_count: usize) -> (u32, usize) {
 	let mut handles: [u32; MAX_HANDLES] = [ 0xffffffff ; MAX_HANDLES];
 

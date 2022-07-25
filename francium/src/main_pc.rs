@@ -39,7 +39,6 @@ pub mod init;
 use crate::constants::*;
 use crate::mmu::PagePermission;
 use crate::memory::KERNEL_ADDRESS_SPACE;
-use core::arch::asm;
 
 extern "C" {
 	fn switch_stacks();

@@ -13,41 +13,72 @@
 .global syscall_break
 
 .section .text
+
+// sysv abi register order: rdi, rsi, rdx, rcx, r8, r9
+// sysv abi callee save: rbx, rsp, rbp, r12, r13, r14, and r15;
+// rcx is clobbered by syscall, so move it into r10
+
+// The sysv abi returns 128 bit values in rax:rdx.
+
 syscall_break:
-syscall #0
+mov eax, 0x00
+syscall
 ret
 
 syscall_debug_output:
-syscall #0
+mov eax, 0x01
+syscall
 ret
 
 syscall_create_port:
-syscall #0
+mov eax, 0x02
+mov rbx, rsi
+syscall
+mov [rbx], edx
 ret
 
 syscall_connect_to_port:
-syscall #0
+mov eax, 0x03
+mov rbx, rsi
+syscall
+mov [rbx], edx
 ret
 
 syscall_exit_process:
-syscall #0
+mov eax, 0x04
+syscall
 ret
 
 syscall_close_handle:
-syscall #0
+mov eax, 0x05
+syscall
 ret
+
 syscall_ipc_request:
-syscall #0
+mov eax, 0x06
+syscall
 ret
+
 syscall_ipc_reply:
-syscall #0
+mov eax, 0x07
+syscall
 ret
+
 syscall_ipc_receive:
-syscall #0
+mov eax, 0x08
+mov rbx, rdx
+syscall
+mov [rbx], rdx
 ret
+
 syscall_ipc_accept:
-syscall #0
+mov eax, 0x09
+mov rbx, rsi
+syscall
+mov [rbx], edx
 ret
+
 syscall_get_process_id:
-syscall #0
+mov eax, 0x0a
+syscall
 ret

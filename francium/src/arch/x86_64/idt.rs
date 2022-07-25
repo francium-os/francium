@@ -1,5 +1,4 @@
 use core::arch::asm;
-use crate::arch::x86_64::interrupt_handlers;
 
 #[repr(C, packed)]
 struct IDTR {
@@ -31,7 +30,7 @@ impl IDTEntry {
 		}
 	}
 
-	const fn new(offset: usize, ist: u8, flags: u8) -> IDTEntry {
+	const fn new(offset: usize, ist: u8, _flags: u8) -> IDTEntry {
 		// cheat a little: hardcode kernel code seg
 		IDTEntry {
 			offset_low: (offset & 0xffff) as u16,
