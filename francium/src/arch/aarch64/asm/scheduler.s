@@ -10,7 +10,7 @@ switch_thread_asm:
 
 // Save callee save registers.
 stp x19, x20,  [x0, #0x98]
-stp x21, x22,   [x0, #0xa8]
+stp x21, x22,  [x0, #0xa8]
 stp x23, x24,  [x0, #0xb8]
 stp x25, x26,  [x0, #0xc8]
 stp x27, x28,  [x0, #0xd8]
