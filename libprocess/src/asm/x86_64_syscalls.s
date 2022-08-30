@@ -31,17 +31,21 @@ syscall
 ret
 
 syscall_create_port:
+push rbx
 mov eax, 0x02
 mov rbx, rsi
 syscall
 mov [rbx], edx
+pop rbx
 ret
 
 syscall_connect_to_port:
+push rbx
 mov eax, 0x03
 mov rbx, rsi
 syscall
 mov [rbx], edx
+pop rbx
 ret
 
 syscall_exit_process:
@@ -65,17 +69,21 @@ syscall
 ret
 
 syscall_ipc_receive:
+push rbx
 mov eax, 0x08
 mov rbx, rdx
 syscall
 mov [rbx], rdx
+pop rbx
 ret
 
 syscall_ipc_accept:
+push rbx
 mov eax, 0x09
 mov rbx, rsi
 syscall
 mov [rbx], edx
+pop rbx
 ret
 
 syscall_get_process_id:

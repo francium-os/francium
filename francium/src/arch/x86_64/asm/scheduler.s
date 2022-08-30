@@ -36,21 +36,23 @@ mov r15, [rsi + 112]
 // Restore SP.
 mov rsp, [rsi + 152 + 8]
 
+push rsi
+push rcx
 // Unlock the mutex for the from context.
-mov rax, rdx
+mov rdi, rdx
 call force_unlock_mutex
 
 // Unlock the mutex for the to context.
-mov rax, rcx
+pop rdi
 call force_unlock_mutex
+
+pop rsi
 
 // load tag
 mov rax, [rsi]
 
-xchg bx, bx
 mov r10, [rsi + 128 + 8]
-push r10
-ret
+jmp r10
 
 xchg bx, bx
 .a: jmp .a
