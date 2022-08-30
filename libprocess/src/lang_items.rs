@@ -27,6 +27,9 @@ use core::panic::PanicInfo;
 fn panic(info: &PanicInfo) -> ! {
     // printing info directly seems to just die (tm)
     // idk why, but not doing that seems to work better
-    println!("user mode panic: {:?}", info.message());
+    match info.message() {
+        Some(m) => println!("User mode panic! {:?}", m),
+        None => println!("User mode panic without info")
+    }
     syscalls::exit_process()
 }
