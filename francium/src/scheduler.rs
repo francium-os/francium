@@ -21,6 +21,7 @@ extern "C" {
 	fn switch_thread_asm(from_context: *mut ThreadContext, to_context: *const ThreadContext, from: usize, to: usize) -> usize;
 }
 
+#[cfg(target_arch = "x86_64")]
 extern "C" {
 	#[link_name = "current_thread_kernel_stack"]
 	static mut CURRENT_THREAD_KERNEL_STACK: usize;
@@ -40,10 +41,17 @@ fn set_thread_context_tag(p: &Arc<Thread>, tag: usize) {
 
 #[cfg(target_arch = "x86_64")]
 fn set_thread_context_tag(p: &Arc<Thread>, tag: usize) {
-	match p.context.try_lock() {
-		Some(mut ctx) => { ctx.regs.rax = tag; },
-		None => panic!("context already locked")
-	}
+	p.context.lock().regs.rax = tag;
+}
+
+#[cfg(target_arch = "aarch64")]
+pub unsafe fn set_current_thread_stack(_stack: usize) {
+	// aarch64 keeps this state for us :)
+}
+
+#[cfg(target_arch = "x86_64")]
+pub unsafe fn set_current_thread_stack(stack: usize) {
+	CURRENT_THREAD_KERNEL_STACK = stack;
 }
 
 impl Scheduler {
@@ -72,7 +80,7 @@ impl Scheduler {
 				// TODO: lol
 				SCHEDULER.force_unlock();
 
-				CURRENT_THREAD_KERNEL_STACK = to.kernel_stack_top;
+				set_current_thread_stack(to.kernel_stack_top);
 			}
 
 			{
