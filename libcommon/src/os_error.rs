@@ -8,6 +8,7 @@ pub const RESULT_OK: ResultCode = ResultCode(0);
 #[derive(Debug, TryFromPrimitive)]
 #[repr(u16)]
 pub enum Module {
+    None = 0,
     Kernel = 1,
     Unknown = 0xffff
 }
@@ -15,6 +16,7 @@ pub enum Module {
 #[derive(Debug, TryFromPrimitive)]
 #[repr(u16)]
 pub enum Error {
+    None = 0,
     NotAllowed = 1,
     Unknown = 0xffff
 }
