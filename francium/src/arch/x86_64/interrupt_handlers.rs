@@ -211,7 +211,7 @@ pub fn read_cr2() -> usize {
 }
 
 #[no_mangle]
-unsafe extern "C" fn handle_exception(_ctx: &ExceptionContext, error_code: u64, interrupt_number: u64) {
+unsafe extern "C" fn handle_exception(ctx: &ExceptionContext, error_code: u64, interrupt_number: u64) {
 	match interrupt_number {
 		0xe => {
 			let cr2 = read_cr2();
@@ -246,11 +246,16 @@ unsafe extern "C" fn handle_exception(_ctx: &ExceptionContext, error_code: u64, 
 
 			println!("");
 
-			/*let process = &crate::scheduler::get_current_process();
+			let process = &crate::scheduler::get_current_process();
 			let process_locked = process.lock();
 			let pg = &process_locked.address_space.page_table;
 
-			println!("Walk: {:x}", pg.virt_to_phys(cr2, 0).unwrap().0);*/
+			//println!("Walk: {:x}", pg.virt_to_phys(cr2).unwrap().0);
+
+			println!("registers: {:?}", ctx.regs);
+			for i in -32..32 {
+				println!("{:?}: {:x}", i, *(ctx.regs.rsp as *const usize).offset(i));
+			}
 
 			/*if error_code & (1<<5) {
 				// protection key

@@ -9,10 +9,8 @@ pub fn enable_mmu() {
 	// Assume all the other flags are fine. Maybe.
 }
 
-pub fn switch_to_page_table(phys_addr: PhysAddr) {
-	unsafe {
+pub unsafe fn switch_to_page_table(phys_addr: PhysAddr) {
 		asm!("mov cr3, {phys}", phys = in (reg) (phys_addr.0));
-	}
 }
 
 pub unsafe fn invalidate_tlb_for_range(start: usize, size: usize) {

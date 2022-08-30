@@ -109,6 +109,8 @@ impl AddressSpace {
 	}
 
 	pub fn make_active(&self) {
-		arch::mmu::switch_to_page_table(self.page_table_phys);
+		unsafe {
+			arch::mmu::switch_to_page_table(self.page_table_phys);
+		}
 	}
 }

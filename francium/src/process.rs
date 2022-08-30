@@ -118,11 +118,18 @@ extern "C" {
 	fn setup_initial_thread_context(ctx: &ThreadContext, mutex: usize);
 }
 
+
+extern "C" {
+	#[link_name = "current_thread_kernel_stack"]
+	static mut CURRENT_THREAD_KERNEL_STACK: usize;
+}
+
 pub fn force_switch_to(thread: Arc<Thread>) {
 	thread.process.lock().use_pages();
 
 	let thread_context = MutexGuard::leak(thread.context.lock());
 	unsafe {
+		CURRENT_THREAD_KERNEL_STACK = thread.kernel_stack_top;
 		setup_initial_thread_context(thread_context, &thread.context as *const Mutex<ThreadContext> as usize);
 	}
 }

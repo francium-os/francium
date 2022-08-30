@@ -25,7 +25,7 @@ qemu_args=-M virt -cpu cortex-a53 -kernel $(francium) -serial stdio -m 2048
 else ifeq ($(arch), x86_64)
 target=x86_64-unknown-francium
 qemu_args=-drive format=raw,file=$(bootimg) -serial stdio -m 2048 -no-reboot -d int
-gdb=gdb
+gdb=rust-gdb
 endif
 
 CARGO_FLAGS = -Zbuild-std=core,alloc,compiler_builtins -Zbuild-std-features=compiler-builtins-mem

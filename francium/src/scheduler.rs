@@ -21,6 +21,11 @@ extern "C" {
 	fn switch_thread_asm(from_context: *mut ThreadContext, to_context: *const ThreadContext, from: usize, to: usize) -> usize;
 }
 
+extern "C" {
+	#[link_name = "current_thread_kernel_stack"]
+	static mut CURRENT_THREAD_KERNEL_STACK: usize;
+}
+
 #[no_mangle]
 pub extern "C" fn force_unlock_mutex(mutex: NonNull<Mutex<ThreadContext>>) {
 	unsafe {
@@ -35,7 +40,10 @@ fn set_thread_context_tag(p: &Arc<Thread>, tag: usize) {
 
 #[cfg(target_arch = "x86_64")]
 fn set_thread_context_tag(p: &Arc<Thread>, tag: usize) {
-	p.context.lock().regs.rax = tag;
+	match p.context.try_lock() {
+		Some(mut ctx) => { ctx.regs.rax = tag; },
+		None => panic!("context already locked")
+	}
 }
 
 impl Scheduler {
@@ -63,9 +71,13 @@ impl Scheduler {
 			unsafe {
 				// TODO: lol
 				SCHEDULER.force_unlock();
+
+				CURRENT_THREAD_KERNEL_STACK = to.kernel_stack_top;
 			}
 
-			to.process.lock().use_pages();
+			{
+				to.process.lock().use_pages();
+			}
 
 			let from_context_locked = MutexGuard::leak(from.context.lock());
 			let to_context_locked = MutexGuard::leak(to.context.lock());
@@ -89,7 +101,7 @@ impl Scheduler {
 	}
 
 	pub fn tick(&mut self) {
-		// todo: process things
+		println!("Tick!");
 		if self.runnable_threads.len() == 0 {
 			return
 		}
