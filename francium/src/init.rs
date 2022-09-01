@@ -191,10 +191,11 @@ pub fn setup_virtual_memory() {
 		let current_pages = get_current_page_table();
 		//let kernel_phys_base = current_pages.virt_to_phys(KERNEL_BASE).unwrap().0;
 
-		let text_start_virt = &__text_start as *const i32 as usize;
+		//let text_start_virt = &__text_start as *const i32 as usize;
 		let bss_end_virt = &__bss_end as *const i32 as usize;
 
-		let kernel_length = bss_end_virt - text_start_virt;
+		// use KERNEL_BASE instead of text_start because pi4 has text_start at 0x80000
+		let kernel_length = bss_end_virt - KERNEL_BASE;
 
 		for i in (0x0000000..kernel_length).step_by(0x1000) {
 			page_table_root.map_4k(current_pages.virt_to_phys(KERNEL_BASE+i).unwrap(), KERNEL_BASE + i, PagePermission::KERNEL_RWX, MapType::NormalCachable);
