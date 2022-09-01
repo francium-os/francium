@@ -106,31 +106,39 @@ pub fn load_process(elf_buf: &[u8]) -> Arc<Thread> {
 	if let elf_rs::Elf::Elf64(e) = elf {
 		for section in e.section_header_iter() {
 			let sh = section.sh;
-			if sh.sh_type() == SectionType::SHT_PROGBITS {
+
+			// .bss is nobits, which is kind of important
+			if sh.sh_type() == SectionType::SHT_PROGBITS || sh.sh_type() == SectionType::SHT_NOBITS {
 				if sh.flags().contains(SectionHeaderFlags::SHF_ALLOC) {
 					let section_start = sh.addr() as usize;
+					// Round up section size to page size, at least.
 					let section_size = sh.size() as usize;
+					let section_size_aligned = (section_size + 0xfff) & (!0xfff);
+					println!("Section: {:?}", section);
 
 					if sh.flags().contains(SectionHeaderFlags::SHF_EXECINSTR) {
-						p.address_space.create(section_start, section_size, PagePermission::USER_RWX);
+						p.address_space.create(section_start, section_size_aligned, PagePermission::USER_RWX);
 					}
 					else {
-						p.address_space.create(section_start, section_size, PagePermission::USER_READ_WRITE);
+						p.address_space.create(section_start, section_size_aligned, PagePermission::USER_READ_WRITE);
 					}
 					
-					unsafe { invalidate_tlb_for_range(section_start, section_size); }
+					// If we actually have data, copy it...
+					if sh.sh_type() == SectionType::SHT_PROGBITS
+					{
+						unsafe { invalidate_tlb_for_range(section_start, section_size_aligned); }
 
-					unsafe {
-						core::ptr::copy_nonoverlapping(elf_buf.as_ptr().offset(sh.offset() as isize), sh.addr() as *mut u8, sh.size() as usize);
-					}
+						unsafe {
+							core::ptr::copy_nonoverlapping(elf_buf.as_ptr().offset(sh.offset() as isize), sh.addr() as *mut u8, sh.size() as usize);
+						}
 
-					// TODO: proper cache management
-					let section_start: usize = sh.addr() as usize;
-					let section_end: usize = section_start + sh.size() as usize;
-					for addr in (section_start .. section_end).step_by(64) {
-						unsafe { clear_cache_for_address(addr); }
+						// TODO: proper cache management
+						let section_start: usize = sh.addr() as usize;
+						let section_end: usize = section_start + sh.size() as usize;
+						for addr in (section_start .. section_end).step_by(64) {
+							unsafe { clear_cache_for_address(addr); }
+						}
 					}
-					println!("{:x?}", section);
 				}
 			}
 		}
