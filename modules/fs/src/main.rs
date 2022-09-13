@@ -18,6 +18,8 @@ impl IPCServer for FSCallback {
 type FSServer = ServerImpl<FSCallback>;
 
 fn main() {
+	println!("Hello from fs!");
+
 	let port = syscalls::create_port("fs").unwrap();
 	let mut server = FSServer::new(port);
 

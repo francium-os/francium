@@ -18,6 +18,8 @@ impl IPCServer for SMCallback {
 type SMServer = ServerImpl<SMCallback>;
 
 fn main() {
+	println!("Hello from sm!");
+
 	let port = syscalls::create_port("sm").unwrap();
 	let mut server = SMServer::new(port);
 

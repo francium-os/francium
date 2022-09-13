@@ -5,6 +5,7 @@ use spin::{Mutex, MutexGuard};
 use core::ptr::NonNull;
 
 use crate::process::{Thread, Process};
+use crate::arch;
 use crate::arch::context::ThreadContext;
 
 pub struct Scheduler {
@@ -45,13 +46,15 @@ fn set_thread_context_tag(p: &Arc<Thread>, tag: usize) {
 }
 
 #[cfg(target_arch = "aarch64")]
-pub unsafe fn set_current_thread_stack(_stack: usize) {
-	// aarch64 keeps this state for us :)
+pub unsafe fn set_current_thread_state(_stack: usize, tls: usize) {
+	// aarch64 keeps stack state for us :)
+	arch::arch_registers::write_tpidr_el0(tls);
 }
 
 #[cfg(target_arch = "x86_64")]
-pub unsafe fn set_current_thread_stack(stack: usize) {
+pub unsafe fn set_current_thread_state(stack: usize, tls: usize) {
 	CURRENT_THREAD_KERNEL_STACK = stack;
+	arch::msr::write_fs_base(tls);
 }
 
 impl Scheduler {
@@ -80,7 +83,7 @@ impl Scheduler {
 				// TODO: lol
 				SCHEDULER.force_unlock();
 
-				set_current_thread_stack(to.kernel_stack_top);
+				set_current_thread_state(to.kernel_stack_top, to.thread_local_location);
 			}
 
 			{

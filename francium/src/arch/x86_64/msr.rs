@@ -4,8 +4,8 @@ const IA32_EFER: u32  = 0xc0000080;
 const IA32_STAR: u32  = 0xc0000081;
 const IA32_LSTAR: u32 = 0xc0000082;
 const IA32_FMASK: u32 = 0xc0000084;
-/*const IA32_FS_BASE: u32 = 0xc0000100;
-const IA32_GS_BASE: u32 = 0xc0000101;
+const IA32_FS_BASE: u32 = 0xc0000100;
+/*const IA32_GS_BASE: u32 = 0xc0000101;
 const IA32_KERNEL_GS_BASE: u32 = 0xc0000102;
 const IA32_TSC_AUX: u32 = 0xc0000103;*/
 
@@ -54,3 +54,10 @@ pub unsafe fn write_fmask(fmask: usize) {
 	write_msr(IA32_FMASK, fmask)
 }
 
+pub unsafe fn read_fs_base() -> usize {
+	read_msr(IA32_FS_BASE)
+}
+
+pub unsafe fn write_fs_base(fs_base: usize) {
+	write_msr(IA32_FS_BASE, fs_base)
+}

@@ -37,7 +37,6 @@ fn setup_user_context(process: Arc<Mutex<Box<Process>>>, usermode_pc: usize, use
 		exc_context.regs[31] = usermode_sp;
 		exc_context.saved_pc = usermode_pc;
 		exc_context.saved_spsr = 0;
-		exc_context.saved_tpidr = new_thread.thread_local_location;
 
 		context_locked.regs[30] = user_thread_starter as usize;
 		context_locked.regs[31] = exc_context_location;
@@ -102,42 +101,45 @@ pub fn load_process(elf_buf: &[u8]) -> Arc<Thread> {
 	let mut p = Box::new(Process::new(Box::new(aspace)));
 	p.use_pages();
 	
-	let elf = elf_rs::Elf::from_bytes(elf_buf).unwrap();
-	if let elf_rs::Elf::Elf64(e) = elf {
-		for section in e.section_header_iter() {
-			let sh = section.sh;
+	let elf = Elf::from_bytes(elf_buf).unwrap();
+	if let Elf::Elf64(e) = elf {
+		for phdr in e.program_header_iter() {
+			let ph = phdr.ph;
+			if ph.ph_type() == ProgramType::LOAD {
+				let section_start: usize = ph.vaddr() as usize;
+				let section_size_aligned: usize = ph.memsz() as usize;
 
-			// .bss is nobits, which is kind of important
-			if sh.sh_type() == SectionType::SHT_PROGBITS || sh.sh_type() == SectionType::SHT_NOBITS {
-				if sh.flags().contains(SectionHeaderFlags::SHF_ALLOC) {
-					let section_start = sh.addr() as usize;
-					// Round up section size to page size, at least.
-					let section_size = sh.size() as usize;
-					let section_size_aligned = (section_size + 0xfff) & (!0xfff);
+				if (ph.flags() & 1) == 1 { // todo fix this holy shit
+					p.address_space.create(section_start, section_size_aligned, PagePermission::USER_RWX);
+				} else {
+					p.address_space.create(section_start, section_size_aligned, PagePermission::USER_READ_WRITE);
+				}
 
-					if sh.flags().contains(SectionHeaderFlags::SHF_EXECINSTR) {
-						p.address_space.create(section_start, section_size_aligned, PagePermission::USER_RWX);
+				if ph.filesz() != 0 {
+					// TODO: proper TLB management
+					unsafe { invalidate_tlb_for_range(section_start, section_size_aligned); }
+
+					unsafe {
+						core::ptr::copy_nonoverlapping(elf_buf.as_ptr().offset(ph.offset() as isize), ph.vaddr() as *mut u8, ph.filesz() as usize);
 					}
-					else {
-						p.address_space.create(section_start, section_size_aligned, PagePermission::USER_READ_WRITE);
-					}
-					
-					// If we actually have data, copy it...
-					if sh.sh_type() == SectionType::SHT_PROGBITS
-					{
-						unsafe { invalidate_tlb_for_range(section_start, section_size_aligned); }
 
-						unsafe {
-							core::ptr::copy_nonoverlapping(elf_buf.as_ptr().offset(sh.offset() as isize), sh.addr() as *mut u8, sh.size() as usize);
-						}
-
-						// TODO: proper cache management
-						let section_start: usize = sh.addr() as usize;
-						let section_end: usize = section_start + sh.size() as usize;
-						for addr in (section_start .. section_end).step_by(64) {
-							unsafe { clear_cache_for_address(addr); }
-						}
+					// TODO: proper cache management
+					let section_end: usize = section_start + ph.memsz() as usize;
+					for addr in (section_start .. section_end).step_by(64) {
+						unsafe { clear_cache_for_address(addr); }
 					}
+				}
+			} else if ph.ph_type() == ProgramType::Unknown(7) { // unk(7) = TLS
+				// load TLS template
+				let tls_start: usize = ph.offset() as usize;
+				let tls_end: usize = ph.offset() as usize + ph.filesz() as usize;
+				p.thread_local_template.extend(&elf_buf[tls_start..tls_end]);
+				p.thread_local_template.resize(ph.memsz() as usize, 0);
+
+
+				if ph.memsz() as usize > crate::process::TLS_SIZE {
+					// Fuck shit
+					panic!("no");
 				}
 			}
 		}

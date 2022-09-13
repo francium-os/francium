@@ -63,9 +63,6 @@ mrs x0, elr_el1
 mrs x1, spsr_el1
 stp x0, x1,    [sp, #0x100]
 
-mrs x0, tpidr_el0
-str x0,        [sp, #0x110]
-
 mov x0, sp
 bl rust_curr_el_spx_sync
 b restore_exception_context
@@ -96,9 +93,6 @@ stp x30, x0,   [sp, #0xf0]
 mrs x0, elr_el1
 mrs x1, spsr_el1
 stp x0, x1,    [sp, #0x100]
-
-mrs x0, tpidr_el0
-str x0,        [sp, #0x110]
 
 mov x0, sp
 bl rust_lower_el_aarch64_irq
@@ -143,9 +137,6 @@ mrs x0, elr_el1
 mrs x1, spsr_el1
 stp x0, x1,    [sp, #0x100]
 
-mrs x0, tpidr_el0
-str x0,        [sp, #0x110]
-
 mov x0, sp
 bl rust_lower_el_spx_sync
 b restore_exception_context
@@ -176,11 +167,7 @@ stp x30, x0,   [sp, #0xf0]
 
 mrs x0, elr_el1
 mrs x1, spsr_el1
-// todo: tpidr?
 stp x0, x1,    [sp, #0x100]
-
-mrs x0, tpidr_el0
-str x0,        [sp, #0x110]
 
 mov x0, sp
 bl rust_lower_el_aarch64_irq
@@ -224,9 +211,6 @@ msr sp_el0, x0
 ldp x0, x1,    [sp, #0x100]
 msr elr_el1, x0
 msr spsr_el1, x1
-
-ldr x0,        [sp, #0x110]
-msr tpidr_el0, x0
 
 ldp x0, x1,    [sp, #0x00]
 ldp x2, x3,    [sp, #0x10]

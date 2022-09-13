@@ -5,6 +5,7 @@ pub mod gicv2;
 pub mod mmu;
 pub mod arch_timer;
 pub mod cache;
+pub mod arch_registers;
 
 pub use mmu::enable_mmu;
 pub use mmu::set_ttbr0_el1;

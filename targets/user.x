@@ -19,6 +19,14 @@ SECTIONS
     __rodata_end = .;
   }
 
+  .tdata : {
+    *(.tdata.IPC_BUFFER)
+    *(.tbss.IPC_BUFFER)
+
+    *(.tdata.*)
+    *(.tbss.*)
+  } :tls
+
   .data ALIGN(0x1000) :
   {
     __data_start = .;
@@ -32,14 +40,6 @@ SECTIONS
     *(.bss .bss.*)
     __bss_end = .;
   }
-
-  .tdata : {
-    *(.tdata.IPC_BUFFER)
-    *(.tbss.IPC_BUFFER)
-
-    *(.tdata.*)
-    *(.tbss.*)
-  } :tls
 
   . = ALIGN(0x1000);
 }

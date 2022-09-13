@@ -25,6 +25,8 @@ pub struct X86Regs {
 	pub eflags: usize,
 	pub rsp: usize,
 	pub ss: usize,
+
+	pub fs: usize
 }
 
 impl X86Regs {
@@ -35,6 +37,8 @@ impl X86Regs {
 			eflags: 0,
 			rsp: 0,
 			ss: 0,
+
+			fs: 0,
 
 			interrupt_number: 0,
 			error_code: 0,
