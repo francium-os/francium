@@ -33,5 +33,13 @@ SECTIONS
     __bss_end = .;
   }
 
+  .tdata : {
+    *(.tdata.IPC_BUFFER)
+    *(.tbss.IPC_BUFFER)
+
+    *(.tdata.*)
+    *(.tbss.*)
+  } :tls
+
   . = ALIGN(0x1000);
 }

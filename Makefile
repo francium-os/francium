@@ -13,9 +13,9 @@ $(error Bad board!)
 endif
 
 francium = target/$(target)-kernel/release/francium_$(board)
-sm = modules/sm/target/$(target)-user/release/sm
-fs = modules/fs/target/$(target)-user/release/fs
-test = modules/test/target/$(target)-user/release/test
+sm = target/$(target)-user/release/sm
+fs = target/$(target)-user/release/fs
+test = target/$(target)-user/release/test
 bootimg = target/x86_64-unknown-francium-kernel/release/boot-bios-francium_pc.img
 
 ifeq ($(arch), aarch64)
@@ -30,7 +30,7 @@ endif
 
 CARGO_FLAGS = -Zbuild-std=core,alloc,compiler_builtins -Zbuild-std-features=compiler-builtins-mem
 
-.PHONY: qemu gdb bochs $(francium) $(bootimg) $(fs) $(test) clean
+.PHONY: qemu gdb bochs $(francium) $(bootimg) $(fs) $(sm) $(test) clean
 
 all: $(francium) $(if $(filter $(board),raspi4), kernel8.bin)
 $(francium): $(fs) $(sm) $(test)

@@ -1,32 +1,32 @@
 #![no_std]
+#![feature(default_alloc_error_handler)]
 
 use process::println;
 use process::syscalls;
-use process::Handle;
+
+use process::ipc_server::{ServerImpl, IPCServer};
+
+struct FSCallback {
+}
+
+impl IPCServer for FSCallback {
+	fn handle() {
+		println!("FS message!");
+	}
+}
+
+type FSServer = ServerImpl<FSCallback>;
 
 fn main() {
-	println!("[C] Hello from cesium! My process id is {:?}", syscalls::get_process_id());
-	println!("[S] Creating sm port...");
-	let port = syscalls::create_port("sm").unwrap();
-	println!("[S] Created sm port: {:?}.", port);
+	let port = syscalls::create_port("fs").unwrap();
+	let mut server = FSServer::new(port);
 
-	let handles: [Handle; 1] = [port];
-	let index = syscalls::ipc_receive(&handles).unwrap();
-	println!("[S] Got index? {:?}", index);
-	if index == 0 {
-		let new_session = syscalls::ipc_accept(port).unwrap();
-		println!("[S] Got new session {:?}", new_session);
-
-		let handles: [Handle; 2] = [port, new_session];
-		let index = syscalls::ipc_receive(&handles).unwrap();
-		println!("[S] Got ipc result {:?}", index);
-		if index == 1 {
-			syscalls::ipc_reply(new_session).unwrap();
-		}
+	while server.process() {
+		// spin
 	}
 
 	syscalls::close_handle(port).unwrap();
-	println!("[S] Server done!");
+	println!("FS exiting!");
 
 	syscalls::exit_process();
 }

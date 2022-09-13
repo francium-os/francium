@@ -89,15 +89,17 @@ fn bootloader_main(info: &'static mut bootloader::BootInfo) -> ! {
 
 	let elf_one_buf = include_bytes!("../../target/x86_64-unknown-francium-user/release/fs");
 	let elf_two_buf = include_bytes!("../../target/x86_64-unknown-francium-user/release/test");
+	let elf_three_buf = include_bytes!("../../target/x86_64-unknown-francium-user/release/sm");
 
-	println!("Loading process one...");
 	let one_main_thread = init::load_process(elf_one_buf);
 	scheduler::register_thread(one_main_thread.clone());
 
-	println!("Loading process two...");
 	let two_main_thread = init::load_process(elf_two_buf);
 	scheduler::register_thread(two_main_thread.clone());
-
+	
+	let three_main_thread = init::load_process(elf_three_buf);
+	scheduler::register_thread(three_main_thread.clone());
+	
 	platform::scheduler_post_init();
 
 	println!("Running...");

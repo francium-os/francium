@@ -8,5 +8,7 @@ edition = "2018"
 
 [dependencies]
 common = { path = "../libcommon"}
+smallvec = "1.9.0"
+simple-chunk-allocator = "0.1.5"
 
 [build-dependencies]

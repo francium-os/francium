@@ -114,7 +114,6 @@ pub fn load_process(elf_buf: &[u8]) -> Arc<Thread> {
 					// Round up section size to page size, at least.
 					let section_size = sh.size() as usize;
 					let section_size_aligned = (section_size + 0xfff) & (!0xfff);
-					println!("Section: {:?}", section);
 
 					if sh.flags().contains(SectionHeaderFlags::SHF_EXECINSTR) {
 						p.address_space.create(section_start, section_size_aligned, PagePermission::USER_RWX);
