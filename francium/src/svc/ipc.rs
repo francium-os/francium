@@ -5,7 +5,6 @@ use crate::process::Thread;
 use crate::waitable;
 use crate::waitable::{Waiter, Waitable};
 use spin::Mutex;
-use core::cell::Cell;
 use alloc::collections::BTreeMap;
 use alloc::vec::Vec;
 use alloc::sync::{Arc, Weak};
@@ -154,8 +153,6 @@ pub fn svc_ipc_request(session_handle: u32) -> u32 {
 		client_session.server.signal_one();
 		client_session.wait();
 
-		// [this thread will have its TLS filled by the server]
-
 		0
 	} else {
 		// error
@@ -177,12 +174,9 @@ pub fn svc_ipc_receive(handles_ptr: *const u32, handle_count: usize) -> (u32, us
 		let client_thread = server_session.queue.lock().pop().unwrap();
 		let current_thread = scheduler::get_current_thread();
 		/* Process IPC message here! */
-		println!("Copy A from {} to {}", client_thread.id, current_thread.id);
-
 		{
 			let from_tls = client_thread.thread_local.lock();
 			let mut to_tls = current_thread.thread_local.lock();
-			println!("{:?} {:?} ??", from_tls.as_ptr(), to_tls.as_ptr());
 			unsafe {
 				core::ptr::copy_nonoverlapping(from_tls.as_ptr(), to_tls.as_mut_ptr(), 32);
 			}
@@ -199,9 +193,8 @@ pub fn svc_ipc_reply(session_handle: u32) -> u32 {
 	if let Handle::ServerSession(server_session) = handle::get_handle(session_handle) {
 		// TODO: wtf?
 		let current_thread = scheduler::get_current_thread();
-		let thread_lock = server_session.client_thread.lock();
+		let mut thread_lock = server_session.client_thread.lock();
 		let client_thread = thread_lock.as_ref().unwrap();
-		println!("Copy B from {} to {}", current_thread.id, client_thread.id);
 
 		{
 			let from_tls = current_thread.thread_local.lock();
@@ -211,7 +204,7 @@ pub fn svc_ipc_reply(session_handle: u32) -> u32 {
 			}
 		}
 
-		*server_session.client_thread.lock() = None;
+		*thread_lock = None;
 		server_session.client.lock().upgrade().unwrap().signal_one();
 		0
 	} else {

@@ -1,4 +1,4 @@
-use crate::{Handle, INVALID_HANDLE};
+use crate::Handle;
 use crate::ipc_common::IPC_BUFFER;
 use crate::syscalls;
 
@@ -9,4 +9,8 @@ pub fn try_make_request(h: Handle) {
 	}
 
 	syscalls::ipc_request(h).unwrap();
+
+	unsafe {
+		println!("owo? {:x}", IPC_BUFFER[0]);
+	}
 }

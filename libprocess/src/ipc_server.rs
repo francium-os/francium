@@ -36,6 +36,7 @@ impl<T: IPCServer> ServerImpl<T> {
 			// a client has a message for us!
 			unsafe {
 				println!("owo: {:x}", IPC_BUFFER[0]);
+				IPC_BUFFER[0] = 0xaaaaaaaa;
 			}
 			T::handle(self.handles[index]);
 			true

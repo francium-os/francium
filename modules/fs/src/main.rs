@@ -12,6 +12,7 @@ struct FSCallback {
 impl IPCServer for FSCallback {
 	fn handle(h: Handle) {
 		println!("FS message!");
+		syscalls::ipc_reply(h).unwrap();
 	}
 }
 

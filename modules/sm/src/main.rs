@@ -13,7 +13,7 @@ struct SMCallback {
 impl IPCServer for SMCallback {
 	fn handle(h: Handle) {
 		println!("SM message!");
-		syscalls::ipc_reply(h);
+		syscalls::ipc_reply(h).unwrap();
 	}
 }
 
