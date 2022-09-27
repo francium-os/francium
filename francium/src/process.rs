@@ -1,7 +1,7 @@
 use crate::memory::AddressSpace;
 use crate::arch::context::ThreadContext;
 use crate::handle_table::HandleTable;
-use crate::mmu::PagePermission;
+use crate::mmu::{PagePermission,phys_to_virt};
 use crate::scheduler;
 
 use alloc::alloc::{alloc, Layout};
@@ -81,7 +81,7 @@ impl Thread {
 		};
 
 		// TODO: slightly messy here
-		let (thread_local_length, thread_local_location) = { 
+		let (thread_local_length, thread_local_location, thread_local_pointer) = { 
 			let mut locked = p.lock();
 
 			let loc = locked.thread_local_location;
@@ -98,11 +98,14 @@ impl Thread {
 				core::ptr::copy_nonoverlapping(&locked.thread_local_template[0] as *const u8, (loc + TLS_TCB_OFFSET) as *mut u8, locked.thread_local_template.len());
 			}
 
-			(locked.thread_local_template.len(), loc)
+			// XXX: god awful hack
+			let pointer = phys_to_virt(locked.address_space.page_table.virt_to_phys(loc).unwrap());
+
+			(locked.thread_local_template.len(), loc, pointer)
 		};
 
 		let thread_local = unsafe {
-			(thread_local_location as *mut [u8; TLS_SIZE]).as_mut().unwrap()
+			(thread_local_pointer as *mut [u8; TLS_SIZE]).as_mut().unwrap()
 		};
 
 		fill_out_tls_context(thread_local_location, thread_local_length);

@@ -179,6 +179,15 @@ pub fn svc_ipc_receive(handles_ptr: *const u32, handle_count: usize) -> (u32, us
 		/* Process IPC message here! */
 		println!("Copy A from {} to {}", client_thread.id, current_thread.id);
 
+		{
+			let from_tls = client_thread.thread_local.lock();
+			let mut to_tls = current_thread.thread_local.lock();
+			println!("{:?} {:?} ??", from_tls.as_ptr(), to_tls.as_ptr());
+			unsafe {
+				core::ptr::copy_nonoverlapping(from_tls.as_ptr(), to_tls.as_mut_ptr(), 32);
+			}
+		}
+
 		*server_session.client_thread.lock() = Some(client_thread);
 	}
 
@@ -193,6 +202,15 @@ pub fn svc_ipc_reply(session_handle: u32) -> u32 {
 		let thread_lock = server_session.client_thread.lock();
 		let client_thread = thread_lock.as_ref().unwrap();
 		println!("Copy B from {} to {}", current_thread.id, client_thread.id);
+
+		{
+			let from_tls = current_thread.thread_local.lock();
+			let mut to_tls = client_thread.thread_local.lock();
+			unsafe {
+				core::ptr::copy_nonoverlapping(from_tls.as_ptr(), to_tls.as_mut_ptr(), 32);
+			}
+		}
+
 		*server_session.client_thread.lock() = None;
 		server_session.client.lock().upgrade().unwrap().signal_one();
 		0
