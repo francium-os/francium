@@ -34,7 +34,7 @@ pub struct Thread {
 	pub kernel_stack_size: usize,
 
 	// safety: dude trust me
-	pub thread_local: &'static mut [u8; TLS_SIZE],
+	pub thread_local: Mutex<&'static mut [u8; TLS_SIZE]>,
 	pub thread_local_location: usize
 }
 
@@ -114,7 +114,7 @@ impl Thread {
 			process: p,
 			kernel_stack_top: kernel_stack as *const usize as usize + kernel_stack_size,
 			kernel_stack_size: kernel_stack_size,
-			thread_local: thread_local,
+			thread_local: Mutex::new(thread_local),
 			thread_local_location: thread_local_location
 		}
 	}

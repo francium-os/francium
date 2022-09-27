@@ -56,8 +56,6 @@ fn setup_user_context(process: Arc<Mutex<Box<Process>>>, usermode_pc: usize, use
 		let exc_context_location = new_thread.kernel_stack_top - core::mem::size_of::<ExceptionContext>(); // XXX: align
 		let exc_context = &mut *(exc_context_location as *mut ExceptionContext);
 
-		println!("exc context {:x}", exc_context_location);
-
 		exc_context.regs.rsp = usermode_sp;
 		exc_context.regs.rip = usermode_pc;
 		exc_context.regs.cs = 0x18 | 3;
@@ -80,11 +78,8 @@ fn setup_user_context(process: Arc<Mutex<Box<Process>>>, usermode_pc: usize, use
 		exc_context.regs.r14 = 14;
 		exc_context.regs.r15 = 15;
 
-		// TODO: Thread locals?
-
 		context_locked.regs.rip = user_thread_starter as usize;
 		context_locked.regs.rsp = exc_context_location;
-		println!("thread context rsp: {:x}", context_locked.regs.rsp);
 	}
 
 	process.lock().threads.push(new_thread.clone());

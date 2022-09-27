@@ -56,6 +56,16 @@ impl Waiter {
 		}
 	}
 
+	pub fn signal_one_with_callback(&self, callback: &dyn Fn(&Arc<Thread>) -> ()) {
+		match self.waiters.lock().pop() {
+			Some(waiter) => {
+				callback(&waiter.0);
+				scheduler::wake_thread(waiter.0, waiter.1)
+			},
+			None => self.pending.store(true, Ordering::Release)
+		}
+	}
+
 	pub fn signal_all(&self) {
 		self.waiters.lock().drain(..).map(|x| scheduler::wake_thread(x.0, x.1)).collect()
 	}
@@ -70,6 +80,10 @@ pub trait Waitable {
 
 	fn signal_one(&self) {
 		self.get_waiter().signal_one();
+	}
+
+	fn signal_one_with_callback(&self, callback: &dyn Fn(&Arc<Thread>) -> ()) {
+		self.get_waiter().signal_one_with_callback(callback);
 	}
 
 	fn signal_all(&self) {

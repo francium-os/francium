@@ -5,6 +5,7 @@ use crate::process::Thread;
 use crate::waitable;
 use crate::waitable::{Waiter, Waitable};
 use spin::Mutex;
+use core::cell::Cell;
 use alloc::collections::BTreeMap;
 use alloc::vec::Vec;
 use alloc::sync::{Arc, Weak};
@@ -14,8 +15,10 @@ use smallvec::SmallVec;
 #[derive(Debug)]
 pub struct ServerSession {
 	wait: Waiter,
-	//port: Arc<Port>,
-	client: Mutex<Weak<ClientSession>>
+	connect_wait: Waiter,
+	queue: Mutex<SmallVec<[Arc<Thread>; 1]>>,
+	client: Mutex<Weak<ClientSession>>,
+	client_thread: Mutex<Option<Arc<Thread>>>
 }
 
 #[derive(Debug)]
@@ -46,8 +49,10 @@ impl ServerSession {
 	fn new() -> ServerSession {
 		ServerSession {
 			wait: Waiter::new(),
-			//port: port,
-			client: Mutex::new(Weak::new())
+			connect_wait: Waiter::new(),
+			queue: Mutex::new(SmallVec::new()),
+			client: Mutex::new(Weak::new()),
+			client_thread: Mutex::new(None)
 		}
 	}
 }
@@ -128,7 +133,7 @@ pub fn svc_connect_to_port(tag: u64) -> (u32, u32) {
 	// create the session, and wait for it to be accepted by the server
 	port.queue.lock().push(server_session.clone());
 	port.signal_one();
-	server_session.wait();
+	server_session.connect_wait.wait();
 
 	// return session
 	{
@@ -143,16 +148,20 @@ pub fn svc_connect_to_port(tag: u64) -> (u32, u32) {
 pub fn svc_ipc_request(session_handle: u32) -> u32 {
 	if let Handle::ClientSession(client_session) = handle::get_handle(session_handle) {
 		// signal, then wait for reply
+		let current_thread = scheduler::get_current_thread();
+
+		client_session.server.queue.lock().push(current_thread);
 		client_session.server.signal_one();
 		client_session.wait();
+
+		// [this thread will have its TLS filled by the server]
+
 		0
 	} else {
 		// error
 		1
 	}
 }
-
-// todo: setup tls??
 
 const MAX_HANDLES: usize = 128;
 pub fn svc_ipc_receive(handles_ptr: *const u32, handle_count: usize) -> (u32, usize) {
@@ -163,6 +172,16 @@ pub fn svc_ipc_receive(handles_ptr: *const u32, handle_count: usize) -> (u32, us
 	}
 
 	let index = waitable::wait_handles(&handles[..handle_count]);
+
+	if let Handle::ServerSession(server_session) = handle::get_handle(handles[index]) {
+		let client_thread = server_session.queue.lock().pop().unwrap();
+		let current_thread = scheduler::get_current_thread();
+		/* Process IPC message here! */
+		println!("Copy A from {} to {}", client_thread.id, current_thread.id);
+
+		*server_session.client_thread.lock() = Some(client_thread);
+	}
+
 	(0, index)
 }
 
@@ -170,6 +189,11 @@ pub fn svc_ipc_receive(handles_ptr: *const u32, handle_count: usize) -> (u32, us
 pub fn svc_ipc_reply(session_handle: u32) -> u32 {
 	if let Handle::ServerSession(server_session) = handle::get_handle(session_handle) {
 		// TODO: wtf?
+		let current_thread = scheduler::get_current_thread();
+		let thread_lock = server_session.client_thread.lock();
+		let client_thread = thread_lock.as_ref().unwrap();
+		println!("Copy B from {} to {}", current_thread.id, client_thread.id);
+		*server_session.client_thread.lock() = None;
 		server_session.client.lock().upgrade().unwrap().signal_one();
 		0
 	} else {
@@ -180,11 +204,11 @@ pub fn svc_ipc_reply(session_handle: u32) -> u32 {
 // x0: port
 // x1: session handle out
 pub fn svc_ipc_accept(port_handle: u32) -> (u32, u32) {
-	if let Handle::Port(port) =  handle::get_handle(port_handle) {
+	if let Handle::Port(port) = handle::get_handle(port_handle) {
 		let server_session = port.queue.lock().pop().unwrap();
 
 		// wake the client
-		server_session.signal_one();
+		server_session.connect_wait.signal_one();
 
 		let current_process = scheduler::get_current_process();
 		let mut process = current_process.lock();

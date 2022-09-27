@@ -3,14 +3,14 @@
 
 use process::println;
 use process::syscalls;
-
+use process::Handle;
 use process::ipc_server::{ServerImpl, IPCServer};
 
 struct FSCallback {
 }
 
 impl IPCServer for FSCallback {
-	fn handle() {
+	fn handle(h: Handle) {
 		println!("FS message!");
 	}
 }

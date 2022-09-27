@@ -5,7 +5,7 @@ use smallvec::SmallVec;
 use core::marker::PhantomData;
 
 pub trait IPCServer {
-	fn handle();
+	fn handle(h: Handle);
 }
 
 // https://stackoverflow.com/questions/29978133/capturing-a-trait-in-a-struct-that-is-only-used-in-the-implementation
@@ -35,9 +35,9 @@ impl<T: IPCServer> ServerImpl<T> {
 		} else {
 			// a client has a message for us!
 			unsafe {
-				println!("owo: {:?}", IPC_BUFFER[0]);
+				println!("owo: {:x}", IPC_BUFFER[0]);
 			}
-			T::handle();
+			T::handle(self.handles[index]);
 			true
 		}
 	}

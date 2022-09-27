@@ -24,7 +24,7 @@ gdb=aarch64-none-elf-gdb
 qemu_args=-M virt -cpu cortex-a53 -kernel $(francium) -serial stdio -m 2048
 else ifeq ($(arch), x86_64)
 target=x86_64-unknown-francium
-qemu_args=-drive format=raw,file=$(bootimg) -serial stdio -m 2048 -no-reboot -d int
+qemu_args=-drive format=raw,file=$(bootimg) -serial stdio -m 2048 -no-reboot
 gdb=rust-gdb
 endif
 

@@ -3,6 +3,7 @@
 
 use process::println;
 use process::syscalls;
+use process::Handle;
 
 use process::ipc_server::{ServerImpl, IPCServer};
 
@@ -10,8 +11,9 @@ struct SMCallback {
 }
 
 impl IPCServer for SMCallback {
-	fn handle() {
+	fn handle(h: Handle) {
 		println!("SM message!");
+		syscalls::ipc_reply(h);
 	}
 }
 

@@ -4,7 +4,8 @@ use crate::syscalls;
 
 pub fn try_make_request(h: Handle) {
 	unsafe {
-		IPC_BUFFER[0] = 0xaa;
+		IPC_BUFFER[0] = 0x69706320; // 'ipc '
+		IPC_BUFFER[1] = 0; // TODO: pack method id/num handles/num translates
 	}
 
 	syscalls::ipc_request(h).unwrap();
