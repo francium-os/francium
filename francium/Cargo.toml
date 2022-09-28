@@ -13,7 +13,7 @@ elf_rs = "0.1.3"
 lazy_static = { version = "1.4.0", features=["spin_no_std"]}
 smallvec = "1.6.1"
 spin = "0.9.0"
-bootloader = { version = "0.10.12", optional = true }
+bootloader = { version = "0.10.13", optional = true }
 
 [build-dependencies]
 
@@ -39,4 +39,4 @@ path = "src/main_pc.rs"
 
 [package.metadata.bootloader]
 map-physical-memory = true
-physical-memory-offset = "0xffff_ff00_0000_0000"
+physical-memory-offset = "0xffff_f000_0000_0000"

@@ -86,14 +86,18 @@ initial_level_0_table:
 
 # table, level 1.
 .quad (initial_uc_memory_table - KERNEL_BASE + PHYS_BASE) + (1<<10) + 3
-.rept 507
+.rept 447
 .quad 0
 .endr
-# Map peripherals at -2TB
 .quad (initial_device_memory_table - KERNEL_BASE + PHYS_BASE) + (1<<10) + 3
+.rept 31
 .quad 0
-# identity map physical memory at 0xffff_ff00_0000_0000 ie "physmap"
+.endr
 .quad (initial_uc_memory_table - KERNEL_BASE + PHYS_BASE) + (1<<10) + 3
+.rept 30
+.quad 0
+.endr
+
 # map kernel
 .quad (initial_kernel_map - KERNEL_BASE + PHYS_BASE) + (1<<10) + 3
 

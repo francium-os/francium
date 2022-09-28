@@ -254,7 +254,6 @@ fn get_block_default_flags() -> EntryFlags {
 }
 
 
-
 impl PageTable {
 	pub const fn new() -> PageTable {
 		PageTable {
@@ -266,9 +265,9 @@ impl PageTable {
 		// TODO: is there a better way to do this
 
 		let mut pg = PageTable::new();
-		pg.entries[508] = self.entries[508];
-		pg.entries[509] = self.entries[509];
-		pg.entries[510] = self.entries[510];
+
+		pg.entries[448] = self.entries[448];
+		pg.entries[480] = self.entries[480];
 		pg.entries[511] = self.entries[511];
 
 		pg
