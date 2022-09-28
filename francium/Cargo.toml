@@ -1,7 +1,6 @@
 [package]
 name = "francium"
 version = "0.1.0"
-authors = ["Ezekiel Bethel <zek@9net.org>"]
 edition = "2018"
 autobins = false
 
