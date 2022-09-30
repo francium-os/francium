@@ -104,25 +104,30 @@ pub fn load_process(elf_buf: &[u8]) -> Arc<Thread> {
 				let section_start: usize = ph.vaddr() as usize;
 				let section_size_aligned: usize = ph.memsz() as usize;
 
-				if (ph.flags() & 1) == 1 { // todo fix this holy shit
+				if (ph.flags() & 1) == 1 { // TODO: where did `1` come from?
 					p.address_space.create(section_start, section_size_aligned, PagePermission::USER_RWX);
 				} else {
 					p.address_space.create(section_start, section_size_aligned, PagePermission::USER_READ_WRITE);
 				}
 
-				if ph.filesz() != 0 {
-					// TODO: proper TLB management
-					unsafe { invalidate_tlb_for_range(section_start, section_size_aligned); }
+				// TODO: proper TLB management
+				unsafe { invalidate_tlb_for_range(section_start, section_size_aligned); }
 
+				if ph.filesz() != 0 {
 					unsafe {
 						core::ptr::copy_nonoverlapping(elf_buf.as_ptr().offset(ph.offset() as isize), ph.vaddr() as *mut u8, ph.filesz() as usize);
 					}
-
-					// TODO: proper cache management
-					let section_end: usize = section_start + ph.memsz() as usize;
-					for addr in (section_start .. section_end).step_by(64) {
-						unsafe { clear_cache_for_address(addr); }
+				} else {
+					// BSS section
+					unsafe {
+						core::ptr::write_bytes(ph.vaddr() as *mut u8, 0, ph.memsz() as usize);
 					}
+				}
+				
+				// TODO: proper cache management
+				let section_end: usize = section_start + ph.memsz() as usize;
+				for addr in (section_start .. section_end).step_by(64) {
+					unsafe { clear_cache_for_address(addr); }
 				}
 			} else if ph.ph_type() == ProgramType::Unknown(7) { // unk(7) = TLS
 				// load TLS template
@@ -133,7 +138,6 @@ pub fn load_process(elf_buf: &[u8]) -> Arc<Thread> {
 
 
 				if ph.memsz() as usize > crate::process::TLS_SIZE {
-					// Fuck shit
 					panic!("no");
 				}
 			}
