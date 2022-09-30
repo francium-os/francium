@@ -5,7 +5,9 @@ use quote::{quote, format_ident};
 use syn::{parse_macro_input, ItemTrait, TraitItem, Meta, Lit, ReturnType};
 
 #[proc_macro_attribute]
-pub fn ipc_server(_attr: TokenStream, item: TokenStream) -> TokenStream {
+pub fn ipc_server(attr: TokenStream, item: TokenStream) -> TokenStream {
+    let ipc_handle_accessor = format_ident!("{}", attr.to_string());
+
     let input = parse_macro_input!(item as ItemTrait);
 
     let mut server_methods: Vec<syn::TraitItemMethod> = Vec::new();
@@ -13,7 +15,6 @@ pub fn ipc_server(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let mut server_dispatch: Vec<_> = Vec::new();
 
     let server_trait_name = input.ident.clone();
-    let server_struct_name = format_ident!("{}Struct", input.ident);
 
     for item in input.items {
         if let TraitItem::Method(method) = item  {
@@ -68,10 +69,10 @@ pub fn ipc_server(_attr: TokenStream, item: TokenStream) -> TokenStream {
                     crate::syscalls::ipc_reply(h).unwrap();
                 }
             });
-            let server_name = format_ident!("get_handle_for_sm");
+
             client_methods.push(quote! {
                 pub fn #method_name ( #(#inputs),* ) #output {
-                    let h = #server_name();
+                    let h = #ipc_handle_accessor();
                     let mut msg: crate::ipc::message::IPCMessage = crate::ipc::message::IPCMessage::new();
                     let header = crate::ipc::message::IPCHeader { id: #method_id };
                     msg.write_header(&header);
@@ -98,18 +99,11 @@ pub fn ipc_server(_attr: TokenStream, item: TokenStream) -> TokenStream {
     };
 
     let out = quote! {
-        pub struct #server_struct_name {
-        }
-
         pub trait #server_trait_name { 
             #(#server_methods);*
         }
 
-        impl crate::ipc_server::IPCServer for #server_struct_name {
-            fn new() -> #server_struct_name {
-                #server_struct_name {}
-            }
-
+        impl crate::ipc_server::IPCServer for alloc::boxed::Box<dyn #server_trait_name> {
             #server_dispatch_method
         }
 

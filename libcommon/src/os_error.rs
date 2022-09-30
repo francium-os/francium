@@ -11,6 +11,7 @@ pub enum Module {
     None = 0,
     Kernel = 1,
     SM = 2,
+    FS = 3,
     Unknown = 0xffff
 }
 

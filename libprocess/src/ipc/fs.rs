@@ -6,7 +6,6 @@ use ipc_gen::ipc_server;
 
 static FS_HANDLE: Mutex<Option<Handle>> = Mutex::new(None);
 
-#[inline(never)]
 fn get_handle_for_fs() -> Handle {
 	let mut locked = FS_HANDLE.lock();
 	match *locked {
@@ -19,6 +18,8 @@ fn get_handle_for_fs() -> Handle {
 	}
 }
 
-#[ipc_server]
+#[ipc_server(get_handle_for_fs)]
 trait FSServer {
+	#[ipc_method_id = 1]
+	fn test(&self) -> OSResult<Handle>;
 }

@@ -3,21 +3,19 @@ use crate::syscalls;
 use smallvec::SmallVec;
 
 pub trait IPCServer {
-	fn new() -> Self;
 	fn process(&self, h: Handle);
 }
 
-// https://stackoverflow.com/questions/29978133/capturing-a-trait-in-a-struct-that-is-only-used-in-the-implementation
 pub struct ServerImpl<T: IPCServer> {
 	handles: SmallVec<[Handle; 2]>,
 	server: T
 }
 
 impl<T: IPCServer> ServerImpl<T> {
-	pub fn new(port: Handle) -> ServerImpl<T> {
+	pub fn new(t: T, port: Handle) -> ServerImpl<T> {
 		ServerImpl {
 			handles: SmallVec::from_buf_and_len([port, INVALID_HANDLE], 1),
-			server: T::new()
+			server: t
 		}
 	}
 
