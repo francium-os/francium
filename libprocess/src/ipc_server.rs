@@ -6,7 +6,7 @@ pub trait IPCServer {
 	fn process(&self, h: Handle);
 }
 
-pub struct ServerImpl<T: IPCServer> {
+pub struct ServerImpl<T> where T: IPCServer {
 	handles: SmallVec<[Handle; 2]>,
 	server: T
 }
@@ -19,10 +19,11 @@ impl<T: IPCServer> ServerImpl<T> {
 		}
 	}
 
-	pub fn process(&mut self) -> bool {
+	pub fn process(&mut self) -> bool
+	{
 		let index = syscalls::ipc_receive(&self.handles).unwrap();
 		if index == 0 {
-			// server handle
+			// server handle is signalled!
 			let new_session = syscalls::ipc_accept(self.handles[0]).unwrap();
 			self.handles.push(new_session);
 			println!("IPC: accepted new session");

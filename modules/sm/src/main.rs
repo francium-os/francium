@@ -1,17 +1,20 @@
 #![no_std]
 #![feature(default_alloc_error_handler)]
 
-extern crate alloc;
-
-use alloc::boxed::Box;
 use process::println;
 use process::syscalls;
 use process::{Handle, INVALID_HANDLE};
-use process::os_error::{OSError, OSResult, Module, Error};
-use process::ipc_server::ServerImpl;
+use process::os_error::OSResult;
+use process::ipc_server::{ServerImpl, IPCServer};
 use process::ipc::sm::SMServer;
 
 struct SMServerStruct {}
+
+impl IPCServer for SMServerStruct {
+	fn process(&self, h: Handle) {
+		SMServer::process(self, h)
+	}
+}
 
 impl SMServer for SMServerStruct {
 	fn get_service_handle(&self, tag: u64) -> OSResult<Handle> {
@@ -20,13 +23,11 @@ impl SMServer for SMServerStruct {
 	}
 }
 
-type SMServerImpl = ServerImpl<Box<dyn SMServer>>;
-
 fn main() {
 	println!("Hello from sm!");
 
 	let port = syscalls::create_port("sm").unwrap();
-	let mut server = SMServerImpl::new(Box::new(SMServerStruct{}), port);
+	let mut server = ServerImpl::new(SMServerStruct{}, port);
 
 	while server.process() {
 		// spin

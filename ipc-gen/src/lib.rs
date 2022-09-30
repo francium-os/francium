@@ -100,12 +100,11 @@ pub fn ipc_server(attr: TokenStream, item: TokenStream) -> TokenStream {
 
     let out = quote! {
         pub trait #server_trait_name { 
+            #server_dispatch_method
+
             #(#server_methods);*
         }
-
-        impl crate::ipc_server::IPCServer for alloc::boxed::Box<dyn #server_trait_name> {
-            #server_dispatch_method
-        }
+            
 
         #(#client_methods)*
     };

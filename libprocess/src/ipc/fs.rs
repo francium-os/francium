@@ -1,6 +1,5 @@
 use spin::Mutex;
 use crate::Handle;
-use crate::syscalls;
 use common::os_error::OSResult;
 use ipc_gen::ipc_server;
 
