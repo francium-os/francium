@@ -5,7 +5,7 @@
 #![feature(allocator_api)]
 #![feature(thread_local)]
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Default)]
 #[repr(transparent)]
 pub struct Handle(u32);
 const INVALID_HANDLE: Handle = Handle(0xffffffff);
@@ -14,8 +14,6 @@ const INVALID_HANDLE: Handle = Handle(0xffffffff);
 pub mod print;
 pub mod syscalls;
 mod lang_items;
-pub mod ipc_common;
-pub mod ipc_client;
 pub mod ipc_server;
 pub mod allocator;
 pub mod ipc;

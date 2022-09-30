@@ -10,5 +10,6 @@ common = { path = "../libcommon"}
 ipc-gen = { path = "../ipc-gen"}
 smallvec = "1.9.0"
 simple-chunk-allocator = "0.1.5"
+spin = "0.9.4"
 
 [build-dependencies]

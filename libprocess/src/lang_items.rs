@@ -28,7 +28,7 @@ fn panic(info: &PanicInfo) -> ! {
     // printing info directly seems to just die (tm)
     // idk why, but not doing that seems to work better
     match info.message() {
-        Some(m) => println!("User mode panic! {:?}", m),
+        Some(m) => println!("User mode panic! {:?} {:?}", m, info.location()),
         None => println!("User mode panic without info")
     }
     syscalls::exit_process()

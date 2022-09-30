@@ -5,18 +5,9 @@ use process::println;
 use process::syscalls;
 use process::Handle;
 use process::ipc_server::{ServerImpl, IPCServer};
+use process::ipc::fs;
 
-struct FSCallback {
-}
-
-impl IPCServer for FSCallback {
-	fn handle(h: Handle) {
-		println!("FS message!");
-		syscalls::ipc_reply(h).unwrap();
-	}
-}
-
-type FSServer = ServerImpl<FSCallback>;
+type FSServer = ServerImpl<fs::FSServerStruct>;
 
 fn main() {
 	println!("Hello from fs!");

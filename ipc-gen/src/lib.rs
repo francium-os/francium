@@ -12,7 +12,8 @@ pub fn ipc_server(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let mut client_methods: Vec<_> = Vec::new();
     let mut server_dispatch: Vec<_> = Vec::new();
 
-    let server_name = input.ident;
+    let server_trait_name = input.ident.clone();
+    let server_struct_name = format_ident!("{}Struct", input.ident);
 
     for item in input.items {
         if let TraitItem::Method(method) = item  {
@@ -72,7 +73,8 @@ pub fn ipc_server(_attr: TokenStream, item: TokenStream) -> TokenStream {
                 pub fn #method_name ( #(#inputs),* ) #output {
                     let h = #server_name();
                     let mut msg: crate::ipc::message::IPCMessage = crate::ipc::message::IPCMessage::new();
-                    msg.write_header();
+                    let header = crate::ipc::message::IPCHeader { id: #method_id };
+                    msg.write_header(&header);
                     #(msg.write(#input_names);)*
                     crate::syscalls::ipc_request(h).unwrap();
                     #dispatch_output
@@ -84,7 +86,7 @@ pub fn ipc_server(_attr: TokenStream, item: TokenStream) -> TokenStream {
     }
 
     let server_dispatch_method = quote! {
-        fn handle(&self, h: Handle) {
+        fn process(&self, h: Handle) {
             let mut msg: crate::ipc::message::IPCMessage = crate::ipc::message::IPCMessage::new();
             let message_header = msg.read_header();
 
@@ -96,8 +98,17 @@ pub fn ipc_server(_attr: TokenStream, item: TokenStream) -> TokenStream {
     };
 
     let out = quote! {
-        trait #server_name { 
+        pub struct #server_struct_name {
+        }
+
+        pub trait #server_trait_name { 
             #(#server_methods);*
+        }
+
+        impl crate::ipc_server::IPCServer for #server_struct_name {
+            fn new() -> #server_struct_name {
+                #server_struct_name {}
+            }
 
             #server_dispatch_method
         }
