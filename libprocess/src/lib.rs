@@ -10,7 +10,7 @@ extern crate alloc;
 #[derive(Copy, Clone, Debug, Default)]
 #[repr(transparent)]
 pub struct Handle(u32);
-const INVALID_HANDLE: Handle = Handle(0xffffffff);
+pub const INVALID_HANDLE: Handle = Handle(0xffffffff);
 
 #[macro_use]
 pub mod print;

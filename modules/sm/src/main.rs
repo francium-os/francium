@@ -6,7 +6,7 @@ extern crate alloc;
 use alloc::boxed::Box;
 use process::println;
 use process::syscalls;
-use process::Handle;
+use process::{Handle, INVALID_HANDLE};
 use process::os_error::{OSError, OSResult, Module, Error};
 use process::ipc_server::ServerImpl;
 use process::ipc::sm::SMServer;
@@ -16,7 +16,7 @@ struct SMServerStruct {}
 impl SMServer for SMServerStruct {
 	fn get_service_handle(&self, tag: u64) -> OSResult<Handle> {
 		println!("Got tag: {:x}", tag);
-		Err(OSError { module: Module::SM, err: Error::NotImplemented })
+		Ok(INVALID_HANDLE)
 	}
 }
 

@@ -11,7 +11,7 @@ fn get_handle_for_fs() -> Handle {
 	match *locked {
 		Some(x) => x,
 		None => {
-			let handle = syscalls::connect_to_port("fs").unwrap();
+			let handle = crate::ipc::sm::get_service_handle(crate::syscalls::make_tag("fs")).unwrap();
 			*locked = Some(handle);
 			handle
 		}
