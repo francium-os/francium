@@ -18,3 +18,4 @@ pub mod ipc_common;
 pub mod ipc_client;
 pub mod ipc_server;
 pub mod allocator;
+pub mod ipc;

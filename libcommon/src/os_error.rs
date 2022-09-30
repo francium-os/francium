@@ -36,3 +36,5 @@ impl OSError {
         }
     }
 }
+
+pub type OSResult<T> = Result<T, OSError>;

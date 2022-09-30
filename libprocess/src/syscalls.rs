@@ -21,7 +21,7 @@ pub fn print(s: &str) {
 	}
 }
 
-fn make_tag(s: &str) -> u64 {
+pub fn make_tag(s: &str) -> u64 {
 	let tag_bytes = s.as_bytes();
 	let length = min(8, tag_bytes.len());
 	let mut tag_bytes_padded: [u8; 8] = [0; 8];

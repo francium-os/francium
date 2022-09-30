@@ -1,5 +1,4 @@
 use crate::{Handle, INVALID_HANDLE};
-use crate::ipc_common::IPC_BUFFER;
 use crate::syscalls;
 use smallvec::SmallVec;
 use core::marker::PhantomData;
@@ -24,7 +23,6 @@ impl<T: IPCServer> ServerImpl<T> {
 
 	pub fn process(&mut self) -> bool {
 		let index = syscalls::ipc_receive(&self.handles).unwrap();
-		println!("[S] Got index? {:?}", index);
 		if index == 0 {
 			// server handle
 			let new_session = syscalls::ipc_accept(self.handles[0]).unwrap();
@@ -34,10 +32,6 @@ impl<T: IPCServer> ServerImpl<T> {
 			true
 		} else {
 			// a client has a message for us!
-			unsafe {
-				println!("owo: {:x}", IPC_BUFFER[0]);
-				IPC_BUFFER[0] = 0xaaaaaaaa;
-			}
 			T::handle(self.handles[index]);
 			true
 		}

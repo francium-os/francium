@@ -6,7 +6,8 @@ members = [
   "libcommon",
   "modules/fs",
   "modules/sm",
-  "modules/test"
+  "modules/test",
+  "ipc-gen"
 ]
 
 [profile.dev]
