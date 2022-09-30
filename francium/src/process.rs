@@ -94,8 +94,10 @@ impl Thread {
 			}
 			locked.thread_local_location += TLS_SIZE;
 
-			unsafe {
-				core::ptr::copy_nonoverlapping(&locked.thread_local_template[0] as *const u8, (loc + TLS_TCB_OFFSET) as *mut u8, locked.thread_local_template.len());
+			if locked.thread_local_template.len() > 0 {
+				unsafe {
+					core::ptr::copy_nonoverlapping(&locked.thread_local_template[0] as *const u8, (loc + TLS_TCB_OFFSET) as *mut u8, locked.thread_local_template.len());
+				}
 			}
 
 			// XXX: god awful hack
