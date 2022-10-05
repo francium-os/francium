@@ -11,6 +11,12 @@ fn main() {
 
 	let fs_handle = ipc::sm::get_service_handle(syscalls::make_tag("fs")).unwrap();
 	println!("fs handle: {:?}", fs_handle);
-	println!("[C] Client done!");
+
+	println!("SM IPC");
+	ipc::sm::stop();
+	println!("FS IPC");
+	ipc::fs::stop();
+	println!("Done");
+
 	syscalls::exit_process();
 }

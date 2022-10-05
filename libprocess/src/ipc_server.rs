@@ -8,7 +8,7 @@ pub trait IPCServer {
 
 pub struct ServerImpl<T> where T: IPCServer {
 	handles: SmallVec<[Handle; 2]>,
-	server: T
+	pub server: T
 }
 
 impl<T: IPCServer> ServerImpl<T> {
