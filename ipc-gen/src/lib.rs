@@ -81,7 +81,7 @@ pub fn ipc_server(attr: TokenStream, item: TokenStream) -> TokenStream {
                 ReturnType::Type(_, ty) => {
                     // if translate type
                     quote! {
-                        let out: #ty = msg.read();
+                        let out: #ty = reply_msg.read();
                         out
                     }
                 }
@@ -90,11 +90,17 @@ pub fn ipc_server(attr: TokenStream, item: TokenStream) -> TokenStream {
             let method_name = &sig.ident;
             server_dispatch.push(quote! {
                 #method_id => {
-                    #(let #inputs = msg.read();)*
-                    #(msg.read::<u32>(); let #handles = msg.read();)*
+                    #(let #inputs = request_msg.read();)*
+                    #(let #handles = request_msg.read();)*
+
+                    request_msg.read_translates();
 
                     let res = self.#method_name (#(#input_names_with_handles),*);
-                    msg.write(res);
+                    let mut reply_msg = crate::ipc::message::IPCMessage::new();
+                    reply_msg.write(res);
+                    reply_msg.write_translates();
+                    reply_msg.write_header_for(0);
+
                     crate::syscalls::ipc_reply(h).unwrap();
                 }
             });
@@ -103,27 +109,30 @@ pub fn ipc_server(attr: TokenStream, item: TokenStream) -> TokenStream {
             let msg_length_maybe = if input_names.len() == 0 {
                 quote!{ let msg_length: usize = 0; }
             } else {
-                quote! { #(msg.write(#input_names));*; let msg_length: usize = msg.write_offset; }
+                quote! { #(request_msg.write(#input_names));*; let msg_length: usize = request_msg.write_offset; }
             };
 
-            let translate_count: usize = handles.len();
+            //let translate_count: usize = handles.len();
 
             client_methods.push(quote! {
                 pub fn #method_name ( #(#inputs_with_handles),* ) #output {
                     let h = #ipc_handle_accessor();
-                    let mut msg: crate::ipc::message::IPCMessage = crate::ipc::message::IPCMessage::new();
-                    let mut header = crate::ipc::message::IPCHeader { id: #method_id, size: 0, translate_count: #translate_count };
+                    let mut request_msg = crate::ipc::message::IPCMessage::new();
 
                     // Write normal parameters and record their length
                     #msg_length_maybe
                     // Write translate handles
-                    #(msg.write(#handle_names.0.0));* ;
+                    #(request_msg.write(#handle_names.0.0));* ;
 
-                    header.size = msg_length;
-                    assert!(header.size % 4 == 0);
-                    msg.write_header(&header);
+                    request_msg.write_header_for(#method_id);
+                    request_msg.write_translates();
 
                     crate::syscalls::ipc_request(h).unwrap();
+
+                    let mut reply_msg = crate::ipc::message::IPCMessage::new();
+                    reply_msg.read_header();
+                    reply_msg.read_translates();
+
                     #dispatch_output
                 }
             });
@@ -134,10 +143,10 @@ pub fn ipc_server(attr: TokenStream, item: TokenStream) -> TokenStream {
 
     let server_dispatch_method = quote! {
         fn process(&self, h: Handle) {
-            let mut msg: crate::ipc::message::IPCMessage = crate::ipc::message::IPCMessage::new();
-            let message_header = msg.read_header();
+            let mut request_msg: crate::ipc::message::IPCMessage = crate::ipc::message::IPCMessage::new();
+            request_msg.read_header();
 
-            match message_header.id {
+            match request_msg.header.id {
                 #(#server_dispatch),*
                 _ => { panic!("Unexpected IPC message ID!") }
             }

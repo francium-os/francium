@@ -18,6 +18,17 @@ impl Deref for TranslateHandle {
 	}
 }
 
+#[derive(Copy, Clone, Debug)]
+pub enum TranslateEntry {
+	None,
+	Handle(Handle),
+	MemoryStatic(),
+	MemoryMap()
+}
+
+const MAX_TRANSLATE: usize = 4;
+const TRANSLATE_TYPE_HANDLE: u64 = 1;
+
 pub struct IPCHeader {
 	pub id: u32,
 	pub size: usize,
@@ -25,8 +36,11 @@ pub struct IPCHeader {
 }
 
 pub struct IPCMessage {
+	pub header: IPCHeader,
 	pub read_offset: usize,
-	pub write_offset: usize
+	pub write_offset: usize,
+	pub current_translate: usize,
+	pub translate_entries: [TranslateEntry; MAX_TRANSLATE]
 }
 
 pub trait IPCValue {
@@ -43,30 +57,78 @@ impl IPCMessage {
 	pub fn new() -> IPCMessage {
 		// sizeof(packed header) == 4
 		IPCMessage {
+			header: IPCHeader { id: 0, size: 0, translate_count: 0 },
 			read_offset: 4,
-			write_offset: 4
+			write_offset: 4,
+			current_translate: 0,
+			translate_entries: [TranslateEntry::None; MAX_TRANSLATE]
 		}
 	}
 
-	pub fn read_header(&mut self) -> IPCHeader {
-		self.read_offset = 0;
-
-		let packed = self.read::<u32>();
+	pub fn read_header(&mut self) {
+		let packed = unsafe {
+			u32::from_le_bytes(IPC_BUFFER[0..4].try_into().unwrap())
+		};
 
 		let message_id = packed & 0xff;
 		let message_size = (packed & (0xff<<8))>>8;
 		let message_translate_count = (packed & (0xff<<16))>>16;
 
-		IPCHeader{id: message_id, size: message_size as usize, translate_count: message_translate_count as usize }
+		self.header = IPCHeader{id: message_id, size: message_size as usize, translate_count: message_translate_count as usize };
 	}
 
-	pub fn write_header(&mut self, header: &IPCHeader) {
+	pub fn write_header_for(&mut self, method_id: u32) {
+		self.header = IPCHeader { id: method_id, size: self.write_offset, translate_count: self.current_translate };
+		let header = &self.header;
+
 		assert!(header.size < 256);
 		assert!(header.translate_count < 256);
 
 		let packed = header.id | (((header.size & 0xff) as u32) << 8) | (((header.translate_count & 0xff) as u32) << 16);
-		self.write_offset = 0;
-		self.write::<u32>(packed);
+		
+		unsafe {
+			IPC_BUFFER[0..4].copy_from_slice(&u32::to_le_bytes(packed));
+		}
+	}
+
+	pub fn write_translates(&mut self) {
+		//println!("Write translates: {:?} {:?} {:?}", self.write_offset, self.header.size, self.current_translate);
+
+		unsafe {
+			for i in 0..self.current_translate {
+				let entry = self.translate_entries[i];
+				match entry {
+					TranslateEntry::Handle(handle) => {
+						let off = self.write_offset + i * 16;
+
+						let buffer = &mut IPC_BUFFER[off .. off + 16];
+						buffer[0..8].copy_from_slice(&u64::to_le_bytes(1));
+						buffer[8..16].copy_from_slice(&u64::to_le_bytes(handle.0 as u64));
+					},
+					_ => { unimplemented!(); }
+				}
+			}
+		}
+	}
+
+	pub fn read_translates(&mut self) {
+		unsafe {
+			//println!("read off: {:?}, size: {:?}", self.read_offset, self.header.size);
+
+			for i in 0..self.header.translate_count {
+				let off = self.header.size + i * 16;
+				let buffer = &IPC_BUFFER[off .. off + 16];
+				let translate_type = u64::from_le_bytes(buffer[0..8].try_into().unwrap());
+				let translate_payload = u64::from_le_bytes(buffer[8..16].try_into().unwrap());
+				
+				match translate_type {
+					TRANSLATE_TYPE_HANDLE => {
+						self.translate_entries[i] = TranslateEntry::Handle(Handle(translate_payload as u32));
+					},
+					_ => { unimplemented!(); }
+				}
+			}
+		}
 	}
 
 	pub fn read<T: IPCValue>(&mut self) -> T {
@@ -130,14 +192,17 @@ impl IPCValue for OSError {
 
 impl IPCValue for TranslateHandle {
 	fn read(msg: &mut IPCMessage, _buffer: &[u8]) -> TranslateHandle {
-		msg.read::<u32>();
-		let value = msg.read::<u32>();
-		TranslateHandle(Handle(value))
+		if let TranslateEntry::Handle(handle) = msg.translate_entries[msg.current_translate] {
+			msg.current_translate += 1;
+			TranslateHandle(handle)
+		} else {
+			panic!("Invalid translate!");
+		}
 	}
 
 	fn write(msg: &mut IPCMessage, _buffer: &mut [u8], value: &TranslateHandle) {
-		msg.write::<u32>(0);
-		msg.write::<u32>(value.0.0)
+		msg.translate_entries[msg.current_translate] = TranslateEntry::Handle(value.0);
+		msg.current_translate += 1;
 	}
 }
 
