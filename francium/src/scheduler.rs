@@ -73,7 +73,7 @@ impl Scheduler {
 	fn switch_thread(&mut self, from: &Arc<Thread>, to: &Arc<Thread>) -> usize {
 		if from.id == to.id {
 			// don't do this, it'll deadlock
-			println!("Trying to switch to the same thread!");
+			panic!("Trying to switch to the same thread!");
 			return 0
 		}
 
@@ -159,7 +159,7 @@ impl Scheduler {
 		} else {
 			// set x0 of the thread context
 			set_thread_context_tag(&p, tag);
-			self.runnable_threads.push(p);
+			self.runnable_threads.insert(self.current_thread_index+1, p);
 		}
 	}
 
