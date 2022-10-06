@@ -102,7 +102,7 @@ impl IPCMessage {
 						let off = self.write_offset + i * 16;
 
 						let buffer = &mut IPC_BUFFER[off .. off + 16];
-						buffer[0..8].copy_from_slice(&u64::to_le_bytes(1));
+						buffer[0..8].copy_from_slice(&u64::to_le_bytes(TRANSLATE_TYPE_HANDLE));
 						buffer[8..16].copy_from_slice(&u64::to_le_bytes(handle.0 as u64));
 					},
 					_ => { unimplemented!(); }
