@@ -90,10 +90,10 @@ pub fn ipc_server(attr: TokenStream, item: TokenStream) -> TokenStream {
             let method_name = &sig.ident;
             server_dispatch.push(quote! {
                 #method_id => {
+                    request_msg.read_translates();
+
                     #(let #inputs = request_msg.read();)*
                     #(let #handles = request_msg.read();)*
-
-                    request_msg.read_translates();
 
                     let res = self.#method_name (#(#input_names_with_handles),*);
                     let mut reply_msg = crate::ipc::message::IPCMessage::new();
@@ -101,6 +101,7 @@ pub fn ipc_server(attr: TokenStream, item: TokenStream) -> TokenStream {
                     reply_msg.write_translates();
                     reply_msg.write_header_for(0);
 
+                    //unsafe { println!("{:?}", IPC_BUFFER); }
                     crate::syscalls::ipc_reply(h).unwrap();
                 }
             });
@@ -127,6 +128,8 @@ pub fn ipc_server(attr: TokenStream, item: TokenStream) -> TokenStream {
                     request_msg.write_header_for(#method_id);
                     request_msg.write_translates();
 
+                    //println!("{}.{}", stringify!(#server_trait_name), stringify!(#method_name));
+                    //unsafe { println!("{:?}", IPC_BUFFER); }
                     crate::syscalls::ipc_request(h).unwrap();
 
                     let mut reply_msg = crate::ipc::message::IPCMessage::new();
