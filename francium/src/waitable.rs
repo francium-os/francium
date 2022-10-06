@@ -123,21 +123,30 @@ pub fn wait_handles(handles: &[u32]) -> usize {
 		match handle {
 			// What handles are waitable?
 			Handle::Port(port) => {
-				any_pending = any_pending || port.post_wait(index);
+				if port.post_wait(index) {
+					any_pending = true;
+					tag = index;
+					break
+				}
 			},
 
 			Handle::ServerSession(server_session) => {
-				any_pending = any_pending || server_session.post_wait(index);
+				if server_session.post_wait(index) {
+					any_pending = true;
+					tag = index;
+					break
+				}
 			},
 
 			Handle::ClientSession(client_session) => {
-				any_pending = any_pending || client_session.post_wait(index);
+				if client_session.post_wait(index) {
+					any_pending = true;
+					tag = index;
+					break
+				}
 			},
 
 			_ => {}
-		}
-		if any_pending {
-			tag = index;
 		}
 	}
 
