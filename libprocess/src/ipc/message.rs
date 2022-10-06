@@ -225,7 +225,7 @@ impl IPCValue for TranslateCopyHandle {
 	}
 
 	fn write(msg: &mut IPCMessage, _buffer: &mut [u8], value: &TranslateCopyHandle) {
-		msg.translate_entries[msg.current_translate] = TranslateEntry::MoveHandle(value.0);
+		msg.translate_entries[msg.current_translate] = TranslateEntry::CopyHandle(value.0);
 		msg.current_translate += 1;
 	}
 }
