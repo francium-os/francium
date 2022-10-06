@@ -204,7 +204,8 @@ impl IPCValue for TranslateMoveHandle {
 			msg.current_translate += 1;
 			TranslateMoveHandle(handle)
 		} else {
-			panic!("Invalid translate!");
+			println!("{:?} of {:?}", msg.current_translate, msg.header.translate_count);
+			panic!("Invalid translate! Expected Move, got {:?}", msg.translate_entries[msg.current_translate]);
 		}
 	}
 
@@ -220,7 +221,8 @@ impl IPCValue for TranslateCopyHandle {
 			msg.current_translate += 1;
 			TranslateCopyHandle(handle)
 		} else {
-			panic!("Invalid translate!");
+			println!("{:?} of {:?}", msg.current_translate, msg.header.translate_count);
+			panic!("Invalid translate! Expected Copy, got {:?}", msg.translate_entries[msg.current_translate]);
 		}
 	}
 
