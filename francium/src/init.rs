@@ -117,10 +117,12 @@ pub fn load_process(elf_buf: &[u8]) -> Arc<Thread> {
 					unsafe {
 						core::ptr::copy_nonoverlapping(elf_buf.as_ptr().offset(ph.offset() as isize), ph.vaddr() as *mut u8, ph.filesz() as usize);
 					}
-				} else {
+				}
+
+				if ph.filesz() < ph.memsz() {
 					// BSS section
 					unsafe {
-						core::ptr::write_bytes(ph.vaddr() as *mut u8, 0, ph.memsz() as usize);
+						core::ptr::write_bytes((ph.vaddr() + ph.filesz()) as *mut u8, 0, (ph.memsz()-ph.filesz()) as usize);
 					}
 				}
 				
