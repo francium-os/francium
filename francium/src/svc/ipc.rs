@@ -160,6 +160,7 @@ pub fn svc_ipc_request(session_handle: u32) -> u32 {
 	}
 }
 
+use crate::process::TLS_TCB_OFFSET;
 const MAX_HANDLES: usize = 128;
 pub fn svc_ipc_receive(handles_ptr: *const u32, handle_count: usize) -> (u32, usize) {
 	let mut handles: [u32; MAX_HANDLES] = [ 0xffffffff ; MAX_HANDLES];
@@ -177,8 +178,9 @@ pub fn svc_ipc_receive(handles_ptr: *const u32, handle_count: usize) -> (u32, us
 		{
 			let from_tls = client_thread.thread_local.lock();
 			let mut to_tls = current_thread.thread_local.lock();
+
 			unsafe {
-				core::ptr::copy_nonoverlapping(from_tls.as_ptr(), to_tls.as_mut_ptr(), 32);
+				core::ptr::copy_nonoverlapping(from_tls[TLS_TCB_OFFSET..].as_ptr(), to_tls[TLS_TCB_OFFSET..].as_mut_ptr(), 128);
 			}
 		}
 
@@ -200,7 +202,7 @@ pub fn svc_ipc_reply(session_handle: u32) -> u32 {
 			let from_tls = current_thread.thread_local.lock();
 			let mut to_tls = client_thread.thread_local.lock();
 			unsafe {
-				core::ptr::copy_nonoverlapping(from_tls.as_ptr(), to_tls.as_mut_ptr(), 32);
+				core::ptr::copy_nonoverlapping(from_tls[TLS_TCB_OFFSET..].as_ptr(), to_tls[TLS_TCB_OFFSET..].as_mut_ptr(), 128);
 			}
 		}
 
