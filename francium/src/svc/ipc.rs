@@ -4,6 +4,7 @@ use crate::handle::Handle;
 use crate::process::Thread;
 use crate::waitable;
 use crate::waitable::{Waiter, Waitable};
+use common::os_error::{ResultCode, RESULT_OK, Module, Reason};
 use spin::Mutex;
 use alloc::collections::BTreeMap;
 use alloc::vec::Vec;
@@ -72,7 +73,7 @@ lazy_static! {
 	static ref PORT_WAITERS: Mutex<Vec<(u64, Arc<Thread>)>> = Mutex::new(Vec::new());
 }
 
-pub fn svc_create_port(tag: u64) -> (u32, u32) {
+pub fn svc_create_port(tag: u64) -> (ResultCode, u32) {
 	let server_port = Port::new();
 	let server_port_handle = Arc::new(server_port);
 
@@ -100,10 +101,10 @@ pub fn svc_create_port(tag: u64) -> (u32, u32) {
 	let mut process = proc_locked.lock();
 
 	let handle_value = process.handle_table.get_handle(Handle::Port(server_port_handle));
-	(0, handle_value)
+	(RESULT_OK, handle_value)
 }
 
-pub fn svc_connect_to_port(tag: u64) -> (u32, u32) {
+pub fn svc_connect_to_port(tag: u64) -> (ResultCode, u32) {
 	let port = {
 		let ports = PORT_LIST.lock();
 		if let Some(server_port) = ports.get(&tag) {
@@ -139,12 +140,12 @@ pub fn svc_connect_to_port(tag: u64) -> (u32, u32) {
 		let current_process = scheduler::get_current_process();
 		let mut process = current_process.lock();
 		let handle_value = process.handle_table.get_handle(Handle::ClientSession(client_session));
-		(0, handle_value)
+		(RESULT_OK, handle_value)
 	}
 }
 
 // x0: ipc session
-pub fn svc_ipc_request(session_handle: u32) -> u32 {
+pub fn svc_ipc_request(session_handle: u32) -> ResultCode {
 	if let Handle::ClientSession(client_session) = handle::get_handle(session_handle) {
 		// signal, then wait for reply
 		let current_thread = scheduler::get_current_thread();
@@ -153,16 +154,16 @@ pub fn svc_ipc_request(session_handle: u32) -> u32 {
 		client_session.server.signal_one();
 		client_session.wait();
 
-		0
+		RESULT_OK
 	} else {
 		// error
-		1
+		ResultCode::new(Module::Kernel, Reason::InvalidHandle)
 	}
 }
 
 use crate::process::TLS_TCB_OFFSET;
 const MAX_HANDLES: usize = 128;
-pub fn svc_ipc_receive(handles_ptr: *const u32, handle_count: usize) -> (u32, usize) {
+pub fn svc_ipc_receive(handles_ptr: *const u32, handle_count: usize) -> (ResultCode, usize) {
 	let mut handles: [u32; MAX_HANDLES] = [ 0xffffffff ; MAX_HANDLES];
 
 	unsafe {
@@ -187,11 +188,11 @@ pub fn svc_ipc_receive(handles_ptr: *const u32, handle_count: usize) -> (u32, us
 		*server_session.client_thread.lock() = Some(client_thread);
 	}
 
-	(0, index)
+	(RESULT_OK, index)
 }
 
 // x0: session handle
-pub fn svc_ipc_reply(session_handle: u32) -> u32 {
+pub fn svc_ipc_reply(session_handle: u32) -> ResultCode {
 	if let Handle::ServerSession(server_session) = handle::get_handle(session_handle) {
 		// TODO: wtf?
 		let current_thread = scheduler::get_current_thread();
@@ -208,15 +209,15 @@ pub fn svc_ipc_reply(session_handle: u32) -> u32 {
 
 		*thread_lock = None;
 		server_session.client.lock().upgrade().unwrap().signal_one();
-		0
+		RESULT_OK
 	} else {
-		1
+		ResultCode::new(Module::Kernel, Reason::InvalidHandle)
 	}
 }
 
 // x0: port
 // x1: session handle out
-pub fn svc_ipc_accept(port_handle: u32) -> (u32, u32) {
+pub fn svc_ipc_accept(port_handle: u32) -> (ResultCode, u32) {
 	if let Handle::Port(port) = handle::get_handle(port_handle) {
 		let server_session = port.queue.lock().pop().unwrap();
 
@@ -226,8 +227,8 @@ pub fn svc_ipc_accept(port_handle: u32) -> (u32, u32) {
 		let current_process = scheduler::get_current_process();
 		let mut process = current_process.lock();
 		let handle_value = process.handle_table.get_handle(Handle::ServerSession(server_session));
-		(0, handle_value)
+		(RESULT_OK, handle_value)
 	} else {
-		(1, 0xffffffff)
+		(ResultCode::new(Module::Kernel, Reason::InvalidHandle), 0xffffffff)
 	}
 }

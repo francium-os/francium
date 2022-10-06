@@ -5,7 +5,7 @@ use core::sync::atomic::{AtomicBool, Ordering};
 use process::println;
 use process::syscalls;
 use process::Handle;
-use process::os_error::{OSError, OSResult, Module, Error};
+use process::os_error::{OSError, OSResult, Module, Reason};
 use process::ipc_server::{ServerImpl, IPCServer};
 use process::ipc::message::*;
 use process::ipc::sm;
@@ -28,7 +28,7 @@ impl FSServer for FSServerStruct {
 	}
 
 	fn test(&self) -> OSResult<TranslateMoveHandle> {
-		Err(OSError { module: Module::FS, err: Error::NotImplemented })
+		Err(OSError { module: Module::FS, reason: Reason::NotImplemented })
 	}
 }
 

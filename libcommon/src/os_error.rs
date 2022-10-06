@@ -5,6 +5,12 @@ use num_enum::TryFromPrimitive;
 pub struct ResultCode(pub u32);
 pub const RESULT_OK: ResultCode = ResultCode(0);
 
+impl ResultCode {
+    pub fn new(module: Module, reason: Reason) -> ResultCode {
+        OSError::to_result_code(&OSError { module, reason })
+    }
+}
+
 #[derive(Copy, Clone, Debug, TryFromPrimitive)]
 #[repr(u16)]
 pub enum Module {
@@ -17,10 +23,11 @@ pub enum Module {
 
 #[derive(Copy, Clone, Debug, TryFromPrimitive)]
 #[repr(u16)]
-pub enum Error {
+pub enum Reason {
     None = 0,
     NotImplemented = 1,
     NotAllowed = 2,
+    InvalidHandle = 3,
     Unknown = 0xffff
 }
 
@@ -28,19 +35,19 @@ pub enum Error {
 #[allow(dead_code)]
 pub struct OSError {
 	pub module: Module,
-    pub err: Error
+    pub reason: Reason
 }
 
 impl OSError {
     pub fn from_result_code(r: ResultCode) -> OSError {
         OSError { 
             module: Module::try_from((r.0 & 0xffff) as u16).unwrap_or(Module::Unknown),
-            err: Error::try_from(((r.0 & 0xffff0000) >> 16) as u16).unwrap_or(Error::Unknown)
+            reason: Reason::try_from(((r.0 & 0xffff0000) >> 16) as u16).unwrap_or(Reason::Unknown)
         }
     }
 
     pub fn to_result_code(&self) -> ResultCode {
-        ResultCode((self.module as u32) | (self.err as u32) << 16)
+        ResultCode((self.module as u32) | (self.reason as u32) << 16)
     }
 }
 

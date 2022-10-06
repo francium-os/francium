@@ -1,4 +1,6 @@
 use crate::handle::Handle;
+use common::os_error::{RESULT_OK, ResultCode, Module, Reason};
+
 // for now i will just fix the handle table size.
 // todo: dynamic
 const MAX_HANDLES: usize = 256;
@@ -41,17 +43,17 @@ impl HandleTable {
 		panic!("handle table is exhausted!");
 	}
 
-	pub fn close(&mut self, handle: u32) -> u32 {
+	pub fn close(&mut self, handle: u32) -> ResultCode {
 		if (handle as usize) < MAX_HANDLES {
 			match self.handles[handle as usize] {
-				Handle::Invalid => 1,
+				Handle::Invalid => ResultCode::new(Module::Kernel, Reason::InvalidHandle),
 				_ => {
 					self.handles[handle as usize] = Handle::Invalid;
-					0
+					RESULT_OK
 				}
 			}
 		} else {
-			1
+			ResultCode::new(Module::Kernel, Reason::InvalidHandle)
 		}
 	}
 }

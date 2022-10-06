@@ -22,13 +22,13 @@ unsafe extern "C" fn syscall_wrapper_debug_output(s: *const u8, length: usize) {
 #[no_mangle]
 unsafe extern "C" fn syscall_wrapper_create_port(tag: u64) -> Pair {
 	let (res, out) = svc::svc_create_port(tag);
-	Pair { a: res as usize, b: out as usize }
+	Pair { a: res.0 as usize, b: out as usize }
 }
 
 #[no_mangle]
 unsafe extern "C" fn syscall_wrapper_connect_to_port(tag: u64) -> Pair {
 	let (res, out) = svc::svc_connect_to_port(tag);
-	Pair { a: res as usize, b: out as usize }
+	Pair { a: res.0 as usize, b: out as usize }
 }
 
 #[no_mangle]
@@ -38,29 +38,29 @@ unsafe extern "C" fn syscall_wrapper_exit_process() {
 
 #[no_mangle]
 unsafe extern "C" fn syscall_wrapper_close_handle(handle: u32) -> u32 {
-	svc::svc_close_handle(handle)
+	svc::svc_close_handle(handle).0
 }
 
 #[no_mangle]
 unsafe extern "C" fn syscall_wrapper_ipc_request(handle: u32) -> u32 {
-	svc::svc_ipc_request(handle)
+	svc::svc_ipc_request(handle).0
 }
 
 #[no_mangle]
 unsafe extern "C" fn syscall_wrapper_ipc_reply(handle: u32) -> u32 {
-	svc::svc_ipc_reply(handle)
+	svc::svc_ipc_reply(handle).0
 }
 
 #[no_mangle]
 unsafe extern "C" fn syscall_wrapper_ipc_receive(handles: *const u32, index: usize) -> Pair {
 	let (res, out) = svc::svc_ipc_receive(handles, index);
-	Pair { a: res as usize, b: out }
+	Pair { a: res.0 as usize, b: out }
 }
 
 #[no_mangle]
 unsafe extern "C" fn syscall_wrapper_ipc_accept(handle: u32) -> Pair {
 	let (res, out) = svc::svc_ipc_accept(handle);
-	Pair { a: res as usize, b: out as usize }
+	Pair { a: res.0 as usize, b: out as usize }
 }
 
 #[no_mangle]
