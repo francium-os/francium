@@ -7,7 +7,7 @@ use process::syscalls;
 use process::Handle;
 use process::os_error::{OSError, OSResult, Module, Error};
 use process::ipc_server::{ServerImpl, IPCServer};
-use process::ipc::message::TranslateHandle;
+use process::ipc::message::*;
 use process::ipc::sm;
 use process::ipc::fs::FSServer;
 
@@ -27,7 +27,7 @@ impl FSServer for FSServerStruct {
 		self.should_stop.store(true, Ordering::Release);
 	}
 
-	fn test(&self) -> OSResult<TranslateHandle> {
+	fn test(&self) -> OSResult<TranslateMoveHandle> {
 		Err(OSError { module: Module::FS, err: Error::NotImplemented })
 	}
 }
@@ -37,7 +37,7 @@ fn main() {
 
 	let port = syscalls::create_port("").unwrap();
 
-	sm::register_port(syscalls::make_tag("fs"), TranslateHandle(port)).unwrap();
+	sm::register_port(syscalls::make_tag("fs"), TranslateCopyHandle(port)).unwrap();
 
 	let mut server = ServerImpl::new(FSServerStruct{ should_stop: AtomicBool::new(false) }, port);
 

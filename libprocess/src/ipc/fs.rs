@@ -2,7 +2,7 @@ use spin::Mutex;
 use crate::Handle;
 use common::os_error::OSResult;
 use ipc_gen::ipc_server;
-use crate::ipc::message::TranslateHandle;
+use crate::ipc::message::*;
 
 static FS_HANDLE: Mutex<Option<Handle>> = Mutex::new(None);
 
@@ -11,7 +11,7 @@ fn get_handle_for_fs() -> Handle {
 	match *locked {
 		Some(x) => x,
 		None => {
-			let handle = *crate::ipc::sm::get_service_handle(crate::syscalls::make_tag("fs")).unwrap();
+			let handle = crate::ipc::sm::get_service_handle(crate::syscalls::make_tag("fs")).unwrap().0;
 			*locked = Some(handle);
 			handle
 		}
@@ -24,5 +24,5 @@ trait FSServer {
 	fn stop(&self);
 
 	#[ipc_method_id = 1]
-	fn test(&self) -> OSResult<TranslateHandle>;
+	fn test(&self) -> OSResult<TranslateMoveHandle>;
 }

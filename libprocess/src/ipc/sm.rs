@@ -3,7 +3,7 @@ use crate::Handle;
 use crate::syscalls;
 use common::os_error::OSResult;
 use ipc_gen::ipc_server;
-use crate::ipc::message::TranslateHandle;
+use crate::ipc::message::*;
 
 static SM_HANDLE: Mutex<Option<Handle>> = Mutex::new(None);
 
@@ -26,8 +26,8 @@ trait SMServer {
 
 	#[ipc_method_id = 1]
 	//#[copy_handles(return_value)]
-	fn get_service_handle(&self, tag: u64) -> OSResult<TranslateHandle>;
+	fn get_service_handle(&self, tag: u64) -> OSResult<TranslateMoveHandle>;
 
 	#[ipc_method_id = 2]
-	fn register_port(&self, tag: u64, port_handle: TranslateHandle) -> OSResult<()>;
+	fn register_port(&self, tag: u64, port_handle: TranslateCopyHandle) -> OSResult<()>;
 }

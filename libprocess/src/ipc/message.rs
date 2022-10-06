@@ -1,5 +1,4 @@
 use core::convert::TryInto;
-use core::ops::Deref;
 use common::os_error::{OSResult,OSError,ResultCode,RESULT_OK};
 use crate::Handle;
 
@@ -9,25 +8,24 @@ pub static mut IPC_BUFFER: [u8; 128] = [0; 128];
 
 #[repr(transparent)]
 #[derive(Debug)]
-pub struct TranslateHandle(pub Handle);
+pub struct TranslateCopyHandle(pub Handle);
 
-impl Deref for TranslateHandle {
-	type Target = Handle;
-	fn deref(&self) -> &<Self as Deref>::Target {
-		&self.0
-	}
-}
+#[repr(transparent)]
+#[derive(Debug)]
+pub struct TranslateMoveHandle(pub Handle);
 
 #[derive(Copy, Clone, Debug)]
 pub enum TranslateEntry {
 	None,
-	Handle(Handle),
+	MoveHandle(Handle),
+	CopyHandle(Handle),
 	MemoryStatic(),
 	MemoryMap()
 }
 
 const MAX_TRANSLATE: usize = 4;
-const TRANSLATE_TYPE_HANDLE: u64 = 1;
+const TRANSLATE_TYPE_MOVE_HANDLE: u64 = 1;
+const TRANSLATE_TYPE_COPY_HANDLE: u64 = 2;
 
 pub struct IPCHeader {
 	pub id: u32,
@@ -98,11 +96,18 @@ impl IPCMessage {
 			for i in 0..self.current_translate {
 				let entry = self.translate_entries[i];
 				match entry {
-					TranslateEntry::Handle(handle) => {
+					TranslateEntry::MoveHandle(handle) => {
 						let off = self.write_offset + i * 16;
 
 						let buffer = &mut IPC_BUFFER[off .. off + 16];
-						buffer[0..8].copy_from_slice(&u64::to_le_bytes(TRANSLATE_TYPE_HANDLE));
+						buffer[0..8].copy_from_slice(&u64::to_le_bytes(TRANSLATE_TYPE_MOVE_HANDLE));
+						buffer[8..16].copy_from_slice(&u64::to_le_bytes(handle.0 as u64));
+					},
+					TranslateEntry::CopyHandle(handle) => {
+						let off = self.write_offset + i * 16;
+
+						let buffer = &mut IPC_BUFFER[off .. off + 16];
+						buffer[0..8].copy_from_slice(&u64::to_le_bytes(TRANSLATE_TYPE_COPY_HANDLE));
 						buffer[8..16].copy_from_slice(&u64::to_le_bytes(handle.0 as u64));
 					},
 					_ => { unimplemented!(); }
@@ -122,8 +127,11 @@ impl IPCMessage {
 				let translate_payload = u64::from_le_bytes(buffer[8..16].try_into().unwrap());
 				
 				match translate_type {
-					TRANSLATE_TYPE_HANDLE => {
-						self.translate_entries[i] = TranslateEntry::Handle(Handle(translate_payload as u32));
+					TRANSLATE_TYPE_MOVE_HANDLE => {
+						self.translate_entries[i] = TranslateEntry::MoveHandle(Handle(translate_payload as u32));
+					},
+					TRANSLATE_TYPE_COPY_HANDLE => {
+						self.translate_entries[i] = TranslateEntry::CopyHandle(Handle(translate_payload as u32));
 					},
 					_ => { unimplemented!(); }
 				}
@@ -190,21 +198,38 @@ impl IPCValue for OSError {
 	}
 }
 
-impl IPCValue for TranslateHandle {
-	fn read(msg: &mut IPCMessage, _buffer: &[u8]) -> TranslateHandle {
-		if let TranslateEntry::Handle(handle) = msg.translate_entries[msg.current_translate] {
+impl IPCValue for TranslateMoveHandle {
+	fn read(msg: &mut IPCMessage, _buffer: &[u8]) -> TranslateMoveHandle {
+		if let TranslateEntry::MoveHandle(handle) = msg.translate_entries[msg.current_translate] {
 			msg.current_translate += 1;
-			TranslateHandle(handle)
+			TranslateMoveHandle(handle)
 		} else {
 			panic!("Invalid translate!");
 		}
 	}
 
-	fn write(msg: &mut IPCMessage, _buffer: &mut [u8], value: &TranslateHandle) {
-		msg.translate_entries[msg.current_translate] = TranslateEntry::Handle(value.0);
+	fn write(msg: &mut IPCMessage, _buffer: &mut [u8], value: &TranslateMoveHandle) {
+		msg.translate_entries[msg.current_translate] = TranslateEntry::MoveHandle(value.0);
 		msg.current_translate += 1;
 	}
 }
+
+impl IPCValue for TranslateCopyHandle {
+	fn read(msg: &mut IPCMessage, _buffer: &[u8]) -> TranslateCopyHandle {
+		if let TranslateEntry::CopyHandle(handle) = msg.translate_entries[msg.current_translate] {
+			msg.current_translate += 1;
+			TranslateCopyHandle(handle)
+		} else {
+			panic!("Invalid translate!");
+		}
+	}
+
+	fn write(msg: &mut IPCMessage, _buffer: &mut [u8], value: &TranslateCopyHandle) {
+		msg.translate_entries[msg.current_translate] = TranslateEntry::MoveHandle(value.0);
+		msg.current_translate += 1;
+	}
+}
+
 
 impl<T: IPCValue> IPCValue for OSResult<T> {
 	fn read(msg: &mut IPCMessage, buffer: &[u8]) -> OSResult<T> {

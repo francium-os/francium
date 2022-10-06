@@ -7,7 +7,7 @@ use process::syscalls;
 use process::{Handle, INVALID_HANDLE};
 use process::os_error::{OSError, OSResult, Module, Error};
 use process::ipc_server::{ServerImpl, IPCServer};
-use process::ipc::message::TranslateHandle;
+use process::ipc::message::*;
 use process::ipc::sm::SMServer;
 
 struct SMServerStruct {
@@ -26,12 +26,12 @@ impl SMServer for SMServerStruct {
 		self.should_stop.store(true, Ordering::Release);
 	}
 
-	fn get_service_handle(&self, tag: u64) -> OSResult<TranslateHandle> {
+	fn get_service_handle(&self, tag: u64) -> OSResult<TranslateMoveHandle> {
 		println!("Got tag: {:x}", tag);
-		Ok(TranslateHandle(INVALID_HANDLE))
+		Ok(TranslateMoveHandle(INVALID_HANDLE))
 	}
 
-	fn register_port(&self, tag: u64, port_handle: TranslateHandle) -> OSResult<()> {
+	fn register_port(&self, tag: u64, port_handle: TranslateCopyHandle) -> OSResult<()> {
 		Err(OSError { module: Module::SM, err: Error::NotImplemented })
 	}
 }
