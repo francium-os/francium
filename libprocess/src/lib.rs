@@ -7,11 +7,6 @@
 
 extern crate alloc;
 
-#[derive(Copy, Clone, Debug, Default)]
-#[repr(transparent)]
-pub struct Handle(u32);
-pub const INVALID_HANDLE: Handle = Handle(0xffffffff);
-
 #[macro_use]
 pub mod print;
 pub mod syscalls;
@@ -21,3 +16,4 @@ pub mod allocator;
 pub mod ipc;
 
 pub use common::os_error;
+pub use common::{Handle, INVALID_HANDLE};

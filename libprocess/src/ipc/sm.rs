@@ -1,9 +1,9 @@
 use spin::Mutex;
-use crate::Handle;
 use crate::syscalls;
+use common::Handle;
 use common::os_error::OSResult;
+use common::ipc::*;
 use ipc_gen::ipc_server;
-use crate::ipc::message::*;
 
 static SM_HANDLE: Mutex<Option<Handle>> = Mutex::new(None);
 

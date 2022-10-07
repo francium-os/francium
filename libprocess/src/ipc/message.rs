@@ -1,28 +1,11 @@
 use core::convert::TryInto;
 use common::os_error::{OSResult,OSError,ResultCode,RESULT_OK};
 use common::ipc::*;
-use crate::Handle;
+use common::Handle;
 
 #[thread_local]
 #[no_mangle]
 pub static mut IPC_BUFFER: [u8; 128] = [0; 128];
-
-#[repr(transparent)]
-#[derive(Debug)]
-pub struct TranslateCopyHandle(pub Handle);
-
-#[repr(transparent)]
-#[derive(Debug)]
-pub struct TranslateMoveHandle(pub Handle);
-
-#[derive(Copy, Clone, Debug)]
-pub enum TranslateEntry {
-	None,
-	MoveHandle(Handle),
-	CopyHandle(Handle),
-	MemoryStatic(),
-	MemoryMap()
-}
 
 pub struct IPCMessage {
 	pub header: IPCHeader,

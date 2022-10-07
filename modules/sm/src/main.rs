@@ -4,10 +4,10 @@
 use core::sync::atomic::{AtomicBool, Ordering};
 use process::println;
 use process::syscalls;
-use process::{Handle, INVALID_HANDLE};
+use process::Handle;
 use process::os_error::{OSError, OSResult, Module, Reason};
 use process::ipc_server::{ServerImpl, IPCServer};
-use process::ipc::message::*;
+use process::ipc::*;
 use process::ipc::sm::SMServer;
 
 struct SMServerStruct {
@@ -28,7 +28,7 @@ impl SMServer for SMServerStruct {
 
 	fn get_service_handle(&self, tag: u64) -> OSResult<TranslateMoveHandle> {
 		println!("Got tag: {:x}", tag);
-		Ok(TranslateMoveHandle(INVALID_HANDLE))
+		Err(OSError { module: Module::SM, reason: Reason::NotImplemented })
 	}
 
 	fn register_port(&self, tag: u64, port_handle: TranslateCopyHandle) -> OSResult<()> {

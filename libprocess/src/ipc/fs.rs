@@ -1,8 +1,8 @@
 use spin::Mutex;
-use crate::Handle;
+use common::Handle;
 use common::os_error::OSResult;
 use ipc_gen::ipc_server;
-use crate::ipc::message::*;
+use common::ipc::*;
 
 static FS_HANDLE: Mutex<Option<Handle>> = Mutex::new(None);
 

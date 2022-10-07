@@ -1,4 +1,4 @@
-use crate::{Handle, INVALID_HANDLE};
+use common::{Handle, INVALID_HANDLE};
 use crate::syscalls;
 use smallvec::SmallVec;
 

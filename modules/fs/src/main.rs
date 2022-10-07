@@ -7,7 +7,7 @@ use process::syscalls;
 use process::Handle;
 use process::os_error::{OSError, OSResult, Module, Reason};
 use process::ipc_server::{ServerImpl, IPCServer};
-use process::ipc::message::*;
+use process::ipc::*;
 use process::ipc::sm;
 use process::ipc::fs::FSServer;
 
