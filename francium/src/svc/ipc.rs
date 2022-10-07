@@ -4,6 +4,8 @@ use crate::handle::HandleObject;
 use crate::process::Thread;
 use crate::waitable;
 use crate::waitable::{Waiter, Waitable};
+use core::convert::TryInto;
+use common::Handle;
 use common::os_error::{ResultCode, RESULT_OK, Module, Reason};
 use common::ipc::*;
 use spin::Mutex;
@@ -162,6 +164,46 @@ pub fn svc_ipc_request(session_handle: u32) -> ResultCode {
 	}
 }
 
+fn do_ipc_transfer(from_thread: &Arc<Thread>, to_thread: &Arc<Thread>) {
+	let from_tls = from_thread.thread_local.lock();
+	let mut to_tls = to_thread.thread_local.lock();
+
+	let from_ipc_buffer = &from_tls[TLS_TCB_OFFSET..];
+	let to_ipc_buffer = &mut to_tls[TLS_TCB_OFFSET..];
+
+	unsafe {
+		core::ptr::copy_nonoverlapping(from_ipc_buffer.as_ptr(), to_ipc_buffer.as_mut_ptr(), 128);
+	}
+
+	let packed_header = u32::from_le_bytes(to_ipc_buffer[0..4].try_into().unwrap());
+	let header = IPCHeader::unpack(packed_header);
+
+	// Translate all translate parameters
+	for i in 0..header.translate_count {
+		let off = header.size + i*16;
+		let entry = TranslateEntry::read(to_ipc_buffer[off..off+16].try_into().unwrap());
+
+		let new_entry = match entry {
+			TranslateEntry::CopyHandle(handle) => {
+				let obj = from_thread.process.lock().handle_table.get_object(handle.0);
+				let new_handle = to_thread.process.lock().handle_table.get_handle(obj);
+				TranslateEntry::CopyHandle(Handle(new_handle))
+			},
+			TranslateEntry::MoveHandle(handle) => {
+				let obj = from_thread.process.lock().handle_table.get_object(handle.0);
+				let new_handle = to_thread.process.lock().handle_table.get_handle(obj);
+				assert!(from_thread.process.lock().handle_table.close(handle.0) == RESULT_OK);
+
+				TranslateEntry::MoveHandle(Handle(new_handle))
+			},
+			_ => {
+				unimplemented!("Can't translate {:?}", entry);
+			}
+		};
+		TranslateEntry::write(&mut to_ipc_buffer[off..off+16].try_into().unwrap(), new_entry)
+	}
+}
+
 use crate::process::TLS_TCB_OFFSET;
 const MAX_HANDLES: usize = 128;
 pub fn svc_ipc_receive(handles_ptr: *const u32, handle_count: usize) -> (ResultCode, usize) {
@@ -176,15 +218,8 @@ pub fn svc_ipc_receive(handles_ptr: *const u32, handle_count: usize) -> (ResultC
 	if let HandleObject::ServerSession(server_session) = handle::get_handle(handles[index]) {
 		let client_thread = server_session.queue.lock().pop().unwrap();
 		let current_thread = scheduler::get_current_thread();
-		/* Process IPC message here! */
-		{
-			let from_tls = client_thread.thread_local.lock();
-			let mut to_tls = current_thread.thread_local.lock();
 
-			unsafe {
-				core::ptr::copy_nonoverlapping(from_tls[TLS_TCB_OFFSET..].as_ptr(), to_tls[TLS_TCB_OFFSET..].as_mut_ptr(), 128);
-			}
-		}
+		do_ipc_transfer(&client_thread, &current_thread);
 
 		*server_session.client_thread.lock() = Some(client_thread);
 	}
@@ -200,13 +235,7 @@ pub fn svc_ipc_reply(session_handle: u32) -> ResultCode {
 		let mut thread_lock = server_session.client_thread.lock();
 		let client_thread = thread_lock.as_ref().unwrap();
 
-		{
-			let from_tls = current_thread.thread_local.lock();
-			let mut to_tls = client_thread.thread_local.lock();
-			unsafe {
-				core::ptr::copy_nonoverlapping(from_tls[TLS_TCB_OFFSET..].as_ptr(), to_tls[TLS_TCB_OFFSET..].as_mut_ptr(), 128);
-			}
-		}
+		do_ipc_transfer(&current_thread, &client_thread);
 
 		*thread_lock = None;
 		server_session.client.lock().upgrade().unwrap().signal_one();
