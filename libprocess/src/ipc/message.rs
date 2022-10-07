@@ -24,12 +24,6 @@ pub enum TranslateEntry {
 	MemoryMap()
 }
 
-pub struct IPCHeader {
-	pub id: u32,
-	pub size: usize,
-	pub translate_count: usize
-}
-
 pub struct IPCMessage {
 	pub header: IPCHeader,
 	pub read_offset: usize,
@@ -65,22 +59,13 @@ impl IPCMessage {
 			u32::from_le_bytes(IPC_BUFFER[0..4].try_into().unwrap())
 		};
 
-		let message_id = packed & 0xff;
-		let message_size = (packed & (0xff<<8))>>8;
-		let message_translate_count = (packed & (0xff<<16))>>16;
-
-		self.header = IPCHeader{id: message_id, size: message_size as usize, translate_count: message_translate_count as usize };
+		self.header = IPCHeader::unpack(packed);
 	}
 
 	pub fn write_header_for(&mut self, method_id: u32) {
 		self.header = IPCHeader { id: method_id, size: self.write_offset, translate_count: self.current_translate };
-		let header = &self.header;
+		let packed = IPCHeader::pack(&self.header);
 
-		assert!(header.size < 256);
-		assert!(header.translate_count < 256);
-
-		let packed = header.id | (((header.size & 0xff) as u32) << 8) | (((header.translate_count & 0xff) as u32) << 16);
-		
 		unsafe {
 			IPC_BUFFER[0..4].copy_from_slice(&u32::to_le_bytes(packed));
 		}
