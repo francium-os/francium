@@ -1,7 +1,6 @@
 use core::convert::TryInto;
 use common::os_error::{OSResult,OSError,ResultCode,RESULT_OK};
 use common::ipc::*;
-use common::Handle;
 
 #[thread_local]
 #[no_mangle]
@@ -55,51 +54,22 @@ impl IPCMessage {
 	}
 
 	pub fn write_translates(&mut self) {
-		//println!("Write translates: {:?} {:?} {:?}", self.write_offset, self.header.size, self.current_translate);
-
 		unsafe {
 			for i in 0..self.current_translate {
 				let entry = self.translate_entries[i];
-				match entry {
-					TranslateEntry::MoveHandle(handle) => {
-						let off = self.write_offset + i * 16;
-
-						let buffer = &mut IPC_BUFFER[off .. off + 16];
-						buffer[0..8].copy_from_slice(&u64::to_le_bytes(TRANSLATE_TYPE_MOVE_HANDLE));
-						buffer[8..16].copy_from_slice(&u64::to_le_bytes(handle.0 as u64));
-					},
-					TranslateEntry::CopyHandle(handle) => {
-						let off = self.write_offset + i * 16;
-
-						let buffer = &mut IPC_BUFFER[off .. off + 16];
-						buffer[0..8].copy_from_slice(&u64::to_le_bytes(TRANSLATE_TYPE_COPY_HANDLE));
-						buffer[8..16].copy_from_slice(&u64::to_le_bytes(handle.0 as u64));
-					},
-					_ => { unimplemented!(); }
-				}
+				let off = self.write_offset + i * 16;
+				let buffer = &mut IPC_BUFFER[off .. off + 16];
+				TranslateEntry::write(buffer.try_into().unwrap(), entry);
 			}
 		}
 	}
 
 	pub fn read_translates(&mut self) {
 		unsafe {
-			//println!("read off: {:?}, size: {:?}", self.read_offset, self.header.size);
-
 			for i in 0..self.header.translate_count {
 				let off = self.header.size + i * 16;
 				let buffer = &IPC_BUFFER[off .. off + 16];
-				let translate_type = u64::from_le_bytes(buffer[0..8].try_into().unwrap());
-				let translate_payload = u64::from_le_bytes(buffer[8..16].try_into().unwrap());
-				
-				match translate_type {
-					TRANSLATE_TYPE_MOVE_HANDLE => {
-						self.translate_entries[i] = TranslateEntry::MoveHandle(Handle(translate_payload as u32));
-					},
-					TRANSLATE_TYPE_COPY_HANDLE => {
-						self.translate_entries[i] = TranslateEntry::CopyHandle(Handle(translate_payload as u32));
-					},
-					_ => { unimplemented!(); }
-				}
+				self.translate_entries[i] = TranslateEntry::read(buffer.try_into().unwrap());
 			}
 		}
 	}
