@@ -1,0 +1,3 @@
+pub const MAX_TRANSLATE: usize = 4;
+pub const TRANSLATE_TYPE_MOVE_HANDLE: u64 = 1;
+pub const TRANSLATE_TYPE_COPY_HANDLE: u64 = 2;

@@ -5,6 +5,7 @@ use crate::process::Thread;
 use crate::waitable;
 use crate::waitable::{Waiter, Waitable};
 use common::os_error::{ResultCode, RESULT_OK, Module, Reason};
+use common::ipc::*;
 use spin::Mutex;
 use alloc::collections::BTreeMap;
 use alloc::vec::Vec;

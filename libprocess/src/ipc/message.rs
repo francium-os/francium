@@ -1,5 +1,6 @@
 use core::convert::TryInto;
 use common::os_error::{OSResult,OSError,ResultCode,RESULT_OK};
+use common::ipc::*;
 use crate::Handle;
 
 #[thread_local]
@@ -22,10 +23,6 @@ pub enum TranslateEntry {
 	MemoryStatic(),
 	MemoryMap()
 }
-
-const MAX_TRANSLATE: usize = 4;
-const TRANSLATE_TYPE_MOVE_HANDLE: u64 = 1;
-const TRANSLATE_TYPE_COPY_HANDLE: u64 = 2;
 
 pub struct IPCHeader {
 	pub id: u32,
