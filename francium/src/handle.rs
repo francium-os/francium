@@ -8,7 +8,7 @@ use crate::memory::AddressSpace;
 use crate::svc::ipc::{Port,ServerSession,ClientSession};
 
 #[derive(Debug, Clone)]
-pub enum Handle {
+pub enum HandleObject {
 	Process(Arc<Mutex<Box<Process>>>),
 	AddressSpace(Arc<Mutex<Box<AddressSpace>>>),
 	Port(Arc<Port>),
@@ -17,7 +17,7 @@ pub enum Handle {
 	Invalid
 }
 
-pub fn get_handle(reg: u32) -> Handle {
+pub fn get_handle(reg: u32) -> HandleObject {
 	let process_locked = scheduler::get_current_process();
 	let x = process_locked.lock().handle_table.get_object(reg);
 	x

@@ -1,11 +1,11 @@
-use crate::handle::Handle;
+use crate::handle::HandleObject;
 use common::os_error::{RESULT_OK, ResultCode, Module, Reason};
 
 // for now i will just fix the handle table size.
 // todo: dynamic
 const MAX_HANDLES: usize = 256;
 pub struct HandleTable {
-	handles: [Handle; MAX_HANDLES],
+	handles: [HandleObject; MAX_HANDLES],
 }
 
 impl core::fmt::Debug for HandleTable {
@@ -16,24 +16,24 @@ impl core::fmt::Debug for HandleTable {
 
 impl HandleTable {
 	pub fn new() -> HandleTable {
-		const INVALID_HANDLE: Handle = Handle::Invalid;
+		const INVALID_HANDLE: HandleObject = HandleObject::Invalid;
 		HandleTable {
 			handles: [INVALID_HANDLE; MAX_HANDLES]
 		}
 	}
 
-	pub fn get_object(&self, handle: u32) -> Handle {
+	pub fn get_object(&self, handle: u32) -> HandleObject {
 		if (handle as usize) < MAX_HANDLES {
 			self.handles[handle as usize].clone()
 		} else {
-			Handle::Invalid
+			HandleObject::Invalid
 		}
 	}
 
-	pub fn get_handle(&mut self, handle_obj: Handle) -> u32 {
+	pub fn get_handle(&mut self, handle_obj: HandleObject) -> u32 {
 		for (index, obj) in self.handles.iter().enumerate() {
 			match obj {
-				Handle::Invalid => {
+				HandleObject::Invalid => {
 					self.handles[index] = handle_obj;
 					return index as u32;
 				},
@@ -46,9 +46,9 @@ impl HandleTable {
 	pub fn close(&mut self, handle: u32) -> ResultCode {
 		if (handle as usize) < MAX_HANDLES {
 			match self.handles[handle as usize] {
-				Handle::Invalid => ResultCode::new(Module::Kernel, Reason::InvalidHandle),
+				HandleObject::Invalid => ResultCode::new(Module::Kernel, Reason::InvalidHandle),
 				_ => {
-					self.handles[handle as usize] = Handle::Invalid;
+					self.handles[handle as usize] = HandleObject::Invalid;
 					RESULT_OK
 				}
 			}

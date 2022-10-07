@@ -3,7 +3,7 @@ use spin::Mutex;
 use alloc::sync::Arc;
 use crate::scheduler;
 use crate::process::Thread;
-use crate::handle::Handle;
+use crate::handle::HandleObject;
 use core::sync::atomic::{AtomicBool,Ordering};
 
 #[derive(Debug)]
@@ -100,7 +100,7 @@ pub trait Waitable {
 }
 
 const MAX_HANDLES: usize = 128;
-const INVALID_HANDLE: Handle = Handle::Invalid;
+const INVALID_HANDLE: HandleObject = HandleObject::Invalid;
 
 // returns index
 pub fn wait_handles(handles: &[u32]) -> usize {
@@ -122,7 +122,7 @@ pub fn wait_handles(handles: &[u32]) -> usize {
 	for (index, handle) in handle_objects.iter().enumerate() {
 		match handle {
 			// What handles are waitable?
-			Handle::Port(port) => {
+			HandleObject::Port(port) => {
 				if port.post_wait(index) {
 					any_pending = true;
 					tag = index;
@@ -130,7 +130,7 @@ pub fn wait_handles(handles: &[u32]) -> usize {
 				}
 			},
 
-			Handle::ServerSession(server_session) => {
+			HandleObject::ServerSession(server_session) => {
 				if server_session.post_wait(index) {
 					any_pending = true;
 					tag = index;
@@ -138,7 +138,7 @@ pub fn wait_handles(handles: &[u32]) -> usize {
 				}
 			},
 
-			Handle::ClientSession(client_session) => {
+			HandleObject::ClientSession(client_session) => {
 				if client_session.post_wait(index) {
 					any_pending = true;
 					tag = index;
@@ -157,15 +157,15 @@ pub fn wait_handles(handles: &[u32]) -> usize {
 	for handle in handle_objects.iter() {
 		match handle {
 			// What handles are waitable?
-			Handle::Port(port) => {
+			HandleObject::Port(port) => {
 				port.remove_wait();
 			},
 
-			Handle::ServerSession(server_session) => {
+			HandleObject::ServerSession(server_session) => {
 				server_session.remove_wait();
 			},
 
-			Handle::ClientSession(client_session) => {
+			HandleObject::ClientSession(client_session) => {
 				client_session.remove_wait();
 			},
 

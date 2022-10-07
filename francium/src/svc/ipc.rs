@@ -1,6 +1,6 @@
 use crate::scheduler;
 use crate::handle;
-use crate::handle::Handle;
+use crate::handle::HandleObject;
 use crate::process::Thread;
 use crate::waitable;
 use crate::waitable::{Waiter, Waitable};
@@ -101,7 +101,7 @@ pub fn svc_create_port(tag: u64) -> (ResultCode, u32) {
 	let proc_locked = scheduler::get_current_process();
 	let mut process = proc_locked.lock();
 
-	let handle_value = process.handle_table.get_handle(Handle::Port(server_port_handle));
+	let handle_value = process.handle_table.get_handle(HandleObject::Port(server_port_handle));
 	(RESULT_OK, handle_value)
 }
 
@@ -140,14 +140,14 @@ pub fn svc_connect_to_port(tag: u64) -> (ResultCode, u32) {
 	{
 		let current_process = scheduler::get_current_process();
 		let mut process = current_process.lock();
-		let handle_value = process.handle_table.get_handle(Handle::ClientSession(client_session));
+		let handle_value = process.handle_table.get_handle(HandleObject::ClientSession(client_session));
 		(RESULT_OK, handle_value)
 	}
 }
 
 // x0: ipc session
 pub fn svc_ipc_request(session_handle: u32) -> ResultCode {
-	if let Handle::ClientSession(client_session) = handle::get_handle(session_handle) {
+	if let HandleObject::ClientSession(client_session) = handle::get_handle(session_handle) {
 		// signal, then wait for reply
 		let current_thread = scheduler::get_current_thread();
 
@@ -173,7 +173,7 @@ pub fn svc_ipc_receive(handles_ptr: *const u32, handle_count: usize) -> (ResultC
 
 	let index = waitable::wait_handles(&handles[..handle_count]);
 
-	if let Handle::ServerSession(server_session) = handle::get_handle(handles[index]) {
+	if let HandleObject::ServerSession(server_session) = handle::get_handle(handles[index]) {
 		let client_thread = server_session.queue.lock().pop().unwrap();
 		let current_thread = scheduler::get_current_thread();
 		/* Process IPC message here! */
@@ -194,7 +194,7 @@ pub fn svc_ipc_receive(handles_ptr: *const u32, handle_count: usize) -> (ResultC
 
 // x0: session handle
 pub fn svc_ipc_reply(session_handle: u32) -> ResultCode {
-	if let Handle::ServerSession(server_session) = handle::get_handle(session_handle) {
+	if let HandleObject::ServerSession(server_session) = handle::get_handle(session_handle) {
 		// TODO: wtf?
 		let current_thread = scheduler::get_current_thread();
 		let mut thread_lock = server_session.client_thread.lock();
@@ -219,7 +219,7 @@ pub fn svc_ipc_reply(session_handle: u32) -> ResultCode {
 // x0: port
 // x1: session handle out
 pub fn svc_ipc_accept(port_handle: u32) -> (ResultCode, u32) {
-	if let Handle::Port(port) = handle::get_handle(port_handle) {
+	if let HandleObject::Port(port) = handle::get_handle(port_handle) {
 		let server_session = port.queue.lock().pop().unwrap();
 
 		// wake the client
@@ -227,7 +227,7 @@ pub fn svc_ipc_accept(port_handle: u32) -> (ResultCode, u32) {
 
 		let current_process = scheduler::get_current_process();
 		let mut process = current_process.lock();
-		let handle_value = process.handle_table.get_handle(Handle::ServerSession(server_session));
+		let handle_value = process.handle_table.get_handle(HandleObject::ServerSession(server_session));
 		(RESULT_OK, handle_value)
 	} else {
 		(ResultCode::new(Module::Kernel, Reason::InvalidHandle), 0xffffffff)
