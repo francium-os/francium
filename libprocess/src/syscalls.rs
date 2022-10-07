@@ -5,7 +5,7 @@ use core::cmp::min;
 extern "C" {
 	pub fn syscall_debug_output(s: *const u8, len: usize) -> ResultCode;
 	pub fn syscall_create_port(tag: u64, handle_out: *mut Handle) -> ResultCode;
-	pub fn syscall_connect_to_port(tag: u64, handle_out: *mut Handle) -> ResultCode;
+	pub fn syscall_connect_to_named_port(tag: u64, handle_out: *mut Handle) -> ResultCode;
 	pub fn syscall_exit_process() -> !;
 	pub fn syscall_close_handle(h: Handle) -> ResultCode;
 	pub fn syscall_ipc_request(session_handle: Handle) -> ResultCode;
@@ -13,6 +13,7 @@ extern "C" {
 	pub fn syscall_ipc_receive(sessions: *const Handle, num_sessions: usize, index_out: *mut usize) -> ResultCode;
 	pub fn syscall_ipc_accept(session_handle: Handle, handle_out: *mut Handle) -> ResultCode;
 	pub fn syscall_get_process_id() -> usize;
+	pub fn syscall_connect_to_port_handle(h: u32, handle_out: *mut Handle) -> ResultCode;
 }
 
 pub fn print(s: &str) {
@@ -42,10 +43,22 @@ pub fn create_port(s: &str) -> Result<Handle, OSError> {
 	}
 }
 
-pub fn connect_to_port(s: &str) -> Result<Handle, OSError> {
+pub fn connect_to_named_port(s: &str) -> Result<Handle, OSError> {
 	let mut handle_out = INVALID_HANDLE;
 	unsafe {
-		let res = syscall_connect_to_port(make_tag(s), &mut handle_out);
+		let res = syscall_connect_to_named_port(make_tag(s), &mut handle_out);
+		if res == RESULT_OK {
+			Ok(handle_out)
+		} else {
+			Err(OSError::from_result_code(res))
+		}
+	}
+}
+
+pub fn connect_to_port_handle(h: Handle) -> Result<Handle, OSError> {
+	let mut handle_out = INVALID_HANDLE;
+	unsafe {
+		let res = syscall_connect_to_port_handle(h.0, &mut handle_out);
 		if res == RESULT_OK {
 			Ok(handle_out)
 		} else {

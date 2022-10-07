@@ -16,7 +16,7 @@ struct FSServerStruct {
 }
 
 impl IPCServer for FSServerStruct {
-	fn process(&self, h: Handle) {
+	fn process(&mut self, h: Handle) {
 		FSServer::process(self, h)
 	}
 }
@@ -28,7 +28,7 @@ impl FSServer for FSServerStruct {
 	}
 
 	fn test(&self) -> OSResult<TranslateMoveHandle> {
-		Err(OSError { module: Module::FS, reason: Reason::NotImplemented })
+		Err(OSError::new(Module::FS, Reason::NotImplemented))
 	}
 }
 

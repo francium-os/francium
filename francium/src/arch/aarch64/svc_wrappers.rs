@@ -15,8 +15,14 @@ fn syscall_wrapper_create_port(ctx: &mut ExceptionContext) {
 	ctx.regs[1] = handle_out as usize;
 }
 
-fn syscall_wrapper_connect_to_port(ctx: &mut ExceptionContext) {
-	let (result, handle_out) = svc::svc_connect_to_port(ctx.regs[0] as u64);
+fn syscall_wrapper_connect_to_named_port(ctx: &mut ExceptionContext) {
+	let (result, handle_out) = svc::svc_connect_to_named_port(ctx.regs[0] as u64);
+	ctx.regs[0] = result.0 as usize;
+	ctx.regs[1] = handle_out as usize;
+}
+
+fn syscall_wrapper_connect_to_port_handle(ctx: &mut ExceptionContext) {
+	let (result, handle_out) = svc::svc_connect_to_port_handle(ctx.regs[0] as u32);
 	ctx.regs[0] = result.0 as usize;
 	ctx.regs[1] = handle_out as usize;
 }
@@ -58,16 +64,17 @@ fn syscall_wrapper_get_process_id(ctx: &mut ExceptionContext) {
 }
 
 type SVCHandler = fn(&mut ExceptionContext);
-pub const SVC_HANDLERS: [SVCHandler; 11] = [
+pub const SVC_HANDLERS: [SVCHandler; 12] = [
 	syscall_wrapper_break,
 	syscall_wrapper_debug_output,
 	syscall_wrapper_create_port,
-	syscall_wrapper_connect_to_port,
+	syscall_wrapper_connect_to_named_port,
 	syscall_wrapper_exit_process,
 	syscall_wrapper_close_handle,
 	syscall_wrapper_ipc_request,
 	syscall_wrapper_ipc_reply,
 	syscall_wrapper_ipc_receive,
 	syscall_wrapper_ipc_accept,
-	syscall_wrapper_get_process_id
+	syscall_wrapper_get_process_id,
+	syscall_wrapper_connect_to_port_handle
 ];

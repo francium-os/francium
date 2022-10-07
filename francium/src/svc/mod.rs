@@ -8,7 +8,8 @@ pub mod ipc;
 pub use svc_break::svc_break;
 pub use debug_output::svc_debug_output;
 pub use ipc::svc_create_port;
-pub use ipc::svc_connect_to_port;
+pub use ipc::svc_connect_to_port_handle;
+pub use ipc::svc_connect_to_named_port;
 pub use exit_process::svc_exit_process;
 pub use handle::svc_close_handle;
 

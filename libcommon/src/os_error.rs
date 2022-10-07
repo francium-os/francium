@@ -28,6 +28,7 @@ pub enum Reason {
     NotImplemented = 1,
     NotAllowed = 2,
     InvalidHandle = 3,
+    NotFound = 4,
     Unknown = 0xffff
 }
 
@@ -39,6 +40,10 @@ pub struct OSError {
 }
 
 impl OSError {
+    pub fn new(module: Module, reason: Reason) -> OSError {
+        OSError { module, reason }
+    }
+
     pub fn from_result_code(r: ResultCode) -> OSError {
         OSError { 
             module: Module::try_from((r.0 & 0xffff) as u16).unwrap_or(Module::Unknown),

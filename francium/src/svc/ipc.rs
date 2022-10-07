@@ -107,7 +107,36 @@ pub fn svc_create_port(tag: u64) -> (ResultCode, u32) {
 	(RESULT_OK, handle_value)
 }
 
-pub fn svc_connect_to_port(tag: u64) -> (ResultCode, u32) {
+fn connect_to_port_impl(port: &Arc<Port>) -> u32 {
+	let server_session = Arc::new(ServerSession::new());
+	let client_session = Arc::new(ClientSession::new(server_session.clone()));
+
+	// TODO: ugh, i really wanted OnceCell here
+	*server_session.client.lock() = Arc::downgrade(&client_session);
+
+	// create the session, and wait for it to be accepted by the server
+	port.queue.lock().push(server_session.clone());
+	port.signal_one();
+	server_session.connect_wait.wait();
+
+	// return session
+	{
+		let current_process = scheduler::get_current_process();
+		let mut process = current_process.lock();
+		let handle_value = process.handle_table.get_handle(HandleObject::ClientSession(client_session));
+		handle_value
+	}
+}
+
+pub fn svc_connect_to_port_handle(h: u32) -> (ResultCode, u32) {
+	if let HandleObject::Port(port) = handle::get_handle(h) {
+		(RESULT_OK, connect_to_port_impl(&port))
+	} else {
+		(ResultCode::new(Module::Kernel, Reason::InvalidHandle), 0xffffffff)
+	}
+}
+
+pub fn svc_connect_to_named_port(tag: u64) -> (ResultCode, u32) {
 	let port = {
 		let ports = PORT_LIST.lock();
 		if let Some(server_port) = ports.get(&tag) {
@@ -126,25 +155,7 @@ pub fn svc_connect_to_port(tag: u64) -> (ResultCode, u32) {
 			}
 		}
 	};
-
-	let server_session = Arc::new(ServerSession::new());
-	let client_session = Arc::new(ClientSession::new(server_session.clone()));
-
-	// TODO: ugh, i really wanted OnceCell here
-	*server_session.client.lock() = Arc::downgrade(&client_session);
-
-	// create the session, and wait for it to be accepted by the server
-	port.queue.lock().push(server_session.clone());
-	port.signal_one();
-	server_session.connect_wait.wait();
-
-	// return session
-	{
-		let current_process = scheduler::get_current_process();
-		let mut process = current_process.lock();
-		let handle_value = process.handle_table.get_handle(HandleObject::ClientSession(client_session));
-		(RESULT_OK, handle_value)
-	}
+	(RESULT_OK, connect_to_port_impl(&port))
 }
 
 // x0: ipc session

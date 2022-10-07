@@ -12,7 +12,7 @@ fn get_handle_for_sm() -> Handle {
 	match *locked {
 		Some(x) => x,
 		None => {
-			let handle = syscalls::connect_to_port("sm").unwrap();
+			let handle = syscalls::connect_to_named_port("sm").unwrap();
 			*locked = Some(handle);
 			handle
 		}
@@ -29,5 +29,5 @@ trait SMServer {
 	fn get_service_handle(&self, tag: u64) -> OSResult<TranslateMoveHandle>;
 
 	#[ipc_method_id = 2]
-	fn register_port(&self, tag: u64, port_handle: TranslateCopyHandle) -> OSResult<()>;
+	fn register_port(&mut self, tag: u64, port_handle: TranslateCopyHandle) -> OSResult<()>;
 }

@@ -3,7 +3,7 @@ use crate::syscalls;
 use smallvec::SmallVec;
 
 pub trait IPCServer {
-	fn process(&self, h: Handle);
+	fn process(&mut self, h: Handle);
 }
 
 pub struct ServerImpl<T> where T: IPCServer {

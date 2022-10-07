@@ -21,7 +21,7 @@ svc #2
 str w1, [x9]
 ret
 
-syscall_connect_to_port:
+syscall_connect_to_named_port:
 mov x9, x1
 svc #3
 str w1, [x9]
@@ -57,6 +57,12 @@ ret
 
 syscall_get_process_id:
 svc #0x0a
+ret
+
+syscall_connect_to_port_handle:
+mov x9, x1
+svc #0x0b
+str w1, [x9]
 ret
 
 get_tpidr_el0_asm:

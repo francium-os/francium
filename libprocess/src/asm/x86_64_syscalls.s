@@ -39,7 +39,7 @@ mov [rbx], edx
 pop rbx
 ret
 
-syscall_connect_to_port:
+syscall_connect_to_named_port:
 push rbx
 mov eax, 0x03
 mov rbx, rsi
@@ -89,4 +89,13 @@ ret
 syscall_get_process_id:
 mov eax, 0x0a
 syscall
+ret
+
+syscall_connect_to_port_handle:
+push rbx
+mov eax, 0x0b
+mov rbx, rsi
+syscall
+mov [rbx], edx
+pop rbx
 ret
