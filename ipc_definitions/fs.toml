@@ -1,0 +1,8 @@
+name = "fs"
+struct_name = "FSServerStruct"
+
+[[methods]]
+name = "stop"
+id = 0
+inputs = []
+output = "()"

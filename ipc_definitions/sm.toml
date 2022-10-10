@@ -1,0 +1,20 @@
+name = "sm"
+struct_name = "SMServerStruct"
+
+[[methods]]
+name = "stop"
+id = 0
+inputs = []
+output = "()"
+
+[[methods]]
+name = "get_service_handle"
+id = 1
+inputs = [{ name = "tag", ty = "u64"}]
+output = "OSResult<TranslateMoveHandle>"
+
+[[methods]]
+name = "register_port"
+id = 2
+inputs = [{ name = "tag", ty = "u64"}, { name = "port_handle", ty = "TranslateCopyHandle"} ]
+output = "OSResult<()>"

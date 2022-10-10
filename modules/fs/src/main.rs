@@ -11,17 +11,13 @@ use process::ipc::*;
 use process::ipc::sm;
 use process::ipc::fs::FSServer;
 
+include!(concat!(env!("OUT_DIR"), "/fs_server_impl.rs"));
+
 struct FSServerStruct {
 	should_stop: AtomicBool
 }
 
-impl IPCServer for FSServerStruct {
-	fn process(&mut self, h: Handle) {
-		FSServer::process(self, h)
-	}
-}
-
-impl FSServer for FSServerStruct {
+impl FSServerStruct {
 	fn stop(&self) {
 		println!("FS stopping!");
 		self.should_stop.store(true, Ordering::Release);

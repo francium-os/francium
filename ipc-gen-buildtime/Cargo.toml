@@ -1,12 +1,13 @@
 [package]
-name = "fs"
+name = "ipc-gen-buildtime"
 version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-"process" = { path = "../../libprocess" }
-
-[build-dependencies]
-"ipc-gen-buildtime" = { path = "../../ipc-gen-buildtime" }
+quote = "1.0.21"
+serde = "1.0.145"
+serde_derive = "1.0.145"
+syn = "1.0.102"
+toml = "0.5.9"

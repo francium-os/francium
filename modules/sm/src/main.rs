@@ -1,6 +1,8 @@
 #![no_std]
 #![feature(default_alloc_error_handler)]
 
+extern crate alloc;
+
 use core::sync::atomic::{AtomicBool, Ordering};
 use hashbrown::HashMap;
 
@@ -12,18 +14,14 @@ use process::ipc_server::{ServerImpl, IPCServer};
 use process::ipc::*;
 use process::ipc::sm::SMServer;
 
+include!(concat!(env!("OUT_DIR"), "/sm_server_impl.rs"));
+
 struct SMServerStruct {
 	should_stop: AtomicBool,
 	server_ports: HashMap<u64, Handle>
 }
 
-impl IPCServer for SMServerStruct {
-	fn process(&mut self, h: Handle) {
-		SMServer::process(self, h)
-	}
-}
-
-impl SMServer for SMServerStruct {
+impl SMServerStruct {
 	fn stop(&self) {
 		println!("SM stopping!");
 		self.should_stop.store(true, Ordering::Release);
@@ -48,6 +46,9 @@ fn main() {
 
 	let port = syscalls::create_port("sm").unwrap();
 	let mut server = ServerImpl::new(SMServerStruct{ should_stop: AtomicBool::new(false), server_ports: HashMap::new() }, port);
+
+	//let exc = ::pasts::Executor::default();
+	//exc.spawn(a());
 
 	while server.process() {
 		if server.server.should_stop.load(Ordering::Acquire) {
