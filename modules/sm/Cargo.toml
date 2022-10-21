@@ -6,6 +6,7 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+async-broadcast = "0.4.1"
 async-trait = "0.1.57"
 hashbrown = "0.12.3"
 pasts = { version = "0.12.0", features = ["no-std"] }

@@ -1,7 +1,3 @@
-#![no_std]
-#![feature(default_alloc_error_handler)]
-#![feature(thread_local)]
-
 use process::println;
 use process::syscalls;
 use process::ipc;

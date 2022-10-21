@@ -1,7 +1,6 @@
 .global setup_initial_thread_context
 .global user_thread_starter
 
-
 .section .text
 setup_initial_thread_context:
 // args: ctx: rdi, mutex: rsi

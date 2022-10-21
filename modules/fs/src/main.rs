@@ -1,7 +1,4 @@
-#![no_std]
-#![feature(default_alloc_error_handler)]
-
-use core::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, Ordering};
 use process::println;
 use process::syscalls;
 use process::Handle;
@@ -14,13 +11,11 @@ use process::ipc::fs::FSServer;
 include!(concat!(env!("OUT_DIR"), "/fs_server_impl.rs"));
 
 struct FSServerStruct {
-	should_stop: AtomicBool
 }
 
 impl FSServerStruct {
 	fn stop(&self) {
-		println!("FS stopping!");
-		self.should_stop.store(true, Ordering::Release);
+		unimplemented!();
 	}
 
 	fn test(&self) -> OSResult<TranslateMoveHandle> {
@@ -35,13 +30,10 @@ fn main() {
 
 	sm::register_port(syscalls::make_tag("fs"), TranslateCopyHandle(port)).unwrap();
 
-	let mut server = ServerImpl::new(FSServerStruct{ should_stop: AtomicBool::new(false) }, port);
+	let mut server = Box::new(ServerImpl::new(FSServerStruct{}, port));
 
-	while server.process() {
-		if server.server.should_stop.load(Ordering::Acquire) {
-			break
-		}
-	}
+	let exc = ::pasts::Executor::default();
+	exc.spawn(server.process_forever());
 
 	syscalls::close_handle(port).unwrap();
 	println!("FS exiting!");

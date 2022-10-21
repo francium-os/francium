@@ -17,7 +17,8 @@ struct Method {
     name: String,
     id: u32,
     inputs: Vec<Ty>,
-    output: String
+    output: String,
+    is_async: Option<bool>
 }
 
 impl Method {
@@ -34,13 +35,23 @@ impl Method {
 
         let output_type: Type = syn::parse_str(&self.output).unwrap();
 
+        let maybe_await = if let Some(is_async) = self.is_async {
+            if is_async {
+                quote!(.await)
+            } else {
+                quote!()
+            }
+        } else {
+            quote!()
+        };
+
         quote!{
             #method_id => {
                 request_msg.read_translates();
 
                 #(let #inputs = request_msg.read();)*
 
-                let res: #output_type = self.#method_name (#(#input_names),*);
+                let res: #output_type = self.#method_name (#(#input_names),*) #maybe_await;
                 let mut reply_msg = process::ipc::message::IPCMessage::new();
                 reply_msg.write(res);
                 reply_msg.write_translates();
@@ -71,15 +82,18 @@ pub fn generate_server(path: &str) {
     let server_methods: Vec<_> = spec.methods.iter().map(|x| x.server()).collect();
     let server_struct_name = format_ident!("{}", spec.struct_name);
 
-    let server_impl = quote!(    
+    let server_impl = quote!(
+        use pasts::prelude::Box;
+
+        #[async_trait::async_trait]
         impl IPCServer for #server_struct_name {
-            fn process(&mut self, h: Handle) {
-                self.process(h)
+            async fn process(&mut self, h: Handle) {
+                self.process(h).await
             }
         }
 
         impl #server_struct_name {
-            fn process(&mut self, h: Handle) {
+            async fn process(&mut self, h: Handle) {
                 let mut request_msg = process::ipc::message::IPCMessage::new();
                 request_msg.read_header();
 

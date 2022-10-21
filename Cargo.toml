@@ -17,3 +17,6 @@ panic = "abort"
 panic = "abort"
 debug = true
 overflow-checks = true
+
+[patch.crates-io]
+libc = { path = "../libc" }

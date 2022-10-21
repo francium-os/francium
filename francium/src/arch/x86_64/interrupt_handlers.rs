@@ -213,6 +213,13 @@ pub fn read_cr2() -> usize {
 #[no_mangle]
 unsafe extern "C" fn handle_exception(ctx: &ExceptionContext, error_code: u64, interrupt_number: u64) {
 	match interrupt_number {
+		0x6 => {
+			println!("Invalid instruction!");
+			println!("registers: {:?}", ctx.regs);
+			println!("rip: {:x}", ctx.regs.rip);
+			panic!("No");
+		},
+
 		0xe => {
 			let cr2 = read_cr2();
 			println!("Page fault at {:x}!", cr2);

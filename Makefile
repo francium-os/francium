@@ -1,5 +1,7 @@
 board ?= virt
 
+CARGO ?= cargo +francium
+
 ifeq ($(board), virt)
 arch=aarch64
 target=aarch64-unknown-francium
@@ -21,7 +23,7 @@ bootimg = target/x86_64-unknown-francium-kernel/release/boot-bios-francium_pc.im
 ifeq ($(arch), aarch64)
 target=aarch64-unknown-francium
 gdb=aarch64-none-elf-gdb
-qemu_args=-M virt -cpu cortex-a53 -kernel $(francium) -serial stdio -m 2048
+qemu_args=-M virt,gic-version=2 -cpu cortex-a53 -kernel $(francium) -serial stdio -m 2048
 else ifeq ($(arch), x86_64)
 target=x86_64-unknown-francium
 qemu_args=-drive format=raw,file=$(bootimg) -serial stdio -m 2048 -no-reboot
@@ -34,10 +36,10 @@ CARGO_FLAGS = -Zbuild-std=core,alloc,compiler_builtins -Zbuild-std-features=comp
 
 all: $(francium) $(if $(filter $(board),raspi4), kernel8.bin)
 $(francium): $(fs) $(sm) $(test)
-	cargo build $(CARGO_FLAGS) --package=francium --release --features=platform_$(board) --target=targets/$(target)-kernel.json
+	$(CARGO) build $(CARGO_FLAGS) --package=francium --release --features=platform_$(board) --target=targets/$(target)-kernel.json
 
 $(bootimg): $(francium)
-	cargo run --package=simple_boot target/x86_64-unknown-francium-kernel/release/francium_pc
+	$(CARGO) run --package=simple_boot target/x86_64-unknown-francium-kernel/release/francium_pc
 
 ifeq ($(board), raspi4)
 kernel8.bin: $(francium)
@@ -45,13 +47,13 @@ kernel8.bin: $(francium)
 endif
 
 $(fs):
-	cargo build $(CARGO_FLAGS) --package=fs --release --target=targets/$(target)-user.json
+	$(CARGO) build --package=fs --release --target=$(target)
 
 $(sm):
-	cargo build $(CARGO_FLAGS) --package=sm --release --target=targets/$(target)-user.json
+	$(CARGO) build --package=sm --release --target=$(target)
 
 $(test):
-	cargo build $(CARGO_FLAGS) --package=test --release --target=targets/$(target)-user.json
+	$(CARGO) build --package=test --release --target=$(target)
 
 qemu: $(francium) $(if $(filter $(board),pc), $(bootimg))
 	qemu-system-$(arch) $(qemu_args) -s
@@ -80,8 +82,8 @@ openocd-gdb:
 	aarch64-none-elf-gdb $(francium) -ex 'target extended-remote localhost:3333'
 
 clean:
-	cd francium && cargo clean && cd ..; \
-	cd libprocess && cargo clean && cd ..
-	cd modules/fs && cargo clean && cd ../..; \
-	cd modules/sm && cargo clean && cd ../..; \
-	cd modules/test && cargo clean && cd ../..
+	cd francium && $(CARGO) clean && cd ..; \
+	cd libprocess && $(CARGO) clean && cd ..
+	cd modules/fs && $(CARGO) clean && cd ../..; \
+	cd modules/sm && $(CARGO) clean && cd ../..; \
+	cd modules/test && $(CARGO) clean && cd ../..

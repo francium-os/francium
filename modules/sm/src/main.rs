@@ -1,9 +1,4 @@
-#![no_std]
-#![feature(default_alloc_error_handler)]
-
-extern crate alloc;
-
-use core::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, Ordering};
 use hashbrown::HashMap;
 
 use process::println;
@@ -17,17 +12,11 @@ use process::ipc::sm::SMServer;
 include!(concat!(env!("OUT_DIR"), "/sm_server_impl.rs"));
 
 struct SMServerStruct {
-	should_stop: AtomicBool,
 	server_ports: HashMap<u64, Handle>
 }
 
 impl SMServerStruct {
-	fn stop(&self) {
-		println!("SM stopping!");
-		self.should_stop.store(true, Ordering::Release);
-	}
-
-	fn get_service_handle(&self, tag: u64) -> OSResult<TranslateMoveHandle> {
+	async fn get_service_handle(&self, tag: u64) -> OSResult<TranslateMoveHandle> {
 		println!("Got tag: {:x}", tag);
 		let server_port = self.server_ports.get(&tag).ok_or(OSError::new(Module::SM, Reason::NotFound))?;
 		let client_session = syscalls::connect_to_port_handle(*server_port)?;
@@ -45,16 +34,10 @@ fn main() {
 	println!("Hello from sm!");
 
 	let port = syscalls::create_port("sm").unwrap();
-	let mut server = ServerImpl::new(SMServerStruct{ should_stop: AtomicBool::new(false), server_ports: HashMap::new() }, port);
+	let mut server = ServerImpl::new(SMServerStruct{ server_ports: HashMap::new() }, port);
 
-	//let exc = ::pasts::Executor::default();
-	//exc.spawn(a());
-
-	while server.process() {
-		if server.server.should_stop.load(Ordering::Acquire) {
-			break
-		}
-	}
+	let exc = ::pasts::Executor::default();
+	exc.spawn(server.process_forever());
 
 	syscalls::close_handle(port).unwrap();
 	println!("SM exiting!");
