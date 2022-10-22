@@ -32,7 +32,7 @@ endif
 
 CARGO_FLAGS = -Zbuild-std=core,alloc,compiler_builtins -Zbuild-std-features=compiler-builtins-mem
 
-.PHONY: qemu gdb bochs $(francium) $(bootimg) $(fs) $(sm) $(test) clean
+.PHONY: qemu gdb bochs $(francium) $(bootimg) $(fs) $(sm) $(test) clean clean-user clean-kernel
 
 all: $(francium) $(if $(filter $(board),raspi4), kernel8.bin)
 $(francium): $(fs) $(sm) $(test)
@@ -81,8 +81,12 @@ openocd-dap:
 openocd-gdb:
 	aarch64-none-elf-gdb $(francium) -ex 'target extended-remote localhost:3333'
 
-clean:
-	cd francium && $(CARGO) clean && cd ..; \
+clean: clean-user clean-kernel
+
+clean-kernel:
+	cd francium && $(CARGO) clean && cd ..
+
+clean-user:
 	cd libprocess && $(CARGO) clean && cd ..
 	cd modules/fs && $(CARGO) clean && cd ../..; \
 	cd modules/sm && $(CARGO) clean && cd ../..; \
