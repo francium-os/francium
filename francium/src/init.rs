@@ -136,8 +136,10 @@ pub fn load_process(elf_buf: &[u8]) -> Arc<Thread> {
 				let tls_start: usize = ph.offset() as usize;
 				let tls_end: usize = ph.offset() as usize + ph.filesz() as usize;
 				p.thread_local_template.extend(&elf_buf[tls_start..tls_end]);
-				p.thread_local_template.resize(ph.memsz() as usize, 0);
-
+				
+				let align: usize = ph.align() as usize;
+				let memsz_aligned = (ph.memsz() as usize + align-1) & !(align-1);
+				p.thread_local_template.resize(memsz_aligned, 0);
 
 				if ph.memsz() as usize > crate::process::TLS_SIZE {
 					panic!("no");
