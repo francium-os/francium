@@ -155,7 +155,73 @@ pub fn load_process(elf_buf: &[u8], name: &'static str) -> Arc<Thread> {
 
 		let arc = Arc::new(Mutex::new(p));
 
-		let thread = setup_user_context(arc, user_code_base, user_stack_base + user_stack_size);
+		// Fill out argv/etc.
+		// Currently: one argv, a stub.
+
+		let argc: isize = 1;
+		let argv: [&'static str; 1] = ["test"];
+		let envp: [&'static str; 0] = [];
+		let auxv_entries: [(usize, usize); 0] = [];
+
+		// XXX: ptr size?
+		let argv_size: usize = 8 + (argc as usize + 1) * 8;
+		let env_size = (envp.len() + 1) * 8;
+		let auxv_size = (auxv_entries.len() + 1) * 16;
+
+		let strings_len = argv.iter().map(|x| x.len() + 1).sum::<usize>() + envp.iter().map(|x| x.len() + 1).sum::<usize>();
+
+		let new_stack = user_stack_base + user_stack_size;
+		let auxv_base = new_stack - (argv_size + env_size + auxv_size + strings_len + 8);
+
+		// XXX This is bad.
+		// XXX Todo: align?
+
+		unsafe {
+			let mut auxv = auxv_base;
+			let mut strings = auxv_base + argv_size + env_size + auxv_size;
+
+			core::ptr::copy_nonoverlapping(&argc as *const isize, auxv as *mut isize, 1);
+			auxv += core::mem::size_of::<isize>();
+
+			for i in 0..argv.len() {
+				core::ptr::copy_nonoverlapping(&strings as *const usize, auxv as *mut usize, 1);
+				auxv += core::mem::size_of::<usize>();
+
+				let s = argv[i];
+				core::ptr::copy_nonoverlapping(s.as_ptr(), strings as *mut u8, s.len());
+				strings += s.len();
+				*(strings as *mut u8) = 0;
+				strings += 1;
+			}
+
+			core::ptr::write_bytes(auxv as *mut usize, 0, 1);
+			auxv += core::mem::size_of::<usize>();
+
+			for i in 0..envp.len() {
+				let s = envp[i];
+				core::ptr::copy_nonoverlapping(s.as_ptr(), strings as *mut u8, s.len());
+				strings += s.len();
+				*(strings as *mut u8) = 0;
+				strings += 1;
+			}
+
+			core::ptr::write_bytes(auxv as *mut usize, 0, 1);
+			auxv += core::mem::size_of::<usize>();
+
+			for i in 0..auxv_entries.len() {
+				unimplemented!();
+			}
+			
+			core::ptr::write_bytes(auxv as *mut usize, 0, 2);
+			auxv += core::mem::size_of::<usize>() * 2;
+
+			core::ptr::write_bytes(strings as *mut usize, 0, 1);
+			strings += core::mem::size_of::<usize>() * 1;
+
+			println!("{:x} {:x} {:x}??", auxv, strings, auxv_base + argv_size + env_size + auxv_size);
+		}
+
+		let thread = setup_user_context(arc, user_code_base, auxv_base);
 		return thread
 	}
 	panic!("Failed to load process??");
