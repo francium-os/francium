@@ -212,6 +212,9 @@ pub fn read_cr2() -> usize {
 
 #[no_mangle]
 unsafe extern "C" fn handle_exception(ctx: &ExceptionContext, error_code: u64, interrupt_number: u64) {
+
+	println!("Current process: {}", crate::scheduler::get_current_process().lock().name);
+
 	match interrupt_number {
 		0x6 => {
 			println!("Invalid instruction!");

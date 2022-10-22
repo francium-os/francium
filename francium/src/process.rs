@@ -49,7 +49,9 @@ pub struct Process {
 	pub thread_local_location: usize,
 	pub thread_local_size: usize,
 
-	pub thread_local_template: Vec<u8>
+	pub thread_local_template: Vec<u8>,
+
+	pub name: &'static str
 }
 
 #[cfg(target_arch = "aarch64")]
@@ -126,7 +128,7 @@ impl Thread {
 }
 
 impl Process {
-	pub fn new(mut aspace: Box<AddressSpace>) -> Process {
+	pub fn new(name: &'static str, mut aspace: Box<AddressSpace>) -> Process {
 		let thread_local_start = 0x50000000;
 		aspace.create(thread_local_start, 0x1000, PagePermission::USER_READ_WRITE);
 
@@ -139,7 +141,8 @@ impl Process {
 			thread_local_location: thread_local_start,
 			thread_local_size: 0x1000,
 
-			thread_local_template: Vec::new()
+			thread_local_template: Vec::new(),
+			name: name
 		};
 
 		p
