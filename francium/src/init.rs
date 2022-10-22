@@ -217,8 +217,6 @@ pub fn load_process(elf_buf: &[u8], name: &'static str) -> Arc<Thread> {
 
 			core::ptr::write_bytes(strings as *mut usize, 0, 1);
 			strings += core::mem::size_of::<usize>() * 1;
-
-			println!("{:x} {:x} {:x}??", auxv, strings, auxv_base + argv_size + env_size + auxv_size);
 		}
 
 		let thread = setup_user_context(arc, user_code_base, auxv_base);
