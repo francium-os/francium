@@ -14,6 +14,7 @@ extern "C" {
 	pub fn syscall_ipc_accept(session_handle: Handle, handle_out: *mut Handle) -> ResultCode;
 	pub fn syscall_get_process_id() -> usize;
 	pub fn syscall_connect_to_port_handle(h: u32, handle_out: *mut Handle) -> ResultCode;
+	pub fn syscall_map_memory(address: usize, length: usize, permission: u32, address_out: *mut usize) -> ResultCode;
 }
 
 pub fn print(s: &str) {
@@ -133,6 +134,18 @@ pub fn ipc_accept(session_handle: Handle) -> Result<Handle, OSError> {
 pub fn get_process_id() -> usize {
 	unsafe {
 		syscall_get_process_id()
+	}
+}
+
+pub fn map_memory(address: usize, length: usize, permission: u32) -> Result<usize, OSError> {
+	unsafe {
+		let mut address_out: usize = 0;
+		let res = syscall_map_memory(address, length, permission, &mut address_out);
+		if res == RESULT_OK {
+			Ok(address_out)
+		} else {
+			Err(OSError::from_result_code(res))
+		}
 	}
 }
 

@@ -99,3 +99,12 @@ syscall
 mov [rbx], edx
 pop rbx
 ret
+
+syscall_map_memory:
+push rbx
+mov eax, 0x0c
+mov rbx, rcx
+syscall
+mov [rbx], rdx
+pop rbx
+ret

@@ -10,16 +10,16 @@ lazy_static! {
 }
 
 #[derive(Debug)]
-struct Block {
-	address: usize,
-	size: usize,
-	permissions: PagePermission
+pub struct Block {
+	pub address: usize,
+	pub size: usize,
+	pub permissions: PagePermission
 }
 
 pub struct AddressSpace {
 	pub page_table: &'static mut PageTable,
 	page_table_phys: PhysAddr,
-	regions: SmallVec<[Block; 4]>
+	pub regions: SmallVec<[Block; 4]>
 }
 
 impl core::fmt::Debug for AddressSpace {

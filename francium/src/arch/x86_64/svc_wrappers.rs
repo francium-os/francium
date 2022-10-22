@@ -74,6 +74,12 @@ unsafe extern "C" fn syscall_wrapper_get_process_id() -> usize {
 	svc::svc_get_process_id()
 }
 
+#[no_mangle]
+unsafe extern "C" fn syscall_map_memory(address: usize, length: usize, permission: u32) -> Pair {
+	let (res, out) = svc::svc_map_memory(address, length, permission);
+	Pair { a: res.0 as usize, b: out as usize }
+}
+
 // Rust complains loudly about this. As it should.
 global_asm!("
 .global syscall_wrappers
@@ -90,4 +96,5 @@ syscall_wrappers:
 .quad syscall_wrapper_ipc_accept
 .quad syscall_wrapper_get_process_id
 .quad syscall_wrapper_connect_to_port_handle
+.quad syscall_map_memory
 ");
