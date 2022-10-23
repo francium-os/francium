@@ -218,8 +218,7 @@ unsafe extern "C" fn handle_exception(ctx: &ExceptionContext, error_code: u64, i
 	match interrupt_number {
 		0x6 => {
 			println!("Invalid instruction!");
-			println!("registers: {:?}", ctx.regs);
-			println!("rip: {:x}", ctx.regs.rip);
+			println!("register dump:\n{:?}", ctx.regs);
 			panic!("No");
 		},
 
@@ -258,11 +257,10 @@ unsafe extern "C" fn handle_exception(ctx: &ExceptionContext, error_code: u64, i
 
 			let process = &crate::scheduler::get_current_process();
 			let process_locked = process.lock();
-			let pg = &process_locked.address_space.page_table;
-
+			let _pg = &process_locked.address_space.page_table;
 			//println!("Walk: {:x}", pg.virt_to_phys(cr2).unwrap().0);
 
-			println!("registers: {:?}", ctx.regs);
+			println!("register dump:\n{:?}", ctx.regs);
 			for i in -32..32 {
 				println!("{:?}: {:x}", i, *(ctx.regs.rsp as *const usize).offset(i));
 			}

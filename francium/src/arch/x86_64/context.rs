@@ -1,4 +1,7 @@
-#[derive(Copy,Clone,Debug)]
+use core::fmt::{Debug, Formatter};
+use core::format_args;
+
+#[derive(Copy,Clone)]
 #[repr(C)]
 pub struct X86Regs {
 	pub rax: usize,
@@ -27,6 +30,53 @@ pub struct X86Regs {
 	pub ss: usize,
 
 	pub fs: usize
+}
+
+impl Debug for X86Regs {
+	fn fmt(&self, fmt: &mut Formatter<'_>) -> Result<(), core::fmt::Error> {
+		fmt.write_fmt(format_args!(
+"rax: {:016x}
+rbx: {:016x}
+rcx: {:016x}
+rdx: {:016x}
+rbp: {:016x}
+rsi: {:016x}
+rdi: {:016x}
+r8:  {:016x}
+r9:  {:016x}
+r10: {:016x}
+r11: {:016x}
+r12: {:016x}
+r13: {:016x}
+r14: {:0016x}
+r15: {:016x}
+
+cs:rip: {:02x}:{:016x}
+eflags: {:08x}
+ss:rsp: {:02x}:{:016x}
+
+fs: {:x}",
+			self.rax,
+			self.rbx,
+			self.rcx,
+			self.rdx,
+			self.rbp,
+			self.rsi,
+			self.rdi,
+			self.r8,
+			self.r9,
+			self.r10,
+			self.r11,
+			self.r12,
+			self.r13,
+			self.r14,
+			self.r15,
+
+			self.cs, self.rip,
+			self.eflags,
+			self.ss, self.rsp,
+			self.fs))
+	}
 }
 
 impl X86Regs {
