@@ -8,6 +8,8 @@
 .global syscall_ipc_receive
 .global syscall_ipc_accept
 .global syscall_get_process_id
+.global syscall_map_memory
+.global syscall_sleep_ns
 .global get_tpidr_el0_asm
 
 .section .text
@@ -63,6 +65,16 @@ syscall_connect_to_port_handle:
 mov x9, x1
 svc #0x0b
 str w1, [x9]
+ret
+
+syscall_map_memory:
+mov x9, x1
+svc #0x0c
+str x1, [x9]
+ret
+
+syscall_sleep_ns:
+svc #0x0d
 ret
 
 get_tpidr_el0_asm:

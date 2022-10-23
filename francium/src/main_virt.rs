@@ -61,23 +61,23 @@ pub extern "C" fn rust_main() -> ! {
 
 	platform::scheduler_pre_init();
 
-	let elf_one_buf = include_bytes!("../../target/aarch64-unknown-francium/release/fs");
-	let elf_two_buf = include_bytes!("../../target/aarch64-unknown-francium/release/test");
-	let elf_three_buf = include_bytes!("../../target/aarch64-unknown-francium/release/sm");
+	let fs_buf = include_bytes!("../../target/aarch64-unknown-francium/release/fs");
+	let test_buf = include_bytes!("../../target/aarch64-unknown-francium/release/test");
+	let sm_buf = include_bytes!("../../target/aarch64-unknown-francium/release/sm");
 
-	let one_main_thread = init::load_process(elf_one_buf);
-	scheduler::register_thread(one_main_thread.clone());
+	let fs_main_thread = init::load_process(fs_buf, "fs");
+	scheduler::register_thread(fs_main_thread.clone());
 
-	let two_main_thread = init::load_process(elf_two_buf);
-	scheduler::register_thread(two_main_thread.clone());
+	let test_main_thread = init::load_process(test_buf, "test");
+	scheduler::register_thread(test_main_thread.clone());
 
-	let three_main_thread = init::load_process(elf_three_buf);
-	scheduler::register_thread(three_main_thread.clone());
+	let sm_main_thread = init::load_process(sm_buf, "sm");
+	scheduler::register_thread(sm_main_thread.clone());
 
 	platform::scheduler_post_init();
 
 	println!("Running...");
-	process::force_switch_to(one_main_thread);
+	process::force_switch_to(test_main_thread);
 	println!("We shouldn't get here, ever!!");
 
 	loop {}

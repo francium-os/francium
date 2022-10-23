@@ -63,8 +63,18 @@ fn syscall_wrapper_get_process_id(ctx: &mut ExceptionContext) {
 	ctx.regs[0] = pid;
 }
 
+fn syscall_wrapper_map_memory(ctx: &mut ExceptionContext) {
+	let (res, addr_out) = svc::svc_map_memory(ctx.regs[0] as usize, ctx.regs[1] as usize, ctx.regs[2] as u32);
+	ctx.regs[0] = res.0 as usize;
+	ctx.regs[1] = addr_out;
+}
+
+fn syscall_wrapper_sleep_ns(ctx: &mut ExceptionContext) {
+	svc::svc_sleep_ns(ctx.regs[0] as u64);
+}
+
 type SVCHandler = fn(&mut ExceptionContext);
-pub const SVC_HANDLERS: [SVCHandler; 12] = [
+pub const SVC_HANDLERS: [SVCHandler; 14] = [
 	syscall_wrapper_break,
 	syscall_wrapper_debug_output,
 	syscall_wrapper_create_port,
@@ -76,5 +86,7 @@ pub const SVC_HANDLERS: [SVCHandler; 12] = [
 	syscall_wrapper_ipc_receive,
 	syscall_wrapper_ipc_accept,
 	syscall_wrapper_get_process_id,
-	syscall_wrapper_connect_to_port_handle
+	syscall_wrapper_connect_to_port_handle,
+	syscall_wrapper_map_memory,
+	syscall_wrapper_sleep_ns
 ];
