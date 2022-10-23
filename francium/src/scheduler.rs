@@ -74,7 +74,6 @@ impl Scheduler {
 		if from.id == to.id {
 			// don't do this, it'll deadlock
 			panic!("Trying to switch to the same thread!");
-			return 0
 		}
 
 		// TODO: wow, this sucks

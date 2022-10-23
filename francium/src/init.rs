@@ -87,6 +87,8 @@ fn setup_user_context(process: Arc<Mutex<Box<Process>>>, usermode_pc: usize, use
 }
 
 pub fn load_process(elf_buf: &[u8], name: &'static str) -> Arc<Thread> {
+	println!("loading {}", name);
+
 	// Load the first process
 	let aspace = { 
 		let page_table_root = &KERNEL_ADDRESS_SPACE.read().page_table;
@@ -208,15 +210,15 @@ pub fn load_process(elf_buf: &[u8], name: &'static str) -> Arc<Thread> {
 			core::ptr::write_bytes(auxv as *mut usize, 0, 1);
 			auxv += core::mem::size_of::<usize>();
 
-			for i in 0..auxv_entries.len() {
+			for _ in 0..auxv_entries.len() {
 				unimplemented!();
 			}
 			
 			core::ptr::write_bytes(auxv as *mut usize, 0, 2);
-			auxv += core::mem::size_of::<usize>() * 2;
+			//auxv += core::mem::size_of::<usize>() * 2;
 
 			core::ptr::write_bytes(strings as *mut usize, 0, 1);
-			strings += core::mem::size_of::<usize>() * 1;
+			//strings += core::mem::size_of::<usize>() * 1;
 		}
 
 		let thread = setup_user_context(arc, user_code_base, auxv_base);

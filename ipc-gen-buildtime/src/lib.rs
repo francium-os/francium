@@ -83,7 +83,6 @@ pub fn generate_server(path: &str) {
     let server_struct_name = format_ident!("{}", spec.struct_name);
 
     let server_impl = quote!(
-        use pasts::prelude::Box;
 
         #[async_trait::async_trait]
         impl IPCServer for #server_struct_name {
