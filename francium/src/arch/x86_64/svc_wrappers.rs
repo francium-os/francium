@@ -80,6 +80,11 @@ unsafe extern "C" fn syscall_map_memory(address: usize, length: usize, permissio
 	Pair { a: res.0 as usize, b: out as usize }
 }
 
+#[no_mangle]
+unsafe extern "C" fn syscall_sleep_ns(ns: u64) {
+	svc::svc_sleep_ns(ns);
+}
+
 // Rust complains loudly about this. As it should.
 global_asm!("
 .global syscall_wrappers
@@ -97,4 +102,5 @@ syscall_wrappers:
 .quad syscall_wrapper_get_process_id
 .quad syscall_wrapper_connect_to_port_handle
 .quad syscall_map_memory
+.quad syscall_sleep_ns
 ");

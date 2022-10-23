@@ -15,6 +15,7 @@ extern "C" {
 	pub fn syscall_get_process_id() -> usize;
 	pub fn syscall_connect_to_port_handle(h: u32, handle_out: *mut Handle) -> ResultCode;
 	pub fn syscall_map_memory(address: usize, length: usize, permission: u32, address_out: *mut usize) -> ResultCode;
+	pub fn syscall_sleep_ns(ns: u64);
 }
 
 pub fn print(s: &str) {
@@ -146,6 +147,12 @@ pub fn map_memory(address: usize, length: usize, permission: u32) -> Result<usiz
 		} else {
 			Err(OSError::from_result_code(res))
 		}
+	}
+}
+
+pub fn sleep_ns(ns: u64) {
+	unsafe {
+		syscall_sleep_ns(ns);
 	}
 }
 

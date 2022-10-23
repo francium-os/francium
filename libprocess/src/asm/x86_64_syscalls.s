@@ -108,3 +108,8 @@ syscall
 mov [rbx], rdx
 pop rbx
 ret
+
+syscall_sleep_ns:
+mov eax, 0x0d
+syscall
+ret
