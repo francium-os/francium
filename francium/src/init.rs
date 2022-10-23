@@ -104,7 +104,8 @@ pub fn load_process(elf_buf: &[u8], name: &'static str) -> Arc<Thread> {
 			let ph = phdr.ph;
 			if ph.ph_type() == ProgramType::LOAD {
 				let section_start: usize = ph.vaddr() as usize;
-				let section_size_aligned: usize = ph.memsz() as usize;
+				let section_size: usize = ph.memsz() as usize;
+				let section_size_aligned: usize = (section_size + (PAGE_SIZE-1)) & !(PAGE_SIZE-1);
 
 				if (ph.flags() & 1) == 1 { // TODO: where did `1` come from?
 					p.address_space.create(section_start, section_size_aligned, PagePermission::USER_RWX);

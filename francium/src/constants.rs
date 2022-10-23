@@ -4,3 +4,5 @@ pub const KERNEL_BASE: usize =  0xfffffff800000000;
 
 pub const KERNEL_HEAP_BASE: usize = 0xfffffffc00000000;
 pub const KERNEL_HEAP_INITIAL_SIZE: usize = 0x2000;
+
+pub const PAGE_SIZE: usize = 0x1000;

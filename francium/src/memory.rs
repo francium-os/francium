@@ -68,6 +68,8 @@ impl AddressSpace {
 	}
 
 	pub fn create(&mut self, start_addr: usize, size: usize, perm: PagePermission) {
+		assert!(start_addr & 0xfff == 0);
+		assert!(size & 0xfff == 0);
 		unsafe {
 			for addr in (start_addr..(start_addr+size)).step_by(0x1000) {
 				let page = phys_allocator::alloc().unwrap();
