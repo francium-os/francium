@@ -7,7 +7,7 @@ edition = "2021"
 
 [dependencies]
 async-trait = "0.1.57"
-pasts = { version = "0.12.0", features = ["no-std"] }
+futures = "0.3.25"
 "process" = { path = "../../libprocess" }
 
 [build-dependencies]

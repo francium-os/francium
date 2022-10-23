@@ -13,3 +13,4 @@ name = "register_port"
 id = 2
 inputs = [{ name = "tag", ty = "u64"}, { name = "port_handle", ty = "TranslateCopyHandle"} ]
 output = "OSResult<()>"
+is_async = true

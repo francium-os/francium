@@ -32,8 +32,7 @@ fn main() {
 
 	let mut server = Box::new(ServerImpl::new(FSServerStruct{}, port));
 
-	let exc = ::pasts::Executor::default();
-	exc.spawn(server.process_forever());
+	futures::executor::block_on(server.process_forever());
 
 	syscalls::close_handle(port).unwrap();
 	println!("FS exiting!");
