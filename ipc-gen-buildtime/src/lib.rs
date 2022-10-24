@@ -57,7 +57,7 @@ impl Method {
                 reply_msg.write_translates();
                 reply_msg.write_header_for(0);
 
-                crate::syscalls::ipc_reply(h).unwrap();
+                unsafe { crate::syscalls::ipc_reply(h, &mut IPC_BUFFER).unwrap(); }
             }
         }
     }
@@ -83,6 +83,7 @@ pub fn generate_server(path: &str) {
     let server_struct_name = format_ident!("{}", spec.struct_name);
 
     let server_impl = quote!(
+        use process::ipc::message::IPC_BUFFER;
 
         #[async_trait::async_trait]
         impl IPCServer for #server_struct_name {

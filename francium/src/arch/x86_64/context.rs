@@ -29,6 +29,8 @@ pub struct X86Regs {
 	pub rsp: usize,
 	pub ss: usize,
 
+	// End stack frame //
+
 	pub fs: usize
 }
 

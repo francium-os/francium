@@ -3,6 +3,7 @@ use crate::syscalls;
 use smallvec::SmallVec;
 use alloc::boxed::Box;
 use core::sync::atomic::AtomicBool;
+use crate::ipc::message::IPC_BUFFER;
 
 #[async_trait::async_trait]
 pub trait IPCServer {
@@ -28,7 +29,7 @@ impl<T: IPCServer> ServerImpl<T> {
 	pub async fn process_forever(mut self)
 	{
 		loop {
-			let index = syscalls::ipc_receive(&self.handles).unwrap();
+			let index = unsafe { syscalls::ipc_receive(&self.handles, &mut IPC_BUFFER).unwrap() };
 			if index == 0 {
 				// server handle is signalled!
 				let new_session = syscalls::ipc_accept(self.handles[0]).unwrap();

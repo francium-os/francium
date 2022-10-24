@@ -37,17 +37,17 @@ fn syscall_wrapper_close_handle(ctx: &mut ExceptionContext) {
 }
 
 fn syscall_wrapper_ipc_request(ctx: &mut ExceptionContext) {
-	let res = svc::svc_ipc_request(ctx.regs[0] as u32);
+	let res = svc::svc_ipc_request(ctx.regs[0] as u32, ctx.regs[1] as usize);
 	ctx.regs[0] = res.0 as usize;
 }
 
 fn syscall_wrapper_ipc_reply(ctx: &mut ExceptionContext) {
-	let res = svc::svc_ipc_reply(ctx.regs[0] as u32);
+	let res = svc::svc_ipc_reply(ctx.regs[0] as u32, ctx.regs[1] as usize);
 	ctx.regs[0] = res.0 as usize;
 }
 
 fn syscall_wrapper_ipc_receive(ctx: &mut ExceptionContext) {
-	let (res, index_out) = svc::svc_ipc_receive(ctx.regs[0] as *const u32, ctx.regs[1]);
+	let (res, index_out) = svc::svc_ipc_receive(ctx.regs[0] as *const u32, ctx.regs[1], ctx.regs[2] as usize);
 	ctx.regs[0] = res.0 as usize;
 	ctx.regs[1] = index_out;
 }

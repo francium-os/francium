@@ -8,14 +8,15 @@ extern "C" {
 	pub fn syscall_connect_to_named_port(tag: u64, handle_out: *mut Handle) -> ResultCode;
 	pub fn syscall_exit_process() -> !;
 	pub fn syscall_close_handle(h: Handle) -> ResultCode;
-	pub fn syscall_ipc_request(session_handle: Handle) -> ResultCode;
-	pub fn syscall_ipc_reply(session_handle: Handle) -> ResultCode;
-	pub fn syscall_ipc_receive(sessions: *const Handle, num_sessions: usize, index_out: *mut usize) -> ResultCode;
+	pub fn syscall_ipc_request(session_handle: Handle, ipc_buffer: *mut u8) -> ResultCode;
+	pub fn syscall_ipc_reply(session_handle: Handle, ipc_buffer: *mut u8) -> ResultCode;
+	pub fn syscall_ipc_receive(sessions: *const Handle, num_sessions: usize, ipc_buffer: *mut u8, index_out: *mut usize) -> ResultCode;
 	pub fn syscall_ipc_accept(session_handle: Handle, handle_out: *mut Handle) -> ResultCode;
 	pub fn syscall_get_process_id() -> usize;
 	pub fn syscall_connect_to_port_handle(h: u32, handle_out: *mut Handle) -> ResultCode;
 	pub fn syscall_map_memory(address: usize, length: usize, permission: u32, address_out: *mut usize) -> ResultCode;
 	pub fn syscall_sleep_ns(ns: u64);
+	pub fn syscall_bodge(key: u32, addr: usize) -> usize;
 }
 
 pub fn print(s: &str) {
@@ -86,9 +87,9 @@ pub fn exit_process() -> ! {
 	}
 }
 
-pub fn ipc_request(session_handle: Handle) -> Result<(), OSError> {
+pub fn ipc_request(session_handle: Handle, ipc_buffer: &mut [u8; 128]) -> Result<(), OSError> {
 	unsafe {
-		let res = syscall_ipc_request(session_handle);
+		let res = syscall_ipc_request(session_handle, ipc_buffer.as_mut_ptr());
 		if res == RESULT_OK {
 			Ok(())
 		} else {
@@ -97,9 +98,9 @@ pub fn ipc_request(session_handle: Handle) -> Result<(), OSError> {
 	}
 }
 
-pub fn ipc_reply(session_handle: Handle) -> Result<(), OSError> {
+pub fn ipc_reply(session_handle: Handle, ipc_buffer: &mut [u8; 128]) -> Result<(), OSError> {
 	unsafe {
-		let res = syscall_ipc_reply(session_handle);
+		let res = syscall_ipc_reply(session_handle, ipc_buffer.as_mut_ptr());
 		if res == RESULT_OK {
 			Ok(())
 		} else {
@@ -108,10 +109,10 @@ pub fn ipc_reply(session_handle: Handle) -> Result<(), OSError> {
 	}
 }
 
-pub fn ipc_receive(sessions: &[Handle]) -> Result<usize, OSError> {
+pub fn ipc_receive(sessions: &[Handle], ipc_buffer: &mut [u8; 128]) -> Result<usize, OSError> {
 	unsafe {
 		let mut index_out: usize = 0;
-		let res = syscall_ipc_receive(sessions.as_ptr(), sessions.len(), &mut index_out);
+		let res = syscall_ipc_receive(sessions.as_ptr(), sessions.len(), ipc_buffer.as_mut_ptr(), &mut index_out);
 		if res == RESULT_OK {
 			Ok(index_out)
 		} else {
@@ -153,6 +154,14 @@ pub fn map_memory(address: usize, length: usize, permission: u32) -> Result<usiz
 pub fn sleep_ns(ns: u64) {
 	unsafe {
 		syscall_sleep_ns(ns);
+	}
+}
+
+use common::constants::{GET_FS, SET_FS};
+
+pub fn bodge(key: u32, addr: usize) -> usize {
+	unsafe {
+		syscall_bodge(key, addr)
 	}
 }
 

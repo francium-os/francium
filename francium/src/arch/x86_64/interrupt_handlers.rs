@@ -214,11 +214,11 @@ pub fn read_cr2() -> usize {
 unsafe extern "C" fn handle_exception(ctx: &ExceptionContext, error_code: u64, interrupt_number: u64) {
 
 	println!("Current process: {}", crate::scheduler::get_current_process().lock().name);
+	println!("register dump:\n{:?}", ctx.regs);
 
 	match interrupt_number {
 		0x6 => {
 			println!("Invalid instruction!");
-			println!("register dump:\n{:?}", ctx.regs);
 			panic!("No");
 		},
 
@@ -260,7 +260,7 @@ unsafe extern "C" fn handle_exception(ctx: &ExceptionContext, error_code: u64, i
 			let _pg = &process_locked.address_space.page_table;
 			//println!("Walk: {:x}", pg.virt_to_phys(cr2).unwrap().0);
 
-			println!("register dump:\n{:?}", ctx.regs);
+			println!("stack dump");
 			for i in -32..32 {
 				println!("{:?}: {:x}", i, *(ctx.regs.rsp as *const usize).offset(i));
 			}

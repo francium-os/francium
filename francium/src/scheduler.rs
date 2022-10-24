@@ -45,15 +45,9 @@ fn set_thread_context_tag(p: &Arc<Thread>, tag: usize) {
 	p.context.lock().regs.rax = tag;
 }
 
-#[cfg(target_arch = "aarch64")]
-pub unsafe fn set_current_thread_state(_stack: usize, tls: usize) {
-	// aarch64 keeps stack state for us :)
-	arch::arch_registers::write_tpidr_el0(tls);
-}
-
 #[cfg(target_arch = "x86_64")]
-pub unsafe fn set_current_thread_state(stack: usize, tls: usize) {
-	CURRENT_THREAD_KERNEL_STACK = stack;
+pub unsafe fn set_current_thread_state(kernel_stack: usize, tls: usize) {
+	CURRENT_THREAD_KERNEL_STACK = kernel_stack;
 	arch::msr::write_fs_base(tls);
 }
 
@@ -81,8 +75,6 @@ impl Scheduler {
 			unsafe {
 				// TODO: lol
 				SCHEDULER.force_unlock();
-
-				set_current_thread_state(to.kernel_stack_top, to.thread_local_location);
 			}
 
 			{
@@ -96,6 +88,9 @@ impl Scheduler {
 			let to_context_ptr = &to.context as *const Mutex<ThreadContext>;
 
 			unsafe {
+				#[cfg(target_arch = "x86_64")]
+				set_current_thread_state(to.kernel_stack_top, to_context_locked.regs.fs);
+
 				return switch_thread_asm(from_context_locked, to_context_locked, from_context_ptr as usize, to_context_ptr as usize)
 			}
 		}

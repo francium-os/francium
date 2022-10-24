@@ -71,7 +71,7 @@ ret
 syscall_ipc_receive:
 push rbx
 mov eax, 0x08
-mov rbx, rdx
+mov rbx, rcx
 syscall
 mov [rbx], rdx
 pop rbx
@@ -111,5 +111,11 @@ ret
 
 syscall_sleep_ns:
 mov eax, 0x0d
+syscall
+ret
+
+syscall_bodge:
+ud2
+mov eax, 0x0e
 syscall
 ret

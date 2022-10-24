@@ -134,19 +134,6 @@ pub fn load_process(elf_buf: &[u8], name: &'static str) -> Arc<Thread> {
 				for addr in (section_start .. section_end).step_by(64) {
 					unsafe { clear_cache_for_address(addr); }
 				}
-			} else if ph.ph_type() == ProgramType::Unknown(7) { // unk(7) = TLS
-				// load TLS template
-				let tls_start: usize = ph.offset() as usize;
-				let tls_end: usize = ph.offset() as usize + ph.filesz() as usize;
-				p.thread_local_template.extend(&elf_buf[tls_start..tls_end]);
-				
-				let align: usize = ph.align() as usize;
-				let memsz_aligned = (ph.memsz() as usize + align-1) & !(align-1);
-				p.thread_local_template.resize(memsz_aligned, 0);
-
-				if ph.memsz() as usize > crate::process::TLS_SIZE {
-					panic!("no");
-				}
 			}
 		}
 

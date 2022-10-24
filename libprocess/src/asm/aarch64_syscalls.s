@@ -46,7 +46,7 @@ svc #7
 ret
 
 syscall_ipc_receive:
-mov x9, x2
+mov x9, x3
 svc #8
 str x1, [x9]
 ret
@@ -75,6 +75,11 @@ ret
 
 syscall_sleep_ns:
 svc #0x0d
+ret
+
+// Currently should not be used on ARM!
+syscall_bodge:
+brk #0
 ret
 
 get_tpidr_el0_asm:

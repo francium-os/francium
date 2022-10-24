@@ -3,7 +3,6 @@ use common::os_error::{OSResult,OSError,ResultCode,RESULT_OK};
 use common::ipc::*;
 
 #[thread_local]
-#[no_mangle]
 pub static mut IPC_BUFFER: [u8; 128] = [0; 128];
 
 pub struct IPCMessage {

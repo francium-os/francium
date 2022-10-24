@@ -130,7 +130,7 @@ pub fn ipc_server(attr: TokenStream, item: TokenStream) -> TokenStream {
 
                     //println!("{}.{}", stringify!(#server_trait_name), stringify!(#method_name));
                     //unsafe { println!("{:?}", IPC_BUFFER); }
-                    crate::syscalls::ipc_request(h).unwrap();
+                    unsafe { crate::syscalls::ipc_request(h, &mut IPC_BUFFER).unwrap(); }
 
                     let mut reply_msg = crate::ipc::message::IPCMessage::new();
                     reply_msg.read_header();
@@ -157,6 +157,8 @@ pub fn ipc_server(attr: TokenStream, item: TokenStream) -> TokenStream {
     };
 
     let out = quote! {
+        use crate::ipc::message::IPC_BUFFER;
+
         pub trait #server_trait_name { 
             // #server_dispatch_method
 

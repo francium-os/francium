@@ -12,6 +12,7 @@ pub struct ExceptionContext {
 	pub regs: [usize; 32],
 	pub saved_pc: usize,
 	pub saved_spsr: usize,
+	pub saved_tpidr: usize
 }
 
 impl ExceptionContext {
@@ -20,6 +21,7 @@ impl ExceptionContext {
 			regs: [0; 32],
 			saved_pc: 0,
 			saved_spsr: 0,
+			saved_tpidr: 0
 		}
 	}
 }

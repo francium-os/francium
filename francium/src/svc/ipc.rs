@@ -19,9 +19,9 @@ use smallvec::SmallVec;
 pub struct ServerSession {
 	wait: Waiter,
 	connect_wait: Waiter,
-	queue: Mutex<SmallVec<[Arc<Thread>; 1]>>,
+	queue: Mutex<SmallVec<[(Arc<Thread>, usize); 1]>>,
 	client: Mutex<Weak<ClientSession>>,
-	client_thread: Mutex<Option<Arc<Thread>>>
+	client_thread: Mutex<Option<(Arc<Thread>, usize)>>
 }
 
 #[derive(Debug)]
@@ -159,12 +159,12 @@ pub fn svc_connect_to_named_port(tag: u64) -> (ResultCode, u32) {
 }
 
 // x0: ipc session
-pub fn svc_ipc_request(session_handle: u32) -> ResultCode {
+pub fn svc_ipc_request(session_handle: u32, ipc_buffer_ptr: usize) -> ResultCode {
 	if let HandleObject::ClientSession(client_session) = handle::get_handle(session_handle) {
 		// signal, then wait for reply
 		let current_thread = scheduler::get_current_thread();
 
-		client_session.server.queue.lock().push(current_thread);
+		client_session.server.queue.lock().push((current_thread, ipc_buffer_ptr));
 		client_session.server.signal_one();
 		client_session.wait();
 
@@ -175,16 +175,21 @@ pub fn svc_ipc_request(session_handle: u32) -> ResultCode {
 	}
 }
 
-fn do_ipc_transfer(from_thread: &Arc<Thread>, to_thread: &Arc<Thread>) {
-	let from_tls = from_thread.thread_local.lock();
-	let mut to_tls = to_thread.thread_local.lock();
+const IPC_BUFFER_LEN: usize = 128;
 
-	let from_ipc_buffer = &from_tls[TLS_TCB_OFFSET..];
-	let to_ipc_buffer = &mut to_tls[TLS_TCB_OFFSET..];
+fn do_ipc_transfer(from_thread: &Arc<Thread>, to_thread: &Arc<Thread>, from_ptr: usize, to_ptr: usize) {
+	// XX todo: figure out how to map from_ptr/to_ptr with respect to caches.
+
+	let from_ipc_buffer_ptr = from_ptr as *const u8;
+	let to_ipc_buffer_ptr = to_ptr as *mut u8;
+
+	println!("IPC transfer: {:x} {:x}", from_ptr, to_ptr);
 
 	unsafe {
-		core::ptr::copy_nonoverlapping(from_ipc_buffer.as_ptr(), to_ipc_buffer.as_mut_ptr(), 128);
+		core::ptr::copy_nonoverlapping(from_ipc_buffer_ptr, to_ipc_buffer_ptr, 128);
 	}
+
+	let to_ipc_buffer = unsafe { core::slice::from_raw_parts_mut(to_ptr as *mut u8, IPC_BUFFER_LEN) };
 
 	let packed_header = u32::from_le_bytes(to_ipc_buffer[0..4].try_into().unwrap());
 	let header = IPCHeader::unpack(packed_header);
@@ -215,9 +220,8 @@ fn do_ipc_transfer(from_thread: &Arc<Thread>, to_thread: &Arc<Thread>) {
 	}
 }
 
-use crate::process::TLS_TCB_OFFSET;
 const MAX_HANDLES: usize = 128;
-pub fn svc_ipc_receive(handles_ptr: *const u32, handle_count: usize) -> (ResultCode, usize) {
+pub fn svc_ipc_receive(handles_ptr: *const u32, handle_count: usize, ipc_buffer_ptr: usize) -> (ResultCode, usize) {
 	let mut handles: [u32; MAX_HANDLES] = [ 0xffffffff ; MAX_HANDLES];
 
 	unsafe {
@@ -227,26 +231,28 @@ pub fn svc_ipc_receive(handles_ptr: *const u32, handle_count: usize) -> (ResultC
 	let index = waitable::wait_handles(&handles[..handle_count]);
 
 	if let HandleObject::ServerSession(server_session) = handle::get_handle(handles[index]) {
-		let client_thread = server_session.queue.lock().pop().unwrap();
+		let (client_thread, client_buffer_ptr) = server_session.queue.lock().pop().unwrap();
 		let current_thread = scheduler::get_current_thread();
 
-		do_ipc_transfer(&client_thread, &current_thread);
+		// XX todo: figure out how to map from_ptr/to_ptr with respect to caches.
+		do_ipc_transfer(&client_thread, &current_thread, client_buffer_ptr, ipc_buffer_ptr);
 
-		*server_session.client_thread.lock() = Some(client_thread);
+		*server_session.client_thread.lock() = Some((client_thread, client_buffer_ptr));
 	}
 
 	(RESULT_OK, index)
 }
 
 // x0: session handle
-pub fn svc_ipc_reply(session_handle: u32) -> ResultCode {
+pub fn svc_ipc_reply(session_handle: u32, ipc_buffer_ptr: usize) -> ResultCode {
 	if let HandleObject::ServerSession(server_session) = handle::get_handle(session_handle) {
 		// TODO: wtf?
 		let current_thread = scheduler::get_current_thread();
 		let mut thread_lock = server_session.client_thread.lock();
-		let client_thread = thread_lock.as_ref().unwrap();
+		let (client_thread, client_buffer_ptr) = thread_lock.as_ref().unwrap();
 
-		do_ipc_transfer(&current_thread, &client_thread);
+		// XX todo: figure out how to map from_ptr/to_ptr with respect to caches.
+		do_ipc_transfer(&current_thread, &client_thread, ipc_buffer_ptr, *client_buffer_ptr);
 
 		*thread_lock = None;
 		server_session.client.lock().upgrade().unwrap().signal_one();
