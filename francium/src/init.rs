@@ -100,17 +100,22 @@ pub fn load_process(elf_buf: &[u8], name: &'static str) -> Arc<Thread> {
 	
 	let elf = Elf::from_bytes(elf_buf).unwrap();
 	if let Elf::Elf64(e) = elf {
-		for phdr in e.program_header_iter() {
+		for (i, phdr) in e.program_header_iter().enumerate() {
 			let ph = phdr.ph;
 			if ph.ph_type() == ProgramType::LOAD {
-				let section_start: usize = ph.vaddr() as usize;
+				let mut section_start: usize = ph.vaddr() as usize;
 				let section_size: usize = ph.memsz() as usize;
 				let section_size_aligned: usize = (section_size + (PAGE_SIZE-1)) & !(PAGE_SIZE-1);
 
+				// XXX This is kind of bad.
+				if (section_start & PAGE_SIZE-1) != 0 {
+					section_start = section_start & !(PAGE_SIZE-1);
+				}
+
 				if (ph.flags() & 1) == 1 { // TODO: where did `1` come from?
-					p.address_space.create(section_start, section_size_aligned, PagePermission::USER_RWX);
+					p.address_space.create_with_overlap(section_start, section_size_aligned, PagePermission::USER_RWX);
 				} else {
-					p.address_space.create(section_start, section_size_aligned, PagePermission::USER_READ_WRITE);
+					p.address_space.create_with_overlap(section_start, section_size_aligned, PagePermission::USER_READ_WRITE);
 				}
 
 				// TODO: proper TLB management

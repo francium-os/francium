@@ -28,6 +28,16 @@ impl core::fmt::Debug for AddressSpace {
 	}
 }
 
+
+fn map_region(pg: &mut PageTable, start_addr: usize, size: usize, perm: PagePermission) {
+	unsafe {
+		for addr in (start_addr..(start_addr+size)).step_by(0x1000) {
+			let page = phys_allocator::alloc().unwrap();
+			pg.map_4k(page, addr, perm, MapType::NormalCachable);
+		}
+	}
+}
+
 impl AddressSpace {
 	pub fn new(template_page_table: PageTable) -> AddressSpace {
 		// Crimes activated
@@ -67,15 +77,63 @@ impl AddressSpace {
 		})
 	}
 
+	pub fn create_with_overlap(&mut self, start_addr: usize, size: usize, perm: PagePermission) {
+		println!("Create w/ overlap: {:x} {:x}", start_addr, size);
+
+		let mut found_overlap = false;
+		for reg in self.regions.iter_mut() {
+			// NOTE: > not >=, if == we do not need to move start
+			if reg.address > start_addr && reg.address <= start_addr + size {
+				// This region's start is inside the new region.
+
+				let deficit = reg.address - start_addr;
+				println!("Expand start {:?}", deficit);
+
+				panic!("panik");
+				found_overlap = true;
+			}
+
+			// NOTE: again, > not >=
+			if reg.address + reg.size > start_addr && reg.address + reg.size <= start_addr + size {
+				// This region's end is inside the new region.
+				let overlap = reg.address + reg.size - start_addr;
+				let deficit = size - overlap;
+				println!("Expand end {:x} {:x}", start_addr + overlap, deficit);
+
+				// XXX: Need to potentially reprotect a chunk.
+				if reg.permissions != perm {
+					println!("XXX need to reprotect");
+				}
+
+				// Need to map a chunk from found region end to new region end.
+				map_region(&mut self.page_table, start_addr + overlap, deficit, perm);
+				reg.size = size;
+
+				found_overlap = true;
+			}
+
+			if found_overlap { break; }
+		}
+
+		if !found_overlap {
+			self.create(start_addr, size, perm)
+		}
+	}
+
 	pub fn create(&mut self, start_addr: usize, size: usize, perm: PagePermission) {
 		assert!(start_addr & 0xfff == 0);
 		assert!(size & 0xfff == 0);
-		unsafe {
-			for addr in (start_addr..(start_addr+size)).step_by(0x1000) {
-				let page = phys_allocator::alloc().unwrap();
-				self.page_table.map_4k(page, addr, perm, MapType::NormalCachable);
+
+		println!("Create: {:x} {:x}", start_addr, size);
+
+		for reg in self.regions.iter() {
+			if (reg.address >= start_addr && reg.address <= start_addr + size) ||
+			   (reg.address + reg.size > start_addr && reg.address + reg.size <= start_addr + size) {
+				panic!("Overlapping regions! {:x} {:x} {:x} {:x}", reg.address, reg.size, start_addr, size);
 			}
 		}
+
+		map_region(&mut self.page_table, start_addr, size, perm);
 
 		self.regions.push(Block{
 			address: start_addr,
@@ -116,3 +174,4 @@ impl AddressSpace {
 		}
 	}
 }
+
