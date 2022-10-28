@@ -99,19 +99,19 @@ fn bootloader_main(info: &'static mut bootloader::BootInfo) -> ! {
 
 	platform::scheduler_pre_init();
 
-	let elf_one_buf = include_bytes!("../../target/x86_64-unknown-francium/release/fs");
-	let elf_two_buf = include_bytes!("../../target/x86_64-unknown-francium/release/test");
-	let elf_three_buf = include_bytes!("../../target/x86_64-unknown-francium/release/sm");
+	let fs_buf = include_bytes!("../../target/x86_64-unknown-francium/release/fs");
+	let test_buf = include_bytes!("../../target/x86_64-unknown-francium/release/test");
+	let sm_buf = include_bytes!("../../target/x86_64-unknown-francium/release/sm");
 
-	let one_main_thread = init::load_process(elf_one_buf, "fs");
-	scheduler::register_thread(one_main_thread.clone());
+	let fs_main_thread = init::load_process(fs_buf, "fs");
+	scheduler::register_thread(fs_main_thread.clone());
 
-	let two_main_thread = init::load_process(elf_two_buf, "test");
-	scheduler::register_thread(two_main_thread.clone());
-	
-	let three_main_thread = init::load_process(elf_three_buf, "sm");
-	scheduler::register_thread(three_main_thread.clone());
-	
+	let test_main_thread = init::load_process(test_buf, "test");
+	scheduler::register_thread(test_main_thread.clone());
+
+	let sm_main_thread = init::load_process(sm_buf, "sm");
+	scheduler::register_thread(sm_main_thread.clone());
+
 	platform::scheduler_post_init();
 
 	unsafe { turn_on_floating_point(); }
