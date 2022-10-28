@@ -85,6 +85,10 @@ fn setup_user_context(process: Arc<Mutex<Box<Process>>>, usermode_pc: usize, use
 	process.lock().threads.push(new_thread.clone());
 	new_thread
 }
+// XXX: find somewhere for this
+const AT_PHDR: usize = 3;
+const AT_PHENT: usize = 4;
+const AT_PHNUM: usize = 5;
 
 pub fn load_process(elf_buf: &[u8], name: &'static str) -> Arc<Thread> {
 	println!("loading {}", name);
@@ -100,12 +104,18 @@ pub fn load_process(elf_buf: &[u8], name: &'static str) -> Arc<Thread> {
 	
 	let elf = Elf::from_bytes(elf_buf).unwrap();
 	if let Elf::Elf64(e) = elf {
-		for (i, phdr) in e.program_header_iter().enumerate() {
+		let mut smallest_base = usize::MAX;
+
+		for phdr in e.program_header_iter() {
 			let ph = phdr.ph;
 			if ph.ph_type() == ProgramType::LOAD {
 				let mut section_start: usize = ph.vaddr() as usize;
 				let section_size: usize = ph.memsz() as usize;
 				let section_size_aligned: usize = (section_size + (PAGE_SIZE-1)) & !(PAGE_SIZE-1);
+
+				if section_start < smallest_base {
+					smallest_base = section_start;
+				}
 
 				// XXX This is kind of bad.
 				if (section_start & PAGE_SIZE-1) != 0 {
@@ -156,7 +166,11 @@ pub fn load_process(elf_buf: &[u8], name: &'static str) -> Arc<Thread> {
 		let argc: isize = 1;
 		let argv: [&'static str; 1] = ["test"];
 		let envp: [&'static str; 0] = [];
-		let auxv_entries: [(usize, usize); 0] = [];
+		let auxv_entries: [(usize, usize); 3] = [
+			(AT_PHDR, smallest_base + e.header().program_header_offset() as usize),
+			(AT_PHENT, e.header().program_header_entry_size() as usize),
+			(AT_PHNUM, e.header().program_header_entry_num() as usize)
+		];
 
 		// XXX: ptr size?
 		let argv_size: usize = 8 + (argc as usize + 1) * 8;
@@ -167,9 +181,6 @@ pub fn load_process(elf_buf: &[u8], name: &'static str) -> Arc<Thread> {
 
 		let new_stack = user_stack_base + user_stack_size;
 		let auxv_base = new_stack - (argv_size + env_size + auxv_size + strings_len + 8);
-
-		// XXX This is bad.
-		// XXX Todo: align?
 
 		unsafe {
 			let mut auxv = auxv_base;
@@ -192,7 +203,12 @@ pub fn load_process(elf_buf: &[u8], name: &'static str) -> Arc<Thread> {
 			core::ptr::write_bytes(auxv as *mut usize, 0, 1);
 			auxv += core::mem::size_of::<usize>();
 
+			assert!(auxv == auxv_base + argv_size);
+
 			for i in 0..envp.len() {
+				core::ptr::copy_nonoverlapping(&strings as *const usize, auxv as *mut usize, 1);
+				auxv += core::mem::size_of::<usize>();
+
 				let s = envp[i];
 				core::ptr::copy_nonoverlapping(s.as_ptr(), strings as *mut u8, s.len());
 				strings += s.len();
@@ -203,15 +219,22 @@ pub fn load_process(elf_buf: &[u8], name: &'static str) -> Arc<Thread> {
 			core::ptr::write_bytes(auxv as *mut usize, 0, 1);
 			auxv += core::mem::size_of::<usize>();
 
-			for _ in 0..auxv_entries.len() {
-				unimplemented!();
+			assert!(auxv == auxv_base + argv_size + env_size);
+
+			for i in 0..auxv_entries.len() {
+				core::ptr::copy_nonoverlapping(&auxv_entries[i].0 as *const usize, auxv as *mut usize, 1);
+				auxv += core::mem::size_of::<usize>();
+				core::ptr::copy_nonoverlapping(&auxv_entries[i].1 as *const usize, auxv as *mut usize, 1);
+				auxv += core::mem::size_of::<usize>();
 			}
 			
 			core::ptr::write_bytes(auxv as *mut usize, 0, 2);
-			//auxv += core::mem::size_of::<usize>() * 2;
+			auxv += core::mem::size_of::<usize>() * 2;
 
 			core::ptr::write_bytes(strings as *mut usize, 0, 1);
 			//strings += core::mem::size_of::<usize>() * 1;
+
+			assert!(auxv + strings_len + 8 == new_stack);
 		}
 
 		let thread = setup_user_context(arc, user_code_base, auxv_base);

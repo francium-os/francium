@@ -115,7 +115,6 @@ syscall
 ret
 
 syscall_bodge:
-ud2
 mov eax, 0x0e
 syscall
 ret

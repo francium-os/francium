@@ -157,7 +157,7 @@ pub fn sleep_ns(ns: u64) {
 	}
 }
 
-use common::constants::{GET_FS, SET_FS};
+pub use common::constants::{GET_FS, SET_FS};
 
 pub fn bodge(key: u32, addr: usize) -> usize {
 	unsafe {

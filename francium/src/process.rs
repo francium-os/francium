@@ -1,11 +1,9 @@
 use crate::memory::AddressSpace;
 use crate::arch::context::ThreadContext;
 use crate::handle_table::HandleTable;
-use crate::mmu::{PagePermission,phys_to_virt};
 use crate::scheduler;
 
 use alloc::alloc::{alloc, Layout};
-use alloc::vec::Vec;
 use alloc::boxed::Box;
 use alloc::sync::Arc;
 use spin::{Mutex, MutexGuard};
@@ -65,7 +63,7 @@ impl Thread {
 }
 
 impl Process {
-	pub fn new(name: &'static str, mut aspace: Box<AddressSpace>) -> Process {
+	pub fn new(name: &'static str, aspace: Box<AddressSpace>) -> Process {
 		let p = Process {
 			address_space: aspace,
 			threads: SmallVec::new(),

@@ -97,6 +97,10 @@ unsafe extern "C" fn syscall_bodge(key: u32, addr: usize) -> usize {
 		common::constants::SET_FS => {
 			let current_thread = scheduler::get_current_thread();
 			current_thread.context.lock().regs.fs = addr;
+
+			// Important: also set fs_base here, so it gets set immediately.
+			crate::arch::msr::write_fs_base(addr);
+
 			0
 		},
 		_ => {
