@@ -45,18 +45,6 @@ extern "C" {
 	static __bootstrap_stack_top: i32;
 }
 
-unsafe fn turn_on_floating_point() {
-	core::arch::asm!("
-		mov rax, cr0
-		and ax, 0xFFFB
-		or ax, 0x2
-		mov cr0, rax
-		mov rax, cr4
-		or ax, 3 << 9
-		mov cr4, rax
-	");
-}
-
 #[cfg(feature = "platform_pc")]
 bootloader::entry_point!(bootloader_main_thunk);
 
@@ -114,10 +102,9 @@ fn bootloader_main(info: &'static mut bootloader::BootInfo) -> ! {
 
 	platform::scheduler_post_init();
 
-	unsafe { turn_on_floating_point(); }
-
 	println!("Running...");
-	process::force_switch_to(one_main_thread);
+
+	process::force_switch_to(fs_main_thread);
 	println!("We shouldn't get here, ever!!");
 
 	loop {}

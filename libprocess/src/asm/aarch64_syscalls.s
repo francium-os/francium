@@ -68,7 +68,7 @@ str w1, [x9]
 ret
 
 syscall_map_memory:
-mov x9, x1
+mov x9, x3
 svc #0x0c
 str x1, [x9]
 ret

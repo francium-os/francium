@@ -111,7 +111,7 @@ pub fn load_process(elf_buf: &[u8], name: &'static str) -> Arc<Thread> {
 			if ph.ph_type() == ProgramType::LOAD {
 				let mut section_start: usize = ph.vaddr() as usize;
 				let section_size: usize = ph.memsz() as usize;
-				let section_size_aligned: usize = (section_size + (PAGE_SIZE-1)) & !(PAGE_SIZE-1);
+				let section_size_aligned: usize = (section_size + (section_start & (PAGE_SIZE-1)) + (PAGE_SIZE-1)) & !(PAGE_SIZE-1);
 
 				if section_start < smallest_base {
 					smallest_base = section_start;

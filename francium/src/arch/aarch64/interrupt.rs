@@ -137,6 +137,12 @@ pub extern "C" fn rust_lower_el_spx_sync(ctx: &mut ExceptionContext) {
 			
 			println!("LR: {:x}", ctx.regs[30]);
 
+			// better handling of data abort
+			if ec == 0b100100 {
+				let dfsc = iss & 0x3f;
+				println!("data fault status: {}", stringify_dfsc(dfsc));
+			}
+
 			loop {}
 		}
 	}
