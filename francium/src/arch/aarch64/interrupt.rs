@@ -90,6 +90,45 @@ fn stringify_dfsc(dfsc: usize) -> &'static str {
 	}
 }
 
+fn stringify_ifsc(ifsc: usize) -> &'static str {
+	match ifsc {
+		0b000000 => "Address size fault, level 0 of translation or translation table base register.",
+		0b000001 => "Address size fault, level 1.",
+		0b000010 => "Address size fault, level 2.",
+		0b000011 => "Address size fault, level 3.",
+		0b000100 => "Translation fault, level 0.",
+		0b000101 => "Translation fault, level 1.",
+		0b000110 => "Translation fault, level 2.",
+		0b000111 => "Translation fault, level 3.",
+		0b001001 => "Access flag fault, level 1.",
+		0b001010 => "Access flag fault, level 2.",
+		0b001011 => "Access flag fault, level 3.",
+		0b001000 => "When FEAT_LPA2 is implemented Access flag fault, level 0.",
+		0b001100 => "When FEAT_LPA2 is implemented Permission fault, level 0.",
+		0b001101 => "Permission fault, level 1.",
+		0b001110 => "Permission fault, level 2.",
+		0b001111 => "Permission fault, level 3.",
+		0b010000 => "Synchronous External abort, not on translation table walk or hardware update of translation table.",
+		0b010011 => "When FEAT_LPA2 is implemented Synchronous External abort on translation table walk or hardware update of translation table, level -1.",
+		0b010100 => "Synchronous External abort on translation table walk or hardware update of translation table, level 0.",
+		0b010101 => "Synchronous External abort on translation table walk or hardware update of translation table, level 1.",
+		0b010110 => "Synchronous External abort on translation table walk or hardware update of translation table, level 2.",
+		0b010111 => "Synchronous External abort on translation table walk or hardware update of translation table, level 3.",
+		0b011000 => "When FEAT_RAS is not implemented Synchronous parity or ECC error on memory access, not on translation table walk.",
+		0b011011 => "When FEAT_LPA2 is implemented and FEAT_RAS is not implemented Synchronous parity or ECC error on memory access on translation table walk or hardware update of translation table, level -1.",
+		0b011100 => "When FEAT_RAS is not implemented Synchronous parity or ECC error on memory access on translation table walk or hardware update of translation table, level 0.",
+		0b011101 => "When FEAT_RAS is not implemented Synchronous parity or ECC error on memory access on translation table walk or hardware update of translation table, level 1.",
+		0b011110 => "When FEAT_RAS is not implemented Synchronous parity or ECC error on memory access on translation table walk or hardware update of translation table, level 2.",
+		0b011111 => "When FEAT_RAS is not implemented Synchronous parity or ECC error on memory access on translation table walk or hardware update of translation table, level 3.",
+		0b101001 => "When FEAT_LPA2 is implemented Address size fault, level -1.",
+		0b101011 => "When FEAT_LPA2 is implemented Translation fault, level -1.",
+		0b110000 => "TLB conflict abort.",
+		0b110001 => "When FEAT_HAFDBS is implemented Unsupported atomic hardware update fault",
+		_ => "unknown ?"
+	}
+}
+
+
 
 #[no_mangle]
 pub extern "C" fn rust_curr_el_spx_sync(ctx: &ExceptionContext) -> ! {
@@ -141,6 +180,9 @@ pub extern "C" fn rust_lower_el_spx_sync(ctx: &mut ExceptionContext) {
 			if ec == 0b100100 {
 				let dfsc = iss & 0x3f;
 				println!("data fault status: {}", stringify_dfsc(dfsc));
+			} else if ec == 0b100000 { // instruction abort
+				let ifsc = iss & 0x3f;
+				println!("data fault status: {}", stringify_ifsc(ifsc));
 			}
 
 			loop {}
