@@ -95,8 +95,7 @@ bitflags! {
 		// global?? something something kernel
 		const GLOBAL = 1<<8;
 
-		const XN = 0;
-		//const XN = 1<<63;
+		const XN = 1<<63;
 	}
 }
 
@@ -325,6 +324,8 @@ impl PageTable {
 			}
 		}
 	}
+
+	// XXX TODO: Linux does core::arch::asm!("dsb ishst; isb;"); on aarch64 after modifying PTEs.
 
 	unsafe fn map_internal(&mut self, virt: usize, entry: PageTableEntry, perm: PagePermission, level: i32, final_level: i32) -> Option<()> {
 		let off = (3-level) * 9 + 12;

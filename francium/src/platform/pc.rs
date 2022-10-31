@@ -1,5 +1,5 @@
 use core::arch::asm;
-
+use crate::arch::msr;
 use spin::Mutex;
 
 pub const PHYS_MEM_BASE: usize = 0;
@@ -70,4 +70,8 @@ pub fn scheduler_pre_init() {
 
 pub fn scheduler_post_init() {
 	unsafe { turn_on_floating_point(); }
+
+	// XXX give this a constant
+	// Enable XN
+	unsafe { msr::write_efer(msr::read_efer() | (1<<11)); }
 }
