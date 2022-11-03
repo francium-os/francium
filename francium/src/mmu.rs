@@ -163,6 +163,11 @@ pub struct PageTable {
 
 // Big hack time!
 
+//#[cfg(target_arch = "aarch64")]
+//const PERM_FLAGS_MASK: EntryFlags = EntryFlags::ATTR_PXN.union(EntryFlags::ATTR_XN).union(EntryFlags::ATTR_AP_2).union(EntryFlags::ATTR_AP_1);
+//#[cfg(target_arch = "x86_64")]
+//const PERM_FLAGS_MASK: EntryFlags = EntryFlags::XN.union(EntryFlags::WRITABLE).union(EntryFlags::USER);
+
 // https://9net.org/screenshots/1627760764.png
 #[cfg(target_arch = "aarch64")]
 fn map_perms(perm: PagePermission) -> EntryFlags {
@@ -325,6 +330,12 @@ impl PageTable {
 		}
 	}
 
+	pub fn reprotect_4k(&mut self, virt: usize, perm: PagePermission, ty: MapType) {
+		/// XXX walk+map is going to be awfully slow
+		let addr = self.virt_to_phys(virt).unwrap();
+		self.map_4k(addr, virt, perm, ty);
+	}
+
 	// XXX TODO: Linux does core::arch::asm!("dsb ishst; isb;"); on aarch64 after modifying PTEs.
 
 	unsafe fn map_internal(&mut self, virt: usize, entry: PageTableEntry, perm: PagePermission, level: i32, final_level: i32) -> Option<()> {
@@ -332,7 +343,8 @@ impl PageTable {
 
 		let index = (virt & (0x1ff << off)) >> off;
 		if level < final_level {
-			if self.entries[index].entry == 0 {
+			let e = self.entries[index];
+			if e.entry == 0 {
 				let new_table_phys: PhysAddr = phys_allocator::alloc()?;
 				
 				let x: usize = phys_to_virt(new_table_phys);

@@ -28,13 +28,18 @@ impl core::fmt::Debug for AddressSpace {
 	}
 }
 
-
 fn map_region(pg: &mut PageTable, start_addr: usize, size: usize, perm: PagePermission) {
 	unsafe {
 		for addr in (start_addr..(start_addr+size)).step_by(0x1000) {
 			let page = phys_allocator::alloc().unwrap();
 			pg.map_4k(page, addr, perm, MapType::NormalCachable);
 		}
+	}
+}
+
+fn reprotect_region(pg: &mut PageTable, start_addr: usize, size: usize, perm: PagePermission) {
+	for addr in (start_addr..(start_addr+size)).step_by(0x1000) {
+		pg.reprotect_4k(addr, perm, MapType::NormalCachable);
 	}
 }
 
@@ -78,19 +83,14 @@ impl AddressSpace {
 	}
 
 	pub fn create_with_overlap(&mut self, start_addr: usize, size: usize, perm: PagePermission) {
-		println!("Create w/ overlap: {:x} {:x}", start_addr, size);
-
 		let mut found_overlap = false;
 		for reg in self.regions.iter_mut() {
 			// NOTE: > not >=, if == we do not need to move start
 			if reg.address > start_addr && reg.address <= start_addr + size {
 				// This region's start is inside the new region.
-
-				let deficit = reg.address - start_addr;
-				println!("Expand start {:?}", deficit);
-
+				//let deficit = reg.address - start_addr;
 				panic!("panik");
-				found_overlap = true;
+				//found_overlap = true;
 			}
 
 			// NOTE: again, > not >=
@@ -98,11 +98,8 @@ impl AddressSpace {
 				// This region's end is inside the new region.
 				let overlap = reg.address + reg.size - start_addr;
 				let deficit = size - overlap;
-				println!("Expand end {:x} {:x}", start_addr + overlap, deficit);
-
-				// XXX: Need to potentially reprotect a chunk.
 				if reg.permissions != perm {
-					println!("XXX need to reprotect");
+					reprotect_region(&mut self.page_table, start_addr, overlap, perm);
 				}
 
 				// Need to map a chunk from found region end to new region end.
@@ -123,8 +120,6 @@ impl AddressSpace {
 	pub fn create(&mut self, start_addr: usize, size: usize, perm: PagePermission) {
 		assert!(start_addr & 0xfff == 0);
 		assert!(size & 0xfff == 0);
-
-		println!("Create: {:x} {:x}", start_addr, size);
 
 		for reg in self.regions.iter() {
 			if (reg.address >= start_addr && reg.address <= start_addr + size) ||
