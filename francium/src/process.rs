@@ -10,8 +10,9 @@ use spin::{Mutex, MutexGuard};
 use core::sync::atomic::AtomicUsize;
 use core::sync::atomic::Ordering;
 use smallvec::SmallVec;
+use atomic_enum::atomic_enum;
 
-#[derive(Debug)]
+#[atomic_enum]
 pub enum ThreadState {
 	Created,
 	Runnable,
@@ -21,7 +22,7 @@ pub enum ThreadState {
 #[derive(Debug)]
 pub struct Thread {
 	pub id: usize,
-	pub state: ThreadState,
+	pub state: AtomicThreadState,
 	pub context: Mutex<ThreadContext>,
 
 	// static
@@ -53,7 +54,7 @@ impl Thread {
 		
 		Thread {
 			id: THREAD_ID.fetch_add(1, Ordering::SeqCst),
-			state: ThreadState::Created,
+			state: AtomicThreadState::new(ThreadState::Created),
 			context: Mutex::new(ThreadContext::new()),
 			process: p,
 			kernel_stack_top: kernel_stack as *const usize as usize + kernel_stack_size,

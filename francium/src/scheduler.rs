@@ -3,8 +3,9 @@ use alloc::sync::Arc;
 use smallvec::SmallVec;
 use spin::{Mutex, MutexGuard};
 use core::ptr::NonNull;
+use core::sync::atomic::Ordering;
 
-use crate::process::{Thread, Process};
+use crate::process::{Thread, ThreadState, Process};
 use crate::arch;
 use crate::arch::context::ThreadContext;
 
@@ -118,9 +119,10 @@ impl Scheduler {
 	}
 
 	pub fn suspend(&mut self, p: &Arc<Thread>) -> usize {
-		//p.state = ThreadState::Suspended;
 		if let Some(runnable_index) = self.runnable_threads.iter().position(|x| x.id == p.id) {
 			let idx = self.current_thread_index;
+			self.runnable_threads[runnable_index].state.store(ThreadState::Suspended, Ordering::Release);
+
 			self.runnable_threads.remove(runnable_index);
 			
 			if self.runnable_threads.len() == 0 {
@@ -174,6 +176,7 @@ pub fn tick() {
 
 pub fn register_thread(p: Arc<Thread>) {
 	let mut sched = SCHEDULER.lock();
+	p.state.store(ThreadState::Runnable, Ordering::Release);
 	sched.threads.push(p.clone());
 	sched.runnable_threads.push(p.clone());
 }

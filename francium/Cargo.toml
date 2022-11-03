@@ -14,6 +14,7 @@ lazy_static = { version = "1.4.0", features=["spin_no_std"]}
 smallvec = "1.6.1"
 spin = "0.9.0"
 bootloader = { version = "0.10.13", optional = true }
+atomic_enum = "0.2.0"
 
 [build-dependencies]
 
