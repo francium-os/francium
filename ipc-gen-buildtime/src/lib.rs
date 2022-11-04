@@ -3,7 +3,7 @@ use std::env;
 use std::fs;
 use std::path::Path;
 use quote::{quote, format_ident};
-use syn::Type;
+use syn::{Type, Path as SynPath};
 
 #[derive(Debug, Deserialize)]
 struct Ty {
@@ -61,14 +61,62 @@ impl Method {
         }
     }
 
-    fn client(&self) -> syn::__private::TokenStream2 {
-        quote!{}
+    fn client(&self, handle_accessor: &str) -> syn::__private::TokenStream2 {
+        let ipc_handle_accessor: SynPath = syn::parse_str(handle_accessor).unwrap();
+
+        let input_names: Vec<_> = self.inputs.iter().map(|x| format_ident!("{}", x.name)).collect();
+        let inputs: Vec<_> = self.inputs.iter().map(|x| {
+            let name = format_ident!("{}", x.name);
+            let ty_ = format_ident!("{}", x.ty);
+            quote!(#name: #ty_)
+        }).collect();
+
+        let output_type: Type = syn::parse_str(&self.output).unwrap();
+        let dispatch_output = if self.output == "()" {
+            quote!{}
+        } else {
+            quote! {
+                let out: #output_type = reply_msg.read();
+                out
+            }
+        };
+
+        let write_inputs = if input_names.len() == 0 {
+            quote!{}
+        } else {
+            quote! { #(request_msg.write(#input_names));*; }
+        };
+
+        let method_name = format_ident!("{}", self.name);
+        let method_id: u32 = self.id;
+
+        quote! {
+            pub fn #method_name ( #(#inputs),* ) -> #output_type {
+                let h = #ipc_handle_accessor();
+                let mut request_msg = crate::ipc::message::IPCMessage::new();
+
+                #write_inputs
+
+                request_msg.write_header_for(#method_id);
+                request_msg.write_translates();
+
+                unsafe { crate::syscalls::ipc_request(h, &mut IPC_BUFFER).unwrap(); }
+
+                let mut reply_msg = crate::ipc::message::IPCMessage::new();
+                reply_msg.read_header();
+                reply_msg.read_translates();
+
+                #dispatch_output
+            }
+        }
     }
 }
+
 #[derive(Debug, Deserialize)]
 struct ServerConfig {
     name: String,
     struct_name: String,
+    handle_accessor: String,
     methods: Vec<Method>
 }
 
@@ -115,11 +163,13 @@ pub fn generate_client(path: &str) {
     let out_dir = env::var_os("OUT_DIR").unwrap();
     let dest_path = Path::new(&out_dir).join(spec.name + "_client_impl.rs");
 
-    let client_methods: Vec<_> = spec.methods.iter().map(|x| x.client()).collect();
+    let client_methods: Vec<_> = spec.methods.iter().map(|x| x.client(&spec.handle_accessor)).collect();
 
-    let client_impl = quote!(
+    let client_impl = quote!{
+        use crate::ipc::message::IPC_BUFFER;
+
         #(#client_methods)*
-    );
+    };
 
     fs::write(dest_path, client_impl.to_string()).unwrap();
     println!("cargo:rerun-if-changed={}", path);

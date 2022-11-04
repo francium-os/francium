@@ -17,6 +17,10 @@ struct SMServerStruct {
 }
 
 impl SMServerStruct {
+	fn stop(&self) {
+		unimplemented!();
+	}
+
 	async fn get_service_handle(&mut self, tag: u64) -> OSResult<TranslateMoveHandle> {
 		println!("Got tag: {:x}", tag);
 

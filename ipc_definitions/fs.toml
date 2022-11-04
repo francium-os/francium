@@ -1,5 +1,6 @@
 name = "fs"
 struct_name = "FSServerStruct"
+handle_accessor = "crate::ipc::fs::get_handle_for_fs"
 
 [[methods]]
 name = "stop"

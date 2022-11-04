@@ -1,5 +1,12 @@
 name = "sm"
 struct_name = "SMServerStruct"
+handle_accessor = "crate::ipc::sm::get_handle_for_sm"
+
+[[methods]]
+name = "stop"
+id = 0
+inputs = []
+output = "()"
 
 [[methods]]
 name = "get_service_handle"
