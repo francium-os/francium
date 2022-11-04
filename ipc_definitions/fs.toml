@@ -6,3 +6,9 @@ name = "stop"
 id = 0
 inputs = []
 output = "()"
+
+[[methods]]
+name = "test"
+id = 1
+inputs = []
+output = "OSResult<TranslateMoveHandle>"

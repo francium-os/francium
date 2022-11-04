@@ -1,15 +1,13 @@
-use std::sync::atomic::{AtomicBool, Ordering};
 use hashbrown::HashMap;
 
-use async_broadcast::{broadcast, TryRecvError};
+use async_broadcast::broadcast;
 
 use process::println;
 use process::syscalls;
-use process::{Handle, INVALID_HANDLE};
-use process::os_error::{OSError, OSResult, Module, Reason};
+use process::Handle;
+use process::os_error::OSResult;
 use process::ipc_server::{ServerImpl, IPCServer};
 use process::ipc::*;
-use process::ipc::sm::SMServer;
 
 include!(concat!(env!("OUT_DIR"), "/sm_server_impl.rs"));
 
@@ -35,7 +33,7 @@ impl SMServerStruct {
 						x.1.clone()
 					},
 					None => {
-						let (s, mut r) = broadcast(1);
+						let (s, r) = broadcast(1);
 						self.server_waiters.insert(tag, (s,r.clone()));
 						r
 					}
@@ -66,7 +64,7 @@ fn main() {
 	println!("Hello from sm!");
 
 	let port = syscalls::create_port("sm").unwrap();
-	let mut server = ServerImpl::new(SMServerStruct{ server_ports: HashMap::new(), server_waiters: HashMap::new() }, port);
+	let server = ServerImpl::new(SMServerStruct{ server_ports: HashMap::new(), server_waiters: HashMap::new() }, port);
 
 	futures::executor::block_on(server.process_forever());
 

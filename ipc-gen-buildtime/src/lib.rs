@@ -4,7 +4,6 @@ use std::fs;
 use std::path::Path;
 use quote::{quote, format_ident};
 use syn::Type;
-use syn::parse::Parse;
 
 #[derive(Debug, Deserialize)]
 struct Ty {
@@ -62,8 +61,8 @@ impl Method {
         }
     }
 
-    fn client() -> String {
-        "".to_string()
+    fn client(&self) -> syn::__private::TokenStream2 {
+        quote!{}
     }
 }
 #[derive(Debug, Deserialize)]
@@ -111,5 +110,17 @@ pub fn generate_server(path: &str) {
 }
 
 pub fn generate_client(path: &str) {
-    //unimplemented!();
+    let spec = toml::from_str::<ServerConfig>(&fs::read_to_string(path).unwrap()).unwrap();
+
+    let out_dir = env::var_os("OUT_DIR").unwrap();
+    let dest_path = Path::new(&out_dir).join(spec.name + "_client_impl.rs");
+
+    let client_methods: Vec<_> = spec.methods.iter().map(|x| x.client()).collect();
+
+    let client_impl = quote!(
+        #(#client_methods)*
+    );
+
+    fs::write(dest_path, client_impl.to_string()).unwrap();
+    println!("cargo:rerun-if-changed={}", path);
 }

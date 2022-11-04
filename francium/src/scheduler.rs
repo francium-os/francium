@@ -6,7 +6,6 @@ use core::ptr::NonNull;
 use core::sync::atomic::Ordering;
 
 use crate::process::{Thread, ThreadState, Process};
-use crate::arch;
 use crate::arch::context::ThreadContext;
 
 pub struct Scheduler {

@@ -331,7 +331,7 @@ impl PageTable {
 	}
 
 	pub fn reprotect_4k(&mut self, virt: usize, perm: PagePermission, ty: MapType) {
-		/// XXX walk+map is going to be awfully slow
+		// XXX walk+map is going to be awfully slow
 		let addr = self.virt_to_phys(virt).unwrap();
 		self.map_4k(addr, virt, perm, ty);
 	}

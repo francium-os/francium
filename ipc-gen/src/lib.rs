@@ -144,17 +144,6 @@ pub fn ipc_server(attr: TokenStream, item: TokenStream) -> TokenStream {
         }
     }
 
-    let server_dispatch_method = quote! {
-            fn process(&mut self, h: Handle) {
-                let mut request_msg: crate::ipc::message::IPCMessage = crate::ipc::message::IPCMessage::new();
-                request_msg.read_header();
-
-                match request_msg.header.id {
-                    #(#server_dispatch),*
-                    _ => { panic!("Unexpected IPC message ID!") }
-                }
-            }
-    };
 
     let out = quote! {
         use crate::ipc::message::IPC_BUFFER;

@@ -1,3 +1,3 @@
-pub fn svc_sleep_ns(ns: u64) {
+pub fn svc_sleep_ns(_ns: u64) {
 	panic!("cant sleep");
 }

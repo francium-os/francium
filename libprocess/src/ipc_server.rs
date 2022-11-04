@@ -2,7 +2,7 @@ use common::{Handle, INVALID_HANDLE};
 use crate::syscalls;
 use smallvec::SmallVec;
 use alloc::boxed::Box;
-use core::sync::atomic::AtomicBool;
+use core::sync::atomic::{Ordering, AtomicBool};
 use crate::ipc::message::IPC_BUFFER;
 
 #[async_trait::async_trait]
@@ -39,6 +39,10 @@ impl<T: IPCServer> ServerImpl<T> {
 				// a client has a message for us!
 				// todo: maybe move message into here?
 				self.server.process(self.handles[index]).await;
+			}
+
+			if self.should_stop.load(Ordering::Acquire) {
+				break;
 			}
 		}
 	}

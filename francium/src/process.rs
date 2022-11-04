@@ -1,7 +1,6 @@
 use crate::memory::AddressSpace;
 use crate::arch::context::ThreadContext;
 use crate::handle_table::HandleTable;
-use crate::scheduler;
 
 use alloc::alloc::{alloc, Layout};
 use alloc::boxed::Box;
