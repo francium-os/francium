@@ -1,7 +1,7 @@
 use super::context::ExceptionContext;
 use super::gicv2;
 use super::arch_timer;
-use crate::scheduler;
+use crate::timer;
 use crate::arch::aarch64::svc_wrappers;
 
 extern "C" {
@@ -128,8 +128,6 @@ fn stringify_ifsc(ifsc: usize) -> &'static str {
 	}
 }
 
-
-
 #[no_mangle]
 pub extern "C" fn rust_curr_el_spx_sync(ctx: &ExceptionContext) -> ! {
 	unsafe {
@@ -203,7 +201,7 @@ pub extern "C" fn rust_lower_el_aarch64_irq(_ctx: &mut ExceptionContext) {
 	let timer_irq = 16 + 14;
 	gicv2::clear(timer_irq);
 
-	scheduler::tick();
+	timer::tick();
 }
 
 extern "C" {
