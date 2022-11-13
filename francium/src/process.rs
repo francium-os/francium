@@ -5,7 +5,7 @@ use crate::handle_table::HandleTable;
 use alloc::alloc::{alloc, Layout};
 use alloc::boxed::Box;
 use alloc::sync::Arc;
-use spin::{Mutex, MutexGuard};
+use spin::Mutex;
 use core::sync::atomic::AtomicUsize;
 use core::sync::atomic::Ordering;
 use smallvec::SmallVec;
@@ -18,7 +18,6 @@ pub enum ThreadState {
 	Suspended
 }
 
-#[derive(Debug)]
 pub struct Thread {
 	pub id: usize,
 	pub state: AtomicThreadState,
@@ -28,6 +27,13 @@ pub struct Thread {
 	pub process: Arc<Mutex<Box<Process>>>,
 	pub kernel_stack_top: usize,
 	pub kernel_stack_size: usize,
+}
+
+impl core::fmt::Debug for Thread
+{
+	fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
+		f.write_fmt(format_args!("Thread id={}", self.id))
+	}
 }
 
 #[derive(Debug)]
@@ -77,21 +83,5 @@ impl Process {
 
 	pub fn use_pages(&self) {
 		self.address_space.make_active();
-	}
-}
-
-// see also: force_unlock_mutex in scheduler
-extern "C" {
-	fn setup_initial_thread_context(ctx: &ThreadContext, mutex: usize);
-}
-
-pub fn force_switch_to(thread: Arc<Thread>) {
-	thread.process.lock().use_pages();
-
-	let thread_context = MutexGuard::leak(thread.context.lock());
-	unsafe {
-		#[cfg(target_arch = "x86_64")]
-		scheduler::set_current_thread_state(thread.kernel_stack_top, 0);
-		setup_initial_thread_context(thread_context, &thread.context as *const Mutex<ThreadContext> as usize);
 	}
 }

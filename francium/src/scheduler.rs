@@ -65,6 +65,7 @@ impl Scheduler {
 	}
 
 	fn switch_thread(&mut self, from: &Arc<Thread>, to: &Arc<Thread>) -> usize {
+		//println!("Switch from {} to {}", from.process.lock().name, to.process.lock().name);
 		if from.id == to.id {
 			// don't do this, it'll deadlock
 			panic!("Trying to switch to the same thread!");
@@ -224,4 +225,28 @@ pub fn terminate_current_process() {
 	}
 
 	sched.terminate_current_thread();
+}
+
+// see also: force_unlock_mutex
+extern "C" {
+	fn setup_initial_thread_context(ctx: &ThreadContext, mutex: usize);
+}
+
+pub fn force_switch_to(thread: Arc<Thread>) {
+	{
+		let mut sched = SCHEDULER.lock();
+
+		sched.current_thread_index = sched.runnable_threads.iter().position(|x| x.id == thread.id).unwrap();
+
+		println!("{:?} {:?}", sched.runnable_threads, sched.threads);
+	}
+
+	thread.process.lock().use_pages();
+
+	let thread_context = MutexGuard::leak(thread.context.lock());
+	unsafe {
+		#[cfg(target_arch = "x86_64")]
+		scheduler::set_current_thread_state(thread.kernel_stack_top, 0);
+		setup_initial_thread_context(thread_context, &thread.context as *const Mutex<ThreadContext> as usize);
+	}
 }

@@ -105,7 +105,7 @@ fn bootloader_main(info: &'static mut bootloader::BootInfo) -> ! {
 
 	println!("Running...");
 
-	process::force_switch_to(fs_main_thread);
+	scheduler::force_switch_to(fs_main_thread);
 	println!("We shouldn't get here, ever!!");
 
 	loop {}

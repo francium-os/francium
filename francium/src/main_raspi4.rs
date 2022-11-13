@@ -78,7 +78,7 @@ pub extern "C" fn rust_main() -> ! {
 	platform::scheduler_post_init();
 
 	println!("Running...");
-	process::force_switch_to(test_main_thread);
+	scheduler::force_switch_to(test_main_thread);
 	println!("We shouldn't get here, ever!!");
 
 	loop {}
