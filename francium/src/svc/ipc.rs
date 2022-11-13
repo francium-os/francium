@@ -4,6 +4,7 @@ use crate::handle::HandleObject;
 use crate::process::Thread;
 use crate::waitable;
 use crate::waitable::{Waiter, Waitable};
+use crate::mmu::phys_to_virt;
 use core::convert::TryInto;
 use common::Handle;
 use common::os_error::{ResultCode, RESULT_OK, Module, Reason};
@@ -108,6 +109,7 @@ pub fn svc_create_port(tag: u64) -> (ResultCode, u32) {
 }
 
 fn connect_to_port_impl(port: &Arc<Port>) -> u32 {
+
 	let server_session = Arc::new(ServerSession::new());
 	let client_session = Arc::new(ClientSession::new(server_session.clone()));
 
@@ -178,18 +180,14 @@ pub fn svc_ipc_request(session_handle: u32, ipc_buffer_ptr: usize) -> ResultCode
 const IPC_BUFFER_LEN: usize = 128;
 
 fn do_ipc_transfer(from_thread: &Arc<Thread>, to_thread: &Arc<Thread>, from_ptr: usize, to_ptr: usize) {
-	// XX todo: figure out how to map from_ptr/to_ptr with respect to caches.
-
-	let from_ipc_buffer_ptr = from_ptr as *const u8;
-	let to_ipc_buffer_ptr = to_ptr as *mut u8;
-
-	println!("IPC transfer: {:x} {:x}", from_ptr, to_ptr);
+	let from_ipc_buffer_ptr = phys_to_virt(from_thread.process.lock().address_space.page_table.virt_to_phys(from_ptr).unwrap()) as *const u8;
+	let to_ipc_buffer_ptr = phys_to_virt(to_thread.process.lock().address_space.page_table.virt_to_phys(to_ptr).unwrap()) as *mut u8;
 
 	unsafe {
 		core::ptr::copy_nonoverlapping(from_ipc_buffer_ptr, to_ipc_buffer_ptr, 128);
 	}
 
-	let to_ipc_buffer = unsafe { core::slice::from_raw_parts_mut(to_ptr as *mut u8, IPC_BUFFER_LEN) };
+	let to_ipc_buffer = unsafe { core::slice::from_raw_parts_mut(to_ipc_buffer_ptr as *mut u8, IPC_BUFFER_LEN) };
 
 	let packed_header = u32::from_le_bytes(to_ipc_buffer[0..4].try_into().unwrap());
 	let header = IPCHeader::unpack(packed_header);
