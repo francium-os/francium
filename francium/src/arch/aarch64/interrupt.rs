@@ -180,7 +180,7 @@ pub extern "C" fn rust_lower_el_spx_sync(ctx: &mut ExceptionContext) {
 				println!("data fault status: {}", stringify_dfsc(dfsc));
 			} else if ec == 0b100000 { // instruction abort
 				let ifsc = iss & 0x3f;
-				println!("data fault status: {}", stringify_ifsc(ifsc));
+				println!("instruction fault status: {}", stringify_ifsc(ifsc));
 			}
 
 			loop {}

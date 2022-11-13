@@ -22,7 +22,7 @@ bootimg = target/x86_64-unknown-francium-kernel/release/boot-bios-francium_pc.im
 
 ifeq ($(arch), aarch64)
 target=aarch64-unknown-francium
-gdb=aarch64-none-elf-gdb
+gdb=aarch64-unknown-francium-gdb
 qemu_args=-M virt,gic-version=2 -cpu cortex-a53 -kernel $(francium) -serial stdio -m 2048
 else ifeq ($(arch), x86_64)
 target=x86_64-unknown-francium
