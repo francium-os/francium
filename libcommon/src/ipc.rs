@@ -44,7 +44,7 @@ impl TranslateEntry {
 		}
 	}
 
-	pub fn write(buffer: &mut [u8; 16], entry: TranslateEntry) {
+	pub fn write(buffer: &mut [u8], entry: TranslateEntry) {
 		match entry {
 			TranslateEntry::MoveHandle(handle) => {
 				buffer[0..8].copy_from_slice(&u64::to_le_bytes(TRANSLATE_TYPE_MOVE_HANDLE));

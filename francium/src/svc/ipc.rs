@@ -214,7 +214,7 @@ fn do_ipc_transfer(from_thread: &Arc<Thread>, to_thread: &Arc<Thread>, from_ptr:
 				unimplemented!("Can't translate {:?}", entry);
 			}
 		};
-		TranslateEntry::write(&mut to_ipc_buffer[off..off+16].try_into().unwrap(), new_entry)
+		TranslateEntry::write(&mut to_ipc_buffer[off..off+16], new_entry);
 	}
 }
 
