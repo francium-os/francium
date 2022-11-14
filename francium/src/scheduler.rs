@@ -46,6 +46,9 @@ fn set_thread_context_tag(p: &Arc<Thread>, tag: usize) {
 }
 
 #[cfg(target_arch = "x86_64")]
+use crate::arch;
+
+#[cfg(target_arch = "x86_64")]
 pub unsafe fn set_current_thread_state(kernel_stack: usize, tls: usize) {
 	CURRENT_THREAD_KERNEL_STACK = kernel_stack;
 	arch::msr::write_fs_base(tls);
@@ -237,8 +240,6 @@ pub fn force_switch_to(thread: Arc<Thread>) {
 		let mut sched = SCHEDULER.lock();
 
 		sched.current_thread_index = sched.runnable_threads.iter().position(|x| x.id == thread.id).unwrap();
-
-		println!("{:?} {:?}", sched.runnable_threads, sched.threads);
 	}
 
 	thread.process.lock().use_pages();
@@ -246,7 +247,7 @@ pub fn force_switch_to(thread: Arc<Thread>) {
 	let thread_context = MutexGuard::leak(thread.context.lock());
 	unsafe {
 		#[cfg(target_arch = "x86_64")]
-		scheduler::set_current_thread_state(thread.kernel_stack_top, 0);
+		set_current_thread_state(thread.kernel_stack_top, 0);
 		setup_initial_thread_context(thread_context, &thread.context as *const Mutex<ThreadContext> as usize);
 	}
 }
