@@ -23,5 +23,6 @@ pub use ipc::svc_ipc_accept;
 pub use memory::svc_map_memory;
 
 pub use process::svc_get_process_id;
+pub use process::svc_get_thread_id;
 
 pub use thread::svc_sleep_ns;

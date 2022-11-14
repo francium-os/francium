@@ -12,11 +12,12 @@ extern "C" {
 	pub fn syscall_ipc_reply(session_handle: Handle, ipc_buffer: *mut u8) -> ResultCode;
 	pub fn syscall_ipc_receive(sessions: *const Handle, num_sessions: usize, ipc_buffer: *mut u8, index_out: *mut usize) -> ResultCode;
 	pub fn syscall_ipc_accept(session_handle: Handle, handle_out: *mut Handle) -> ResultCode;
-	pub fn syscall_get_process_id() -> usize;
+	pub fn syscall_get_process_id() -> u64;
 	pub fn syscall_connect_to_port_handle(h: u32, handle_out: *mut Handle) -> ResultCode;
 	pub fn syscall_map_memory(address: usize, length: usize, permission: u32, address_out: *mut usize) -> ResultCode;
 	pub fn syscall_sleep_ns(ns: u64);
 	pub fn syscall_bodge(key: u32, addr: usize) -> usize;
+	pub fn syscall_get_thread_id() -> u64;
 }
 
 pub fn print(s: &str) {
@@ -133,7 +134,7 @@ pub fn ipc_accept(session_handle: Handle) -> Result<Handle, OSError> {
 	}
 }
 
-pub fn get_process_id() -> usize {
+pub fn get_process_id() -> u64 {
 	unsafe {
 		syscall_get_process_id()
 	}
@@ -162,6 +163,12 @@ pub use common::constants::{GET_FS, SET_FS};
 pub fn bodge(key: u32, addr: usize) -> usize {
 	unsafe {
 		syscall_bodge(key, addr)
+	}
+}
+
+pub fn get_thread_id() -> u64 {
+	unsafe {
+		syscall_get_process_id()
 	}
 }
 

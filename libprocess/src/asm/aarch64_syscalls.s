@@ -10,6 +10,7 @@
 .global syscall_get_process_id
 .global syscall_map_memory
 .global syscall_sleep_ns
+.global syscall_get_thread_id
 .global get_tpidr_el0_asm
 
 .section .text
@@ -80,6 +81,10 @@ ret
 // Currently should not be used on ARM!
 syscall_bodge:
 brk #0
+ret
+
+syscall_get_thread_id:
+svc #0x0f
 ret
 
 get_tpidr_el0_asm:

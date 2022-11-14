@@ -1,3 +1,4 @@
+.global syscall_break
 .global syscall_debug_output
 .global syscall_create_port
 .global syscall_connect_to_port
@@ -8,9 +9,10 @@
 .global syscall_ipc_receive
 .global syscall_ipc_accept
 .global syscall_get_process_id
-.global get_tpidr_el0_asm
-
-.global syscall_break
+.global syscall_map_memory
+.global syscall_sleep_ns
+.global syscall_bodge
+.global syscall_get_thread_id
 
 .section .text
 
@@ -116,5 +118,10 @@ ret
 
 syscall_bodge:
 mov eax, 0x0e
+syscall
+ret
+
+syscall_get_thread_id:
+mov eax, 0x0f
 syscall
 ret

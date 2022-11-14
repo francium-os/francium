@@ -75,18 +75,23 @@ unsafe extern "C" fn syscall_wrapper_get_process_id() -> usize {
 }
 
 #[no_mangle]
-unsafe extern "C" fn syscall_map_memory(address: usize, length: usize, permission: u32) -> Pair {
+unsafe extern "C" fn syscall_wrapper_map_memory(address: usize, length: usize, permission: u32) -> Pair {
 	let (res, out) = svc::svc_map_memory(address, length, permission);
 	Pair { a: res.0 as usize, b: out as usize }
 }
 
 #[no_mangle]
-unsafe extern "C" fn syscall_sleep_ns(ns: u64) {
+unsafe extern "C" fn syscall_wrapper_sleep_ns(ns: u64) {
 	svc::svc_sleep_ns(ns);
 }
 
 #[no_mangle]
-unsafe extern "C" fn syscall_bodge(key: u32, addr: usize) -> usize {
+unsafe extern "C" fn syscall_wrapper_get_thread_id() -> usize {
+	svc::svc_get_thread_id()
+}
+
+#[no_mangle]
+unsafe extern "C" fn syscall_wrapper_bodge(key: u32, addr: usize) -> usize {
 	// just impl it here its fine :tm:
 	match key {
 		common::constants::GET_FS => {
@@ -125,7 +130,8 @@ syscall_wrappers:
 .quad syscall_wrapper_ipc_accept
 .quad syscall_wrapper_get_process_id
 .quad syscall_wrapper_connect_to_port_handle
-.quad syscall_map_memory
-.quad syscall_sleep_ns
-.quad syscall_bodge
+.quad syscall_wrapper_map_memory
+.quad syscall_wrapper_sleep_ns
+.quad syscall_wrapper_bodge
+.quad syscall_wrapper_get_thread_id
 ");

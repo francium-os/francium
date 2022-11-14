@@ -73,8 +73,13 @@ fn syscall_wrapper_sleep_ns(ctx: &mut ExceptionContext) {
 	svc::svc_sleep_ns(ctx.regs[0] as u64);
 }
 
+fn syscall_wrapper_get_thread_id(ctx: &mut ExceptionContext) {
+	let tid = svc::svc_get_thread_id();
+	ctx.regs[0] = tid;
+}
+
 type SVCHandler = fn(&mut ExceptionContext);
-pub const SVC_HANDLERS: [SVCHandler; 14] = [
+pub const SVC_HANDLERS: [SVCHandler; 16] = [
 	syscall_wrapper_break,
 	syscall_wrapper_debug_output,
 	syscall_wrapper_create_port,
@@ -88,5 +93,7 @@ pub const SVC_HANDLERS: [SVCHandler; 14] = [
 	syscall_wrapper_get_process_id,
 	syscall_wrapper_connect_to_port_handle,
 	syscall_wrapper_map_memory,
-	syscall_wrapper_sleep_ns
+	syscall_wrapper_sleep_ns,
+	syscall_wrapper_break, // unused
+	syscall_wrapper_get_thread_id
 ];
