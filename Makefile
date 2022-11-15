@@ -66,7 +66,7 @@ bochs: $(bootimg)
 	bochs
 endif
 
-qemu-gdb: $(francium)
+qemu-gdb: $(francium) $(if $(filter $(board),pc), $(bootimg))
 	qemu-system-$(arch) $(qemu_args) -s -S
 
 gdb:
@@ -87,7 +87,4 @@ clean-kernel:
 	cd francium && $(CARGO) clean && cd ..
 
 clean-user:
-	cd libprocess && $(CARGO) clean && cd ..
-	cd modules/fs && $(CARGO) clean && cd ../..; \
-	cd modules/sm && $(CARGO) clean && cd ../..; \
-	cd modules/test && $(CARGO) clean && cd ../..
+	$(CARGO) clean -p process --release --target=$(target) && $(CARGO) clean -p fs --release --target=$(target) && $(CARGO) clean -p sm --release --target=$(target) && $(CARGO) clean -p test --release --target=$(target)
