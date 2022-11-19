@@ -7,6 +7,7 @@ use crate::constants::*;
 use crate::phys_allocator;
 use crate::arch::mmu::{get_current_page_table, invalidate_tlb_for_range};
 use crate::arch::cache::clear_cache_for_address;
+use crate::align::align_up;
 
 use alloc::boxed::Box;
 use alloc::sync::Arc;
@@ -25,9 +26,7 @@ extern "C" {
 
 use crate::arch::context::ExceptionContext;
 #[cfg(target_arch = "aarch64")]
-fn setup_user_context(process: Arc<Mutex<Box<Process>>>, usermode_pc: usize, usermode_sp: usize) -> Arc<Thread> {
-	let new_thread = Arc::new(Thread::new(process.clone()));
-
+pub fn setup_user_context(new_thread: &Arc<Thread>, usermode_pc: usize, usermode_sp: usize) {
 	unsafe {
 		let mut context_locked = new_thread.context.lock();
 
@@ -41,15 +40,10 @@ fn setup_user_context(process: Arc<Mutex<Box<Process>>>, usermode_pc: usize, use
 		context_locked.regs[30] = user_thread_starter as usize;
 		context_locked.regs[31] = exc_context_location;
 	}
-
-	process.lock().threads.push(new_thread.clone());
-	new_thread
 }
 
 #[cfg(target_arch = "x86_64")]
-fn setup_user_context(process: Arc<Mutex<Box<Process>>>, usermode_pc: usize, usermode_sp: usize) -> Arc<Thread> {
-	let new_thread = Arc::new(Thread::new(process.clone()));
-
+pub fn setup_user_context(new_thread: &Arc<Thread>, usermode_pc: usize, usermode_sp: usize) {
 	unsafe {
 		let mut context_locked = new_thread.context.lock();
 
@@ -81,10 +75,8 @@ fn setup_user_context(process: Arc<Mutex<Box<Process>>>, usermode_pc: usize, use
 		context_locked.regs.rip = user_thread_starter as usize;
 		context_locked.regs.rsp = exc_context_location;
 	}
-
-	process.lock().threads.push(new_thread.clone());
-	new_thread
 }
+
 // XXX: find somewhere for this
 const AT_PHDR: usize = 3;
 const AT_PHENT: usize = 4;
@@ -180,7 +172,8 @@ pub fn load_process(elf_buf: &[u8], name: &'static str) -> Arc<Thread> {
 		let strings_len = argv.iter().map(|x| x.len() + 1).sum::<usize>() + envp.iter().map(|x| x.len() + 1).sum::<usize>();
 
 		let new_stack = user_stack_base + user_stack_size;
-		let auxv_base = new_stack - (argv_size + env_size + auxv_size + strings_len + 8);
+		let auxv_region_size = argv_size + env_size + auxv_size + strings_len + 8;
+		let auxv_base = new_stack - align_up(auxv_region_size, 16);
 
 		unsafe {
 			let mut auxv = auxv_base;
@@ -229,16 +222,17 @@ pub fn load_process(elf_buf: &[u8], name: &'static str) -> Arc<Thread> {
 			}
 			
 			core::ptr::write_bytes(auxv as *mut usize, 0, 2);
-			auxv += core::mem::size_of::<usize>() * 2;
+			//auxv += core::mem::size_of::<usize>() * 2;
 
 			core::ptr::write_bytes(strings as *mut usize, 0, 1);
 			//strings += core::mem::size_of::<usize>() * 1;
 
-			assert!(auxv + strings_len + 8 == new_stack);
+			//assert!(auxv + strings_len + 8 == new_stack);
 		}
 
-		let thread = setup_user_context(arc, user_code_base, auxv_base);
-		return thread
+		let new_thread = Thread::new(arc.clone());
+		setup_user_context(&new_thread, user_code_base, auxv_base);
+		return new_thread
 	}
 	panic!("Failed to load process??");
 }

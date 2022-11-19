@@ -49,22 +49,24 @@ static PROCESS_ID: AtomicUsize = AtomicUsize::new(0);
 static THREAD_ID: AtomicUsize = AtomicUsize::new(0);
 
 impl Thread {
-	pub fn new(p: Arc<Mutex<Box<Process>>>) -> Thread {
+	pub fn new(p: Arc<Mutex<Box<Process>>>) -> Arc<Thread> {
 		let kernel_stack_size = 0x1000;
 
 		let kernel_stack = unsafe {
 			alloc(Layout::from_size_align(kernel_stack_size, 0x1000).unwrap())
 		};
 
-		
-		Thread {
+		let thread = Arc::new(Thread {
 			id: THREAD_ID.fetch_add(1, Ordering::SeqCst),
 			state: AtomicThreadState::new(ThreadState::Created),
 			context: Mutex::new(ThreadContext::new()),
-			process: p,
+			process: p.clone(),
 			kernel_stack_top: kernel_stack as *const usize as usize + kernel_stack_size,
 			kernel_stack_size: kernel_stack_size,
-		}
+		});
+
+		p.lock().threads.push(thread.clone());
+		thread
 	}
 }
 

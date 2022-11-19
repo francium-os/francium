@@ -13,6 +13,7 @@ extern crate smallvec;
 extern crate elf_rs;
 
 pub mod constants;
+pub mod align;
 pub mod drivers;
 pub mod platform;
 pub mod panic;
