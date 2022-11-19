@@ -1,6 +1,6 @@
 use spin::Mutex;
 use crate::mmu::PhysAddr;
-use crate::arch::{gicv2::GICv2, arch_timer::ArchTimer};
+use crate::arch::{aarch64, gicv2::GICv2, arch_timer::ArchTimer};
 use crate::drivers::pl011_uart::Pl011Uart;
 use crate::constants;
 use crate::drivers::InterruptController;
@@ -29,7 +29,7 @@ pub fn scheduler_pre_init() {
 	let gic_lock = GIC.lock();
 	gic_lock.init();
 	gic_lock.enable_interrupt(timer_irq);
-	//aarch64::enable_interrupts();
+	aarch64::enable_interrupts();
 
 	// enable arch timer
 	let timer_lock = DEFAULT_TIMER.lock();
