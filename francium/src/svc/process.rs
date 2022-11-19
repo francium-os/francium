@@ -12,8 +12,6 @@ pub fn svc_get_thread_id() -> usize {
 }
 
 pub fn svc_create_thread(entry_point: usize, stack_top: usize) -> (ResultCode, u32) {
-	println!("Create thread: {:x} {:x}", entry_point, stack_top);
-
 	let process = scheduler::get_current_process();
 	let new_thread = Thread::new(process);
 
