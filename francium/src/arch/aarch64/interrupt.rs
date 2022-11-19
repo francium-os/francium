@@ -195,7 +195,7 @@ pub extern "C" fn rust_lower_el_aarch64_irq(_ctx: &mut ExceptionContext) {
 	// which one?
 	// for now, just ack timer
 
-	println!("Tick!");
+	println!("IRQ!");
 
 	{ DEFAULT_TIMER.lock().reset_timer(); }
 

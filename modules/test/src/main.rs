@@ -16,5 +16,9 @@ fn main() {
 	syscalls::sleep_ns(1 * SECOND);
 	println!("*yawn*");
 
+	loop{
+		syscalls::sleep_ns(1 * SECOND);
+	}
+
 	syscalls::exit_process();
 }

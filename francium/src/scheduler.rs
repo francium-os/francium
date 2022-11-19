@@ -71,7 +71,8 @@ impl Scheduler {
 		//println!("Switch from {} to {}", from.process.lock().name, to.process.lock().name);
 		if from.id == to.id {
 			// don't do this, it'll deadlock
-			panic!("Trying to switch to the same thread!");
+			//panic!("Trying to switch to the same thread!");
+			return 0
 		}
 
 		// TODO: wow, this sucks
