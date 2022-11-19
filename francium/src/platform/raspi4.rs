@@ -1,7 +1,7 @@
 use spin::Mutex;
 use crate::constants::*;
 use crate::mmu::PhysAddr;
-use crate::arch::{gicv2, arch_timer};
+use crate::arch::{gicv2::GICv2, arch_timer};
 use crate::drivers::pl011_uart::Pl011Uart;
 
 pub const PHYS_MEM_BASE: usize = 0;
@@ -12,6 +12,7 @@ pub const PHYS_MEM_SIZE: usize = 0x80000000; // 2gb for now
 lazy_static! {
 	pub static ref DEFAULT_UART: Mutex<Pl011Uart> = Mutex::new(Pl011Uart::new(PhysAddr(0xfe201000), 115200, 48000000));
 }
+pub static GIC: GICv2 = GICv2::new();
 
 extern "C" {
 	fn spin_for_cycles(cycle_count: usize);

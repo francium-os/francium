@@ -1,8 +1,9 @@
 use super::context::ExceptionContext;
-use super::gicv2;
-use super::arch_timer;
 use crate::timer;
 use crate::arch::aarch64::svc_wrappers;
+use crate::platform::{DEFAULT_TIMER, GIC};
+use crate::drivers::Timer;
+use crate::drivers::InterruptController;
 
 extern "C" {
 	fn get_esr_el1() -> usize;
@@ -196,10 +197,10 @@ pub extern "C" fn rust_lower_el_aarch64_irq(_ctx: &mut ExceptionContext) {
 
 	println!("Tick!");
 
-	arch_timer::reset_timer();
+	{ DEFAULT_TIMER.lock().reset_timer(); }
 
 	let timer_irq = 16 + 14;
-	gicv2::clear(timer_irq);
+	{ GIC.lock().ack_interrupt(timer_irq); }
 
 	timer::tick();
 }
