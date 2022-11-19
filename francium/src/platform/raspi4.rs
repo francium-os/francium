@@ -1,7 +1,8 @@
 use spin::Mutex;
 use crate::constants::*;
 use crate::mmu::PhysAddr;
-use crate::arch::{gicv2::GICv2, arch_timer};
+use crate::arch::{aarch64, gicv2::GICv2, arch_timer::ArchTimer};
+use crate::drivers::{Timer, InterruptController};
 use crate::drivers::pl011_uart::Pl011Uart;
 
 pub const PHYS_MEM_BASE: usize = 0;
@@ -9,10 +10,14 @@ pub const PHYS_MEM_SIZE: usize = 0x80000000; // 2gb for now
 
 // uart0 is at 0x7e201000 which i think is at 0xfe201000 in low peri mode
 
+const RPI_GICD_BASE: usize = PERIPHERAL_BASE + 0xff841000;
+const RPI_GICC_BASE: usize = PERIPHERAL_BASE + 0xff842000;
+
 lazy_static! {
 	pub static ref DEFAULT_UART: Mutex<Pl011Uart> = Mutex::new(Pl011Uart::new(PhysAddr(0xfe201000), 115200, 48000000));
+	pub static ref GIC: Mutex<GICv2> = Mutex::new(GICv2::new(RPI_GICD_BASE, RPI_GICC_BASE));
+	pub static ref DEFAULT_TIMER: Mutex<ArchTimer> = Mutex::new(ArchTimer::new());
 }
-pub static GIC: GICv2 = GICv2::new();
 
 extern "C" {
 	fn spin_for_cycles(cycle_count: usize);
@@ -76,17 +81,21 @@ pub fn platform_specific_init() {
 pub fn scheduler_pre_init() {
 	// enable GIC
 	let timer_irq = 16 + 14; // ARCH_TIMER_NS_EL1_IRQ + 16 because "lol no u"
-	gicv2::init();
-	gicv2::enable(timer_irq);
-	//aarch64::enable_interrupts();
+	let gic_lock = GIC.lock();
+	gic_lock.init();
+	gic_lock.enable_interrupt(timer_irq);
+	aarch64::enable_interrupts();
 
 	// enable arch timer
-	arch_timer::set_frequency_us(25000);
-	arch_timer::reset_timer();
+	let timer_lock = DEFAULT_TIMER.lock();
+
+	// 100Hz
+	timer_lock.set_frequency_us(10000);
+	timer_lock.reset_timer();
 }
 
 pub fn scheduler_post_init() {
-	arch_timer::enable();
+	DEFAULT_TIMER.lock().enable_timer();
 }
 
 use core::arch::global_asm;

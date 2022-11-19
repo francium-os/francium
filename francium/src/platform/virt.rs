@@ -6,8 +6,8 @@ use crate::constants;
 use crate::drivers::InterruptController;
 use crate::drivers::Timer;
 
-const VIRT_GICD_BASE: usize = constants::PHYSMAP_BASE + 0x08000000;
-const VIRT_GICC_BASE: usize = constants::PHYSMAP_BASE + 0x08010000;
+const VIRT_GICD_BASE: usize = constants::PERIPHERAL_BASE + 0x08000000;
+const VIRT_GICC_BASE: usize = constants::PERIPHERAL_BASE + 0x08010000;
 
 lazy_static! {
 	// Qemu doesn't care about the baud rate, but we give it one and a UART clock anyway.
@@ -33,7 +33,9 @@ pub fn scheduler_pre_init() {
 
 	// enable arch timer
 	let timer_lock = DEFAULT_TIMER.lock();
-	timer_lock.set_frequency_us(25000);
+
+	// 100Hz
+	timer_lock.set_frequency_us(10000);
 	timer_lock.reset_timer();
 }
 
