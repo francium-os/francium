@@ -3,12 +3,6 @@ struct_name = "FSServerStruct"
 handle_accessor = "crate::ipc::fs::get_handle_for_fs"
 
 [[methods]]
-name = "stop"
-id = 0
-inputs = []
-output = "()"
-
-[[methods]]
 name = "test"
 id = 1
 inputs = []

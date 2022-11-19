@@ -11,10 +11,6 @@ struct FSServerStruct {
 }
 
 impl FSServerStruct {
-	fn stop(&self) {
-		println!("TODO: Stop?");
-	}
-
 	fn test(&self) -> OSResult<TranslateMoveHandle> {
 		Err(OSError::new(Module::FS, Reason::NotImplemented))
 	}
