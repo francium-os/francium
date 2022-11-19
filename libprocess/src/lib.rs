@@ -1,13 +1,10 @@
-#![no_std]
-
 #![feature(const_mut_refs)]
 #![feature(allocator_api)]
 #![feature(thread_local)]
 
 extern crate alloc;
 
-#[macro_use]
-pub mod print;
+//pub mod print;
 pub mod syscalls;
 pub mod ipc_server;
 //pub mod allocator;

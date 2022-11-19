@@ -11,6 +11,9 @@
 .global syscall_map_memory
 .global syscall_sleep_ns
 .global syscall_get_thread_id
+.global syscall_create_thread
+.global syscall_futex_wait
+.global syscall_futex_wake
 .global get_tpidr_el0_asm
 
 .section .text
@@ -85,6 +88,20 @@ ret
 
 syscall_get_thread_id:
 svc #0x0f
+ret
+
+syscall_create_thread:
+mov x9, x2
+svc #0x10
+str w1, [x9]
+ret
+
+syscall_futex_wait:
+svc #0x11
+ret
+
+syscall_futex_wake:
+svc #0x12
 ret
 
 get_tpidr_el0_asm:

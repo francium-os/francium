@@ -8,9 +8,9 @@ edition = "2018"
 [dependencies]
 async-broadcast = "0.4.1"
 async-trait = "0.1.57"
-futures = "0.3.25"
 hashbrown = "0.12.3"
 "process" = { path = "../../libprocess" }
+tokio = { version = "1.21.2", features = ["rt", "rt-multi-thread", "macros"] }
 
 [build-dependencies]
 "ipc-gen-buildtime" = { path = "../../ipc-gen-buildtime" }

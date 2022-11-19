@@ -29,6 +29,7 @@ pub enum Reason {
     NotAllowed = 2,
     InvalidHandle = 3,
     NotFound = 4,
+    TryAgain = 5,
     Unknown = 0xffff
 }
 

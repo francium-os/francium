@@ -50,13 +50,15 @@ impl Method {
 
                 #(let #inputs = request_msg.read();)*
 
-                let res: #output_type = self.#method_name (#(#input_names),*) #maybe_await;
-                let mut reply_msg = process::ipc::message::IPCMessage::new();
-                reply_msg.write(res);
-                reply_msg.write_translates();
-                reply_msg.write_header_for(0);
+                tokio::spawn(async move {
+                    let res: #output_type = self.#method_name (#(#input_names),*) #maybe_await;
+                    let mut reply_msg = process::ipc::message::IPCMessage::new();
+                    reply_msg.write(res);
+                    reply_msg.write_translates();
+                    reply_msg.write_header_for(0);
 
-                unsafe { crate::syscalls::ipc_reply(h, &mut IPC_BUFFER).unwrap(); }
+                    unsafe { crate::syscalls::ipc_reply(h, &mut IPC_BUFFER).unwrap(); }
+                });
             }
         }
     }
@@ -134,13 +136,13 @@ pub fn generate_server(path: &str) {
 
         #[async_trait::async_trait]
         impl IPCServer for #server_struct_name {
-            async fn process(&mut self, h: Handle) {
-                self.process(h).await
+            async fn process(self: std::sync::Arc<Self>, h: Handle) {
+                self.process_internal(h).await
             }
         }
 
         impl #server_struct_name {
-            async fn process(&mut self, h: Handle) {
+            async fn process_internal(self: std::sync::Arc<Self>, h: Handle) {
                 let mut request_msg = process::ipc::message::IPCMessage::new();
                 request_msg.read_header();
 

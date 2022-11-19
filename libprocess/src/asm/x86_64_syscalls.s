@@ -125,3 +125,12 @@ syscall_get_thread_id:
 mov eax, 0x0f
 syscall
 ret
+
+syscall_create_thread:
+push rbx
+mov eax, 0x10
+mov rbx, rdx
+syscall
+mov [rbx], rdx
+pop rbx
+ret

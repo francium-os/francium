@@ -4,24 +4,25 @@ use smallvec::SmallVec;
 use alloc::boxed::Box;
 use core::sync::atomic::{Ordering, AtomicBool};
 use crate::ipc::message::IPC_BUFFER;
+use alloc::sync::Arc;
 
 #[async_trait::async_trait]
 pub trait IPCServer {
-	async fn process(&mut self, h: Handle);
+	async fn process(self: std::sync::Arc<Self>, h: Handle);
 }
 
 pub struct ServerImpl<T> {
 	handles: SmallVec<[Handle; 2]>,
 	should_stop: AtomicBool,
-	pub server: T
+	pub server: Arc<T>
 }
 
-impl<T: IPCServer> ServerImpl<T> {
+impl<T: IPCServer + Send + Sync + 'static> ServerImpl<T> {
 	pub fn new(t: T, port: Handle) -> ServerImpl<T> {
 		ServerImpl {
 			handles: SmallVec::from_buf_and_len([port, INVALID_HANDLE], 1),
 			should_stop: AtomicBool::new(false),
-			server: t
+			server: Arc::new(t)
 		}
 	}
 
@@ -38,7 +39,9 @@ impl<T: IPCServer> ServerImpl<T> {
 			} else {
 				// a client has a message for us!
 				// todo: maybe move message into here?
-				self.server.process(self.handles[index]).await;
+				let handle = self.handles[index];
+				let server = self.server.clone();
+				server.process(handle).await;
 			}
 
 			if self.should_stop.load(Ordering::Acquire) {

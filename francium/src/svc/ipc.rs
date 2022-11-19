@@ -109,7 +109,6 @@ pub fn svc_create_port(tag: u64) -> (ResultCode, u32) {
 }
 
 fn connect_to_port_impl(port: &Arc<Port>) -> u32 {
-
 	let server_session = Arc::new(ServerSession::new());
 	let client_session = Arc::new(ClientSession::new(server_session.clone()));
 

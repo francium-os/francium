@@ -64,7 +64,7 @@ impl IPCHeader {
 		assert!(header.size < 256);
 		assert!(header.translate_count < 256);
 
-		let packed = header.id | (((header.size & 0xff) as u32) << 8) | (((header.translate_count & 0xff) as u32) << 16);
+		let packed = header.id | (((header.size & 0xff) as u32) << 8) | (((header.translate_count & 0xff) as u32) << 16) | (0xaa << 24);
 		packed
 	}
 
@@ -72,6 +72,8 @@ impl IPCHeader {
 		let message_id = packed & 0xff;
 		let message_size = (packed & (0xff<<8))>>8;
 		let message_translate_count = (packed & (0xff<<16))>>16;
+
+		assert!((packed & (0xff<<24))>>24 == 0xaa);
 
 		IPCHeader{id: message_id, size: message_size as usize, translate_count: message_translate_count as usize }
 	}

@@ -1,4 +1,3 @@
-use process::println;
 use process::syscalls;
 use process::Handle;
 use process::os_error::{OSError, OSResult, Module, Reason};
@@ -13,7 +12,7 @@ struct FSServerStruct {
 
 impl FSServerStruct {
 	fn stop(&self) {
-		unimplemented!();
+		println!("TODO: Stop?");
 	}
 
 	fn test(&self) -> OSResult<TranslateMoveHandle> {
@@ -21,7 +20,8 @@ impl FSServerStruct {
 	}
 }
 
-fn main() {
+#[tokio::main]
+async fn main() {
 	println!("Hello from fs!");
 
 	let port = syscalls::create_port("").unwrap();
@@ -30,7 +30,7 @@ fn main() {
 
 	let server = Box::new(ServerImpl::new(FSServerStruct{}, port));
 
-	futures::executor::block_on(server.process_forever());
+	server.process_forever().await;
 
 	syscalls::close_handle(port).unwrap();
 	println!("FS exiting!");

@@ -134,4 +134,8 @@ syscall_wrappers:
 .quad syscall_wrapper_sleep_ns
 .quad syscall_wrapper_bodge
 .quad syscall_wrapper_get_thread_id
+.quad syscall_wrapper_break
+.quad syscall_wrapper_break
+.quad syscall_wrapper_break
+.quad syscall_wrapper_break
 ");

@@ -1,4 +1,3 @@
-use process::println;
 use process::syscalls;
 use process::ipc;
 
@@ -11,7 +10,6 @@ fn main() {
 	ipc::fs::stop();
 	println!("SM IPC");
 	ipc::sm::stop();
-
 	println!("Done");
 
 	println!("Sleeping for 1 second...");

@@ -78,8 +78,24 @@ fn syscall_wrapper_get_thread_id(ctx: &mut ExceptionContext) {
 	ctx.regs[0] = tid;
 }
 
+fn syscall_wrapper_create_thread(ctx: &mut ExceptionContext) {
+	let (res, tid_out) = svc::svc_create_thread(ctx.regs[0], ctx.regs[1]);
+	ctx.regs[0] = res.0 as usize;
+	ctx.regs[1] = tid_out as usize;
+}
+
+fn syscall_wrapper_futex_wait(ctx: &mut ExceptionContext) {
+	let res = svc::svc_futex_wait(ctx.regs[0], ctx.regs[1] as u32, ctx.regs[2]);
+	ctx.regs[0] = res.0 as usize;
+}
+
+fn syscall_wrapper_futex_wake(ctx: &mut ExceptionContext) {
+	let res = svc::svc_futex_wake(ctx.regs[0]);
+	ctx.regs[0] = res.0 as usize;
+}
+
 type SVCHandler = fn(&mut ExceptionContext);
-pub const SVC_HANDLERS: [SVCHandler; 16] = [
+pub const SVC_HANDLERS: [SVCHandler; 19] = [
 	syscall_wrapper_break,
 	syscall_wrapper_debug_output,
 	syscall_wrapper_create_port,
@@ -95,5 +111,8 @@ pub const SVC_HANDLERS: [SVCHandler; 16] = [
 	syscall_wrapper_map_memory,
 	syscall_wrapper_sleep_ns,
 	syscall_wrapper_break, // unused
-	syscall_wrapper_get_thread_id
+	syscall_wrapper_get_thread_id,
+	syscall_wrapper_create_thread,
+	syscall_wrapper_futex_wait,
+	syscall_wrapper_futex_wake
 ];

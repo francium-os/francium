@@ -5,6 +5,7 @@ mod handle;
 mod process;
 mod memory;
 mod thread;
+mod futex;
 pub mod ipc;
 
 pub use svc_break::svc_break;
@@ -24,5 +25,9 @@ pub use memory::svc_map_memory;
 
 pub use process::svc_get_process_id;
 pub use process::svc_get_thread_id;
+pub use process::svc_create_thread;
 
 pub use thread::svc_sleep_ns;
+
+pub use futex::svc_futex_wait;
+pub use futex::svc_futex_wake;
