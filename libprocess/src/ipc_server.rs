@@ -35,7 +35,6 @@ impl<T: IPCServer + Send + Sync + 'static> ServerImpl<T> {
 				// server handle is signalled!
 				let new_session = syscalls::ipc_accept(self.handles[0]).unwrap();
 				self.handles.push(new_session);
-				println!("IPC: accepted new session");
 			} else {
 				// a client has a message for us!
 				// todo: maybe move message into here?
