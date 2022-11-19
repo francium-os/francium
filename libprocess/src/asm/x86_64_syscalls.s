@@ -13,6 +13,9 @@
 .global syscall_sleep_ns
 .global syscall_bodge
 .global syscall_get_thread_id
+.global syscall_create_thread
+.global syscall_futex_wait
+.global syscall_futex_wake
 
 .section .text
 
@@ -133,4 +136,14 @@ mov rbx, rdx
 syscall
 mov [rbx], rdx
 pop rbx
+ret
+
+syscall_futex_wait:
+mov eax, 0x11
+syscall
+ret
+
+syscall_futex_wake:
+mov eax, 0x12
+syscall
 ret

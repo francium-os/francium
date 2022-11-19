@@ -114,6 +114,22 @@ unsafe extern "C" fn syscall_wrapper_bodge(key: u32, addr: usize) -> usize {
 	}
 }
 
+#[no_mangle]
+unsafe extern "C" fn syscall_wrapper_create_thread(entry_point: usize, stack_top: usize) -> Pair {
+	let (res, thread_handle_out) = svc::svc_create_thread(entry_point, stack_top);
+	Pair { a: res.0 as usize, b: thread_handle_out as usize }
+}
+
+#[no_mangle]
+unsafe extern "C" fn syscall_wrapper_futex_wait(addr: usize, expected: u32, _timeout_ns: usize) -> u32 {
+	svc::svc_futex_wait(addr, expected, _timeout_ns).0
+}
+
+#[no_mangle]
+unsafe extern "C" fn syscall_wrapper_futex_wake(addr: usize) -> u32 {
+	svc::svc_futex_wake(addr).0
+}
+
 // Rust complains loudly about this. As it should.
 global_asm!("
 .global syscall_wrappers
@@ -134,8 +150,8 @@ syscall_wrappers:
 .quad syscall_wrapper_sleep_ns
 .quad syscall_wrapper_bodge
 .quad syscall_wrapper_get_thread_id
-.quad syscall_wrapper_break
-.quad syscall_wrapper_break
-.quad syscall_wrapper_break
+.quad syscall_wrapper_create_thread
+.quad syscall_wrapper_futex_wait
+.quad syscall_wrapper_futex_wake
 .quad syscall_wrapper_break
 ");
