@@ -1,3 +1,4 @@
+use core::arch::asm;
 use crate::drivers::Timer;
 
 pub struct ArchTimer{}
@@ -35,6 +36,14 @@ impl Timer for ArchTimer {
         unsafe {
             set_cntp_ctl_el0(1);
         }
+    }
+
+    fn get_counter(&self) -> usize {
+        let mut val: u64;
+        unsafe {
+            asm!("mrs CNTPCT_EL0, {val}", val = out (reg) (val));
+        }
+        val as usize
     }
 }
 

@@ -10,6 +10,8 @@ pub trait Timer {
 	fn set_frequency_us(&self, n: u64);
 	fn reset_timer(&self);
 	fn enable_timer(&self);
+
+	fn get_counter(&self) -> usize;
 }
 
 pub mod pl011_uart;
