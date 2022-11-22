@@ -203,9 +203,10 @@ pub extern "C" fn rust_lower_el_aarch64_irq(_ctx: &mut ExceptionContext) {
 	// which one?
 	// for now, just ack timer
 
-	println!("IRQ!");
-
-	{ DEFAULT_TIMER.lock().reset_timer(); }
+	{
+		let timer_lock = DEFAULT_TIMER.lock();
+		timer_lock.reset_timer();
+	}
 
 	let timer_irq = 16 + 14;
 	{ GIC.lock().ack_interrupt(timer_irq); }

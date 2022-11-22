@@ -1,8 +1,3 @@
-.global get_daif
-.global set_daif
-.global get_far_el1
-.global get_esr_el1
-
 .global restore_exception_context
 
 .extern rust_curr_el_spx_sync
@@ -245,13 +240,3 @@ ldp x28, x29,  [sp, #0xe0]
 
 add sp, sp, #0x120
 eret
-
-.section .text
-
-get_far_el1:
-mrs x0, far_el1
-ret
-
-get_esr_el1:
-mrs x0, esr_el1
-ret

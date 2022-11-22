@@ -7,11 +7,11 @@ pub trait InterruptController {
 
 pub trait Timer {
 	fn init(&self);
-	fn set_frequency_us(&self, n: u64);
+	fn set_period_us(&self, n: u64);
 	fn reset_timer(&self);
 	fn enable_timer(&self);
 
-	fn get_counter(&self) -> usize;
+	fn get_counter_ns(&self) -> u64;
 }
 
 pub mod pl011_uart;

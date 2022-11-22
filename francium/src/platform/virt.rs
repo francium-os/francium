@@ -35,7 +35,7 @@ pub fn scheduler_pre_init() {
 	let timer_lock = DEFAULT_TIMER.lock();
 
 	// 100Hz
-	timer_lock.set_frequency_us(10000);
+	timer_lock.set_period_us(10000);
 	timer_lock.reset_timer();
 }
 

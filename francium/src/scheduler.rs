@@ -59,7 +59,7 @@ impl Scheduler {
 		Scheduler {
 			threads: SmallVec::new(),
 			runnable_threads: SmallVec::new(),
-			current_thread_index: 0,
+			current_thread_index: 0
 		}
 	}
 
@@ -111,7 +111,7 @@ impl Scheduler {
 	}
 
 	pub fn tick(&mut self) {
-		println!("Tick!");
+		//println!("Tick!");
 		if self.runnable_threads.len() == 0 {
 			return
 		}

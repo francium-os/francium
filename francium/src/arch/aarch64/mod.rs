@@ -13,7 +13,6 @@ pub use mmu::set_ttbr1_el1;
 pub use interrupt::enable_interrupts;
 
 use core::arch::global_asm;
-global_asm!(include_str!("asm/arch_timer.s"));
 global_asm!(include_str!("asm/context.s"));
 global_asm!(include_str!("asm/interrupt.s"));
 global_asm!(include_str!("asm/kernel_entry.s"));
