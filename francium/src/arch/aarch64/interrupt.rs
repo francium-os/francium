@@ -4,10 +4,18 @@ use crate::arch::aarch64::svc_wrappers;
 use crate::platform::{DEFAULT_TIMER, GIC};
 use crate::drivers::Timer;
 use crate::drivers::InterruptController;
+use core::arch::asm;
 
-extern "C" {
-	fn get_esr_el1() -> usize;
-	fn get_far_el1() -> usize;
+unsafe fn get_esr_el1() -> usize {
+	let mut value: usize;
+	asm!("mrs {esr_el1}, esr_el1", esr_el1 = out(reg) value);
+	value
+}
+
+unsafe fn get_far_el1() -> usize {
+	let mut value: usize;
+	asm!("mrs {far_el1}, far_el1", far_el1 = out(reg) value);
+	value
 }
 
 fn stringify_ec(ec: usize) -> &'static str {
@@ -205,9 +213,15 @@ pub extern "C" fn rust_lower_el_aarch64_irq(_ctx: &mut ExceptionContext) {
 	timer::tick();
 }
 
-extern "C" {
-	fn set_daif(daif: usize);
-	fn get_daif() -> usize;
+
+unsafe fn get_daif() -> usize {
+	let mut value: usize;
+	asm!("mrs {daif}, daif", daif = out(reg) value);
+	value
+}
+
+unsafe fn set_daif(value: usize) {
+	asm!("msr daif, {daif}", daif = in(reg) value);
 }
 
 pub fn enable_interrupts() {

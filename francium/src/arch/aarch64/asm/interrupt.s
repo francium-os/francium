@@ -247,13 +247,6 @@ add sp, sp, #0x120
 eret
 
 .section .text
-get_daif:
-mrs x0, daif
-ret
-
-set_daif:
-msr daif, x0
-ret
 
 get_far_el1:
 mrs x0, far_el1
