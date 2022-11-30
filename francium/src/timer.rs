@@ -32,7 +32,7 @@ pub fn tick() {
 
 	// TODO: this is awful please fix it later
 	let mut queue_lock = TIMER_QUEUE.lock();
-	println!("a {}", queue_lock.len());
+	println!("timer queue {}", queue_lock.len());
 	queue_lock.retain(|x| x.deadline > current_time);
 }
 

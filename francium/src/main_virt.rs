@@ -71,10 +71,10 @@ pub extern "C" fn rust_main() -> ! {
 	scheduler::register_thread(fs_main_thread.clone());
 
 	let test_main_thread = init::load_process(test_buf, "test");
-	scheduler::register_thread(test_main_thread.clone());
+	scheduler::register_thread(test_main_thread);
 
 	let sm_main_thread = init::load_process(sm_buf, "sm");
-	scheduler::register_thread(sm_main_thread.clone());
+	scheduler::register_thread(sm_main_thread);
 
 	platform::scheduler_post_init();
 

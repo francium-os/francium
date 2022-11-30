@@ -11,6 +11,10 @@ use core::sync::atomic::Ordering;
 use smallvec::SmallVec;
 use atomic_enum::atomic_enum;
 
+use intrusive_collections::intrusive_adapter;
+use intrusive_collections::{LinkedList, LinkedListAtomicLink};
+
+#[derive(PartialEq)]
 #[atomic_enum]
 pub enum ThreadState {
 	Created,
@@ -19,6 +23,10 @@ pub enum ThreadState {
 }
 
 pub struct Thread {
+	pub all_threads_link: LinkedListAtomicLink,
+	pub running_link: LinkedListAtomicLink,
+	pub process_link: LinkedListAtomicLink,
+
 	pub id: usize,
 	pub state: AtomicThreadState,
 	pub context: Mutex<ThreadContext>,
@@ -29,6 +37,8 @@ pub struct Thread {
 	pub kernel_stack_size: usize,
 }
 
+intrusive_adapter!(pub ThreadProcessAdapter = Arc<Thread>: Thread { process_link: LinkedListAtomicLink });
+
 impl core::fmt::Debug for Thread
 {
 	fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
@@ -38,18 +48,21 @@ impl core::fmt::Debug for Thread
 
 #[derive(Debug)]
 pub struct Process {
+	pub all_processes_link: LinkedListAtomicLink,
 	pub id: usize,
 	pub address_space: Box<AddressSpace>,
-	pub threads: SmallVec<[Arc<Thread>; 1]>,
+	pub threads: LinkedList<ThreadProcessAdapter>,
 	pub handle_table: HandleTable,
 	pub name: &'static str
 }
+
+intrusive_adapter!(ProcessAdapter = Box<Process>: Process { all_processes_link: LinkedListAtomicLink });
 
 static PROCESS_ID: AtomicUsize = AtomicUsize::new(0);
 static THREAD_ID: AtomicUsize = AtomicUsize::new(0);
 
 impl Thread {
-	pub fn new(p: Arc<Mutex<Box<Process>>>) -> Arc<Thread> {
+	pub fn new(process: Arc<Mutex<Box<Process>>>) -> Arc<Thread> {
 		let kernel_stack_size = 0x1000;
 
 		let kernel_stack = unsafe {
@@ -57,15 +70,18 @@ impl Thread {
 		};
 
 		let thread = Arc::new(Thread {
+			all_threads_link: LinkedListAtomicLink::new(),
+			running_link: LinkedListAtomicLink::new(),
+			process_link: LinkedListAtomicLink::new(),
 			id: THREAD_ID.fetch_add(1, Ordering::SeqCst),
 			state: AtomicThreadState::new(ThreadState::Created),
 			context: Mutex::new(ThreadContext::new()),
-			process: p.clone(),
+			process: process.clone(),
 			kernel_stack_top: kernel_stack as *const usize as usize + kernel_stack_size,
 			kernel_stack_size: kernel_stack_size,
 		});
 
-		p.lock().threads.push(thread.clone());
+		process.lock().threads.push_back(thread.clone());
 		thread
 	}
 }
@@ -73,8 +89,9 @@ impl Thread {
 impl Process {
 	pub fn new(name: &'static str, aspace: Box<AddressSpace>) -> Process {
 		let p = Process {
+			all_processes_link: LinkedListAtomicLink::new(),
 			address_space: aspace,
-			threads: SmallVec::new(),
+			threads: LinkedList::new(ThreadProcessAdapter::new()),
 			id: PROCESS_ID.fetch_add(1, Ordering::SeqCst),
 			handle_table: HandleTable::new(),
 			name: name

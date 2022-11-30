@@ -8,6 +8,8 @@ pub const PROT_READ: u32 = 0x0004;
 
 
 pub fn svc_map_memory(address: usize, length: usize, permission: u32) -> (ResultCode, usize) {
+	println!("svc_map_memory: {:x} {:x} {}", address, length, permission);
+
 	let binding = scheduler::get_current_process();
 	let mut process_locked = binding.lock();	
 	let aspace = &mut process_locked.address_space;
@@ -37,6 +39,8 @@ pub fn svc_map_memory(address: usize, length: usize, permission: u32) -> (Result
 	if permission & PROT_READ == PROT_READ {
 		page_permission |= PagePermission::READ_ONLY;
 	}
+
+	println!("svc_map_memory: {:x} {:x}", highest_mmap, highest_mmap + length - 1);
 
 	aspace.create(highest_mmap, length, page_permission);
 

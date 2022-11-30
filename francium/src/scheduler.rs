@@ -4,14 +4,21 @@ use smallvec::SmallVec;
 use spin::{Mutex, MutexGuard};
 use core::ptr::NonNull;
 use core::sync::atomic::Ordering;
+use core::pin::Pin;
 
 use crate::process::{Thread, ThreadState, Process};
 use crate::arch::context::ThreadContext;
 
+use intrusive_collections::intrusive_adapter;
+use intrusive_collections::{LinkedList, LinkedListAtomicLink, linked_list::Cursor};
+
+intrusive_adapter!(pub ThreadAdapter = Arc<Thread>: Thread { all_threads_link: LinkedListAtomicLink });
+intrusive_adapter!(pub ThreadRunnableAdapter = Arc<Thread>: Thread { running_link: LinkedListAtomicLink });
+
 pub struct Scheduler {
-	pub threads: SmallVec<[Arc<Thread>; 4]>,
-	pub runnable_threads: SmallVec<[Arc<Thread>; 4]>,
-	pub current_thread_index: usize
+	pub threads: LinkedList<ThreadAdapter>,
+	pub runnable_threads: LinkedList<ThreadRunnableAdapter>,
+	pub current_thread: Option<Arc<Thread>>
 }
 
 lazy_static! {
@@ -57,14 +64,14 @@ pub unsafe fn set_current_thread_state(kernel_stack: usize, tls: usize) {
 impl Scheduler {
 	fn new() -> Scheduler {
 		Scheduler {
-			threads: SmallVec::new(),
-			runnable_threads: SmallVec::new(),
-			current_thread_index: 0
+			threads: LinkedList::new(ThreadAdapter::new()),
+			runnable_threads: LinkedList::new(ThreadRunnableAdapter::new()),
+			current_thread: None,
 		}
 	}
 
 	fn get_current_thread(&self) -> Arc<Thread> {
-		self.runnable_threads[self.current_thread_index].clone()
+		self.current_thread.as_ref().unwrap().clone()
 	}
 
 	fn switch_thread(&mut self, from: &Arc<Thread>, to: &Arc<Thread>) -> usize {
@@ -101,73 +108,75 @@ impl Scheduler {
 		}
 	}
 
-	pub fn get_next_thread(&mut self) -> Arc<Thread> {
-		if self.current_thread_index == self.runnable_threads.len() - 1 {
-			self.current_thread_index = 0;
-		} else {
-			self.current_thread_index += 1;
+	pub fn advance_to_next_thread(&mut self) -> Arc<Thread> {
+		let mut cursor = unsafe {
+			self.runnable_threads.cursor_from_ptr(Arc::<Thread>::as_ptr(&self.current_thread.as_ref().unwrap()))
+		};
+		cursor.move_next();
+		if cursor.is_null() {
+			cursor.move_next();
 		}
-		self.runnable_threads[self.current_thread_index].clone()
+
+		let new_thread = cursor.clone_pointer().unwrap();
+		self.current_thread = Some(new_thread.clone());
+		new_thread
 	}
 
 	pub fn tick(&mut self) {
-		//println!("Tick!");
-		if self.runnable_threads.len() == 0 {
+		// XXX TODO: O(h no)
+		if self.runnable_threads.iter().count() == 0 {
 			return
 		}
 
 		// do the thing
 		let this_thread = self.get_current_thread();
-		let next = self.get_next_thread();
+		let next = self.advance_to_next_thread();
 		self.switch_thread(&this_thread, &next);
 	}
 
-	pub fn suspend(&mut self, p: &Arc<Thread>) -> usize {
-		if let Some(runnable_index) = self.runnable_threads.iter().position(|x| x.id == p.id) {
-			let idx = self.current_thread_index;
-			self.runnable_threads[runnable_index].state.store(ThreadState::Suspended, Ordering::Release);
+	pub fn suspend(&mut self, thread: &Arc<Thread>) -> usize {
+		if thread.state.load(Ordering::Acquire) == ThreadState::Runnable {
+			thread.state.store(ThreadState::Suspended, Ordering::Release);
+			// Safety: thread is runnable
+			let current_thread = self.get_current_thread();
+			let current_id = current_thread.id;
+			let mut cursor = unsafe {
+				self.runnable_threads.cursor_mut_from_ptr(Arc::<Thread>::as_ptr(&current_thread))
+			};
 
-			self.runnable_threads.remove(runnable_index);
-			
-			if self.runnable_threads.len() == 0 {
-				panic!("Trying to suspend everything!");
-			}
-
-			// adjust for threads that shifted
-			if self.current_thread_index > runnable_index {
-				self.current_thread_index -= 1;
-			} else if self.current_thread_index > self.runnable_threads.len() - 1 {
-				self.current_thread_index = 0;
-			}
-
-			assert!(self.current_thread_index < self.runnable_threads.len());
+			// Old thread
+			cursor.remove();
+			let next_thread = cursor.as_cursor().clone_pointer().unwrap();
 
 			// If we got switched out, switch to the new current process.
-			if runnable_index == idx {
-				let next = self.get_current_thread();
-				return self.switch_thread(p, &next)
+			if current_id == thread.id {
+				// TODO: We need to somehow add the assert(num threads != 0) back in.
+				// Cursor now points to the new thread.
+				return self.switch_thread(thread, &next_thread);
 			}
 		}
 
 		0
 	}
 
-	pub fn wake(&mut self, p: Arc<Thread>, tag: usize) {
-		if let Some(_runnable_index) = self.runnable_threads.iter().position(|x| x.id == p.id) {
-			// wtf
-			panic!("Trying to re-wake a thread!");
+	pub fn wake(&mut self, thread: Arc<Thread>, tag: usize) {
+		if thread.state.load(Ordering::Acquire) == ThreadState::Runnable {
+			panic!("Trying to re-wake thread!");
 		} else {
 			// set x0 of the thread context
-			set_thread_context_tag(&p, tag);
-			self.runnable_threads.insert(self.current_thread_index+1, p);
+			set_thread_context_tag(&thread, tag);
+			println!("Wake thread {}", thread.id);
+			self.runnable_threads.push_back(thread);
 		}
 	}
 
 	pub fn terminate_current_thread(&mut self) {
-		let this_thread = self.get_current_thread();
-
-		let thread_index = self.threads.iter().position(|x| x.id == this_thread.id).unwrap();
-		self.threads.remove(thread_index);
+		let current_thread = self.get_current_thread();
+		// Safety: Current thread is a thread
+		let mut cursor = unsafe {
+			self.threads.cursor_mut_from_ptr(Arc::<Thread>::as_ptr(&current_thread))
+		};
+		let this_thread = cursor.remove().unwrap();
 
 		self.suspend(&this_thread);
 	}
@@ -178,11 +187,12 @@ pub fn tick() {
 	sched.tick();
 }
 
-pub fn register_thread(p: Arc<Thread>) {
+pub fn register_thread(thread: Arc<Thread>) {
 	let mut sched = SCHEDULER.lock();
-	p.state.store(ThreadState::Runnable, Ordering::Release);
-	sched.threads.push(p.clone());
-	sched.runnable_threads.push(p.clone());
+	thread.state.store(ThreadState::Runnable, Ordering::Release);
+	
+	sched.threads.push_back(thread.clone());
+	sched.runnable_threads.push_back(thread);
 }
 
 pub fn get_current_thread() -> Arc<Thread> {
@@ -222,9 +232,11 @@ pub fn terminate_current_process() {
 	let current_process = current_thread.process.clone();
 	let process = current_process.lock();
 
-	for thread in &process.threads {
+	let cursor = process.threads.front();
+	while !cursor.is_null() {
+		let thread = cursor.get().unwrap();
 		if thread.id != current_thread.id {
-			sched.suspend(&thread);
+			sched.suspend(&cursor.clone_pointer().unwrap());
 		}
 	}
 
@@ -238,9 +250,10 @@ extern "C" {
 
 pub fn force_switch_to(thread: Arc<Thread>) {
 	{
+		thread.state.store(ThreadState::Runnable, Ordering::Release);
 		let mut sched = SCHEDULER.lock();
-
-		sched.current_thread_index = sched.runnable_threads.iter().position(|x| x.id == thread.id).unwrap();
+		// TODO: assert in runnable?
+		sched.current_thread = Some(thread.clone());
 	}
 
 	thread.process.lock().use_pages();
