@@ -91,7 +91,7 @@ pub fn svc_create_port(tag: u64) -> (ResultCode, u32) {
 		let mut port_waiters = PORT_WAITERS.lock();
 		port_waiters.retain( |x| {
 			if x.0 == tag {
-				scheduler::wake_thread(x.1.clone(), 0);
+				scheduler::wake_thread(x.1.clone(), 0xffffffffffffffff);
 				false
 			} else {
 				true
@@ -116,6 +116,8 @@ fn connect_to_port_impl(port: &Arc<Port>) -> u32 {
 	*server_session.client.lock() = Arc::downgrade(&client_session);
 
 	// create the session, and wait for it to be accepted by the server
+	println!("connect to port {:x}", Arc::<Port>::as_ptr(port) as usize);
+
 	port.queue.lock().push(server_session.clone());
 	port.signal_one();
 	server_session.connect_wait.wait();
@@ -130,6 +132,8 @@ fn connect_to_port_impl(port: &Arc<Port>) -> u32 {
 }
 
 pub fn svc_connect_to_port_handle(h: u32) -> (ResultCode, u32) {
+	println!("connect to port handle {:?}", h);
+
 	if let HandleObject::Port(port) = handle::get_handle(h) {
 		(RESULT_OK, connect_to_port_impl(&port))
 	} else {
@@ -263,6 +267,7 @@ pub fn svc_ipc_reply(session_handle: u32, ipc_buffer_ptr: usize) -> ResultCode {
 // x1: session handle out
 pub fn svc_ipc_accept(port_handle: u32) -> (ResultCode, u32) {
 	if let HandleObject::Port(port) = handle::get_handle(port_handle) {
+		println!("accept: port {:x}", Arc::<Port>::as_ptr(&port) as usize);
 		let server_session = port.queue.lock().pop().unwrap();
 
 		// wake the client

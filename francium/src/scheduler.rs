@@ -82,6 +82,8 @@ impl Scheduler {
 			return 0
 		}
 
+		self.current_thread = Some(to.clone());
+
 		// TODO: wow, this sucks
 		{
 			unsafe {
@@ -146,6 +148,9 @@ impl Scheduler {
 
 			// Old thread
 			cursor.remove();
+			if cursor.is_null() {
+				cursor.move_next();
+			}
 			let next_thread = cursor.as_cursor().clone_pointer().unwrap();
 
 			// If we got switched out, switch to the new current process.
