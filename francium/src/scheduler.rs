@@ -1,16 +1,14 @@
 use alloc::boxed::Box;
 use alloc::sync::Arc;
-use smallvec::SmallVec;
 use spin::{Mutex, MutexGuard};
 use core::ptr::NonNull;
 use core::sync::atomic::Ordering;
-use core::pin::Pin;
 
 use crate::process::{Thread, ThreadState, Process};
 use crate::arch::context::ThreadContext;
 
 use intrusive_collections::intrusive_adapter;
-use intrusive_collections::{LinkedList, LinkedListAtomicLink, linked_list::Cursor};
+use intrusive_collections::{LinkedList, LinkedListAtomicLink};
 
 intrusive_adapter!(pub ThreadAdapter = Arc<Thread>: Thread { all_threads_link: LinkedListAtomicLink });
 intrusive_adapter!(pub ThreadRunnableAdapter = Arc<Thread>: Thread { running_link: LinkedListAtomicLink });
@@ -76,6 +74,7 @@ impl Scheduler {
 
 	fn switch_thread(&mut self, from: &Arc<Thread>, to: &Arc<Thread>) -> usize {
 		//println!("Switch from {} to {}", from.process.lock().name, to.process.lock().name);
+
 		if from.id == to.id {
 			// don't do this, it'll deadlock
 			//panic!("Trying to switch to the same thread!");
@@ -150,6 +149,9 @@ impl Scheduler {
 			cursor.remove();
 			if cursor.is_null() {
 				cursor.move_next();
+				if cursor.is_null() {
+					panic!("Out of threads!!!");
+				}
 			}
 			let next_thread = cursor.as_cursor().clone_pointer().unwrap();
 
@@ -159,19 +161,22 @@ impl Scheduler {
 				// Cursor now points to the new thread.
 				return self.switch_thread(thread, &next_thread);
 			}
+		} else {
+			panic!("Invalid thread state {:?}", thread.state.load(Ordering::Acquire));
 		}
 
 		0
 	}
 
 	pub fn wake(&mut self, thread: Arc<Thread>, tag: usize) {
-		if thread.state.load(Ordering::Acquire) == ThreadState::Runnable {
-			panic!("Trying to re-wake thread!");
-		} else {
+		if thread.state.load(Ordering::Acquire) != ThreadState::Runnable {
+			thread.state.store(ThreadState::Runnable, Ordering::Release);
 			// set x0 of the thread context
 			set_thread_context_tag(&thread, tag);
 			println!("Wake thread {}", thread.id);
 			self.runnable_threads.push_back(thread);
+		} else {
+			panic!("Trying to re-wake thread!");
 		}
 	}
 
