@@ -34,6 +34,7 @@ impl Waiter {
 	pub fn wait(&self) {
 		if !self.pending.load(Ordering::Acquire) {
 			self.waiters.lock().push((scheduler::get_current_thread(), 0));
+			println!("Suspending!!");
 			scheduler::suspend_current_thread();
 		} else {
 			self.pending.store(false, Ordering::Release);

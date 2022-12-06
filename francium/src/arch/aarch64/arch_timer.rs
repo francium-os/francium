@@ -18,11 +18,11 @@ fn get_cntfrq() -> u64 {
     }
 }
 
-unsafe fn get_cntp_tval_el0() -> usize {
+/*unsafe fn get_cntp_tval_el0() -> usize {
     let mut value;
     asm!("mrs {cntp_ctl_el0}, cntp_ctl_el0", cntp_ctl_el0 = out(reg) value);
     value
-}
+}*/
 
 unsafe fn set_cntp_tval_el0(value: u64) {
     asm!("msr cntp_tval_el0, {cntp_tval_el0}", cntp_tval_el0 = in(reg) value);

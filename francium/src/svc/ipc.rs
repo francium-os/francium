@@ -1,3 +1,5 @@
+use tracing::{event, Level};
+
 use crate::scheduler;
 use crate::handle;
 use crate::handle::HandleObject;
@@ -78,6 +80,8 @@ lazy_static! {
 }
 
 pub fn svc_create_port(tag: u64) -> (ResultCode, u32) {
+	event!(Level::DEBUG, svc_name = "create_port", tag = tag);
+
 	let server_port = Port::new();
 	let server_port_handle = Arc::new(server_port);
 
@@ -132,6 +136,8 @@ fn connect_to_port_impl(port: &Arc<Port>) -> u32 {
 }
 
 pub fn svc_connect_to_port_handle(h: u32) -> (ResultCode, u32) {
+	event!(Level::DEBUG, svc_name = "connect_to_port_handle", handle = h);
+
 	println!("connect to port handle {:?}", h);
 
 	if let HandleObject::Port(port) = handle::get_handle(h) {
@@ -142,6 +148,8 @@ pub fn svc_connect_to_port_handle(h: u32) -> (ResultCode, u32) {
 }
 
 pub fn svc_connect_to_named_port(tag: u64) -> (ResultCode, u32) {
+	event!(Level::DEBUG, svc_name = "connect_to_named_port", tag = tag);
+
 	let port = {
 		let ports = PORT_LIST.lock();
 		if let Some(server_port) = ports.get(&tag) {
@@ -165,6 +173,8 @@ pub fn svc_connect_to_named_port(tag: u64) -> (ResultCode, u32) {
 
 // x0: ipc session
 pub fn svc_ipc_request(session_handle: u32, ipc_buffer_ptr: usize) -> ResultCode {
+	event!(Level::DEBUG, svc_name = "ipc_request", session_handle = session_handle, ipc_buffer_ptr = ipc_buffer_ptr);
+
 	if let HandleObject::ClientSession(client_session) = handle::get_handle(session_handle) {
 		// signal, then wait for reply
 		let current_thread = scheduler::get_current_thread();
@@ -223,6 +233,8 @@ fn do_ipc_transfer(from_thread: &Arc<Thread>, to_thread: &Arc<Thread>, from_ptr:
 
 const MAX_HANDLES: usize = 128;
 pub fn svc_ipc_receive(handles_ptr: *const u32, handle_count: usize, ipc_buffer_ptr: usize) -> (ResultCode, usize) {
+	event!(Level::DEBUG, svc_name = "ipc_receive", handles_ptr = handles_ptr as usize, handle_count = handle_count, ipc_buffer_ptr = ipc_buffer_ptr);
+
 	let mut handles: [u32; MAX_HANDLES] = [ 0xffffffff ; MAX_HANDLES];
 
 	unsafe {
@@ -246,6 +258,8 @@ pub fn svc_ipc_receive(handles_ptr: *const u32, handle_count: usize, ipc_buffer_
 
 // x0: session handle
 pub fn svc_ipc_reply(session_handle: u32, ipc_buffer_ptr: usize) -> ResultCode {
+	event!(Level::DEBUG, svc_name = "ipc_reply", session_handle = session_handle, ipc_buffer_ptr = ipc_buffer_ptr);
+
 	if let HandleObject::ServerSession(server_session) = handle::get_handle(session_handle) {
 		// TODO: wtf?
 		let current_thread = scheduler::get_current_thread();
@@ -266,6 +280,8 @@ pub fn svc_ipc_reply(session_handle: u32, ipc_buffer_ptr: usize) -> ResultCode {
 // x0: port
 // x1: session handle out
 pub fn svc_ipc_accept(port_handle: u32) -> (ResultCode, u32) {
+	event!(Level::DEBUG, svc_name = "ipc_accept", port_handle = port_handle);
+
 	if let HandleObject::Port(port) = handle::get_handle(port_handle) {
 		println!("accept: port {:x}", Arc::<Port>::as_ptr(&port) as usize);
 		let server_session = port.queue.lock().pop().unwrap();

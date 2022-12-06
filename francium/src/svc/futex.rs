@@ -1,3 +1,5 @@
+use tracing::{event, Level};
+
 use crate::waitable::Waiter;
 use crate::scheduler;
 use common::os_error::{Module, Reason, ResultCode, RESULT_OK};
@@ -10,13 +12,14 @@ lazy_static! {
 }
 
 pub fn svc_futex_wait(addr: usize, expected: u32, _timeout_ns: usize) -> ResultCode {
+	event!(Level::DEBUG, svc_name = "futex_wait", addr = addr, expected = expected, timeout = _timeout_ns);
 	// TODO: uhhh
 	let futex_valid = unsafe {
 		(*(addr as *mut AtomicU32)).load(Ordering::SeqCst) == expected
 	};
 
 	if futex_valid {
-	{
+		{
 			let mut table_lock = FUTEX_TABLE.lock();
 			let waiter = match table_lock.entry(addr) {
 				Entry::Occupied(o) => o.into_mut(),

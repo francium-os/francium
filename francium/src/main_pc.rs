@@ -38,6 +38,8 @@ pub mod svc;
 
 pub mod init;
 
+pub mod subscriber;
+
 use crate::constants::*;
 use crate::mmu::PagePermission;
 use crate::memory::KERNEL_ADDRESS_SPACE;
@@ -86,6 +88,8 @@ fn bootloader_main(info: &'static mut bootloader::BootInfo) -> ! {
 		let kernel_aspace = &mut KERNEL_ADDRESS_SPACE.write();
 		kernel_aspace.create(KERNEL_HEAP_BASE, KERNEL_HEAP_INITIAL_SIZE, PagePermission::KERNEL_READ_WRITE);
 	}
+
+	subscriber::init();
 
 	platform::scheduler_pre_init();
 

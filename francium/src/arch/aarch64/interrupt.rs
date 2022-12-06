@@ -187,6 +187,10 @@ pub extern "C" fn rust_lower_el_spx_sync(ctx: &mut ExceptionContext) {
 			if ec == 0b100100 {
 				let dfsc = iss & 0x3f;
 				println!("data fault status: {}", stringify_dfsc(dfsc));
+
+				let current_process = crate::scheduler::get_current_process();
+				let proc_locked = current_process.lock();
+				println!("?? {:?}", proc_locked.address_space.page_table.virt_to_phys(get_far_el1()));
 			} else if ec == 0b100000 { // instruction abort
 				let ifsc = iss & 0x3f;
 				println!("instruction fault status: {}", stringify_ifsc(ifsc));

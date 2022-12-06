@@ -8,7 +8,6 @@ use alloc::sync::Arc;
 use spin::Mutex;
 use core::sync::atomic::AtomicUsize;
 use core::sync::atomic::Ordering;
-use smallvec::SmallVec;
 use atomic_enum::atomic_enum;
 
 use intrusive_collections::intrusive_adapter;

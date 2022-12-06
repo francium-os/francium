@@ -1,3 +1,5 @@
+use tracing::{event, Level};
+
 use crate::{scheduler, PagePermission};
 use common::os_error::{ResultCode, RESULT_OK};
 
@@ -8,7 +10,7 @@ pub const PROT_READ: u32 = 0x0004;
 
 
 pub fn svc_map_memory(address: usize, length: usize, permission: u32) -> (ResultCode, usize) {
-	println!("svc_map_memory: {:x} {:x} {}", address, length, permission);
+	event!(Level::DEBUG, svc_name = "map_memory", address = address, length = length, permission = permission);
 
 	let binding = scheduler::get_current_process();
 	let mut process_locked = binding.lock();	
@@ -40,9 +42,10 @@ pub fn svc_map_memory(address: usize, length: usize, permission: u32) -> (Result
 		page_permission |= PagePermission::READ_ONLY;
 	}
 
-	println!("svc_map_memory: {:x} {:x}", highest_mmap, highest_mmap + length - 1);
+//	println!("svc_map_memory: {:x} {:x}", highest_mmap, highest_mmap + length - 1);
 
 	aspace.create(highest_mmap, length, page_permission);
+	//println!("{:x?}", aspace.regions);
 
 	(RESULT_OK, highest_mmap)
 }
