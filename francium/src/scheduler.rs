@@ -13,10 +13,13 @@ use intrusive_collections::{LinkedList, LinkedListAtomicLink};
 intrusive_adapter!(pub ThreadAdapter = Arc<Thread>: Thread { all_threads_link: LinkedListAtomicLink });
 intrusive_adapter!(pub ThreadRunnableAdapter = Arc<Thread>: Thread { running_link: LinkedListAtomicLink });
 
+// TODO: idle_thread is an option because constructing an Arc needs the heap up.
+
 pub struct Scheduler {
 	pub threads: LinkedList<ThreadAdapter>,
 	pub runnable_threads: LinkedList<ThreadRunnableAdapter>,
-	pub current_thread: Option<Arc<Thread>>
+	pub current_thread: Option<Arc<Thread>>,
+	pub idle_thread: Option<Arc<Thread>>
 }
 
 lazy_static! {
@@ -65,7 +68,12 @@ impl Scheduler {
 			threads: LinkedList::new(ThreadAdapter::new()),
 			runnable_threads: LinkedList::new(ThreadRunnableAdapter::new()),
 			current_thread: None,
+			idle_thread: None
 		}
+	}
+
+	fn set_idle_thread(&mut self, thread: Arc<Thread>) {
+		self.idle_thread = Some(thread);
 	}
 
 	fn get_current_thread(&self) -> Arc<Thread> {
@@ -145,20 +153,30 @@ impl Scheduler {
 				self.runnable_threads.cursor_mut_from_ptr(Arc::<Thread>::as_ptr(&current_thread))
 			};
 
-			// Old thread
+			// Cursor now points to old thread
 			cursor.remove();
 			if cursor.is_null() {
 				cursor.move_next();
+
+				// If list is empty, it will still be on the null element.
 				if cursor.is_null() {
-					panic!("Out of threads!!!");
+					let idle_thread = self.idle_thread.as_ref().unwrap();
+					// Get the idle thread running.
+					if idle_thread.state.load(Ordering::Acquire) == ThreadState::Suspended {
+						//self.wake(&self.idle_thread, 0xffffffffffffffff);
+						idle_thread.state.store(ThreadState::Runnable, Ordering::Release);
+						cursor.insert_after(idle_thread.clone());
+					} else {
+						// Huh?
+						panic!("Out of threads!!!");
+					}
 				}
 			}
+
 			let next_thread = cursor.as_cursor().clone_pointer().unwrap();
 
 			// If we got switched out, switch to the new current process.
 			if current_id == thread.id {
-				// TODO: We need to somehow add the assert(num threads != 0) back in.
-				// Cursor now points to the new thread.
 				return self.switch_thread(thread, &next_thread);
 			}
 		} else {
@@ -168,13 +186,25 @@ impl Scheduler {
 		0
 	}
 
-	pub fn wake(&mut self, thread: Arc<Thread>, tag: usize) {
+	pub fn wake(&mut self, thread: &Arc<Thread>, tag: usize) {
 		if thread.state.load(Ordering::Acquire) != ThreadState::Runnable {
 			thread.state.store(ThreadState::Runnable, Ordering::Release);
 			// set x0 of the thread context
-			set_thread_context_tag(&thread, tag);
+			set_thread_context_tag(thread, tag);
 			println!("Wake thread {}", thread.id);
-			self.runnable_threads.push_back(thread);
+			self.runnable_threads.push_back(thread.clone());
+
+			// XXX: Big ol hack.
+			let idle_thread = self.idle_thread.as_ref().unwrap();
+			if idle_thread.state.load(Ordering::Acquire) == ThreadState::Runnable {
+				// We know runnable_threads can't be empty.
+				// We know the idle thread is running.
+				let mut cursor = unsafe {
+					self.runnable_threads.cursor_mut_from_ptr(Arc::<Thread>::as_ptr(&idle_thread))
+				};
+				cursor.remove();
+				idle_thread.state.store(ThreadState::Suspended, Ordering::Release);
+			}
 		} else {
 			panic!("Trying to re-wake thread!");
 		}
@@ -226,7 +256,7 @@ pub fn suspend_current_thread() -> usize {
 	return sched.suspend(&curr)
 }
 
-pub fn wake_thread(p: Arc<Thread>, tag: usize) {
+pub fn wake_thread(p: &Arc<Thread>, tag: usize) {
 	let mut sched = SCHEDULER.lock();
 	sched.wake(p, tag);
 }

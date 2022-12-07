@@ -10,7 +10,7 @@ pub fn svc_sleep_ns(ns: u64) {
 	let thread = scheduler::get_current_thread();
 
 	timer::register_timer(ns, Box::new(move || {
-		scheduler::wake_thread(thread, 0xffffffffffffffff);
+		scheduler::wake_thread(&thread, 0xffffffffffffffff);
 	}));
 
 	scheduler::suspend_current_thread();

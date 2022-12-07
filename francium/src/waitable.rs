@@ -52,7 +52,7 @@ impl Waiter {
 
 	pub fn signal_one(&self) {
 		match self.waiters.lock().pop() {
-			Some(waiter) => scheduler::wake_thread(waiter.0, waiter.1),
+			Some(waiter) => scheduler::wake_thread(&waiter.0, waiter.1),
 			None => self.pending.store(true, Ordering::Release)
 		}
 	}
@@ -61,14 +61,14 @@ impl Waiter {
 		match self.waiters.lock().pop() {
 			Some(waiter) => {
 				callback(&waiter.0);
-				scheduler::wake_thread(waiter.0, waiter.1)
+				scheduler::wake_thread(&waiter.0, waiter.1)
 			},
 			None => self.pending.store(true, Ordering::Release)
 		}
 	}
 
 	pub fn signal_all(&self) {
-		self.waiters.lock().drain(..).map(|x| scheduler::wake_thread(x.0, x.1)).collect()
+		self.waiters.lock().drain(..).map(|x| scheduler::wake_thread(&x.0, x.1)).collect()
 	}
 }
 

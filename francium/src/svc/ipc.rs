@@ -95,7 +95,7 @@ pub fn svc_create_port(tag: u64) -> (ResultCode, u32) {
 		let mut port_waiters = PORT_WAITERS.lock();
 		port_waiters.retain( |x| {
 			if x.0 == tag {
-				scheduler::wake_thread(x.1.clone(), 0xffffffffffffffff);
+				scheduler::wake_thread(&x.1.clone(), 0xffffffffffffffff);
 				false
 			} else {
 				true
