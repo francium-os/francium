@@ -210,7 +210,7 @@ pub fn get_current_thread() -> Arc<Thread> {
 	sched.get_current_thread()
 }
 
-pub fn get_current_process() -> Arc<Mutex<Box<Process>>> {
+pub fn get_current_process() -> Arc<Mutex<Process>> {
 	get_current_thread().process.clone()
 }
 

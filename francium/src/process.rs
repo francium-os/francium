@@ -31,7 +31,7 @@ pub struct Thread {
 	pub context: Mutex<ThreadContext>,
 
 	// static
-	pub process: Arc<Mutex<Box<Process>>>,
+	pub process: Arc<Mutex<Process>>,
 	pub kernel_stack_top: usize,
 	pub kernel_stack_size: usize,
 }
@@ -49,7 +49,7 @@ impl core::fmt::Debug for Thread
 pub struct Process {
 	pub all_processes_link: LinkedListAtomicLink,
 	pub id: usize,
-	pub address_space: Box<AddressSpace>,
+	pub address_space: AddressSpace,
 	pub threads: LinkedList<ThreadProcessAdapter>,
 	pub handle_table: HandleTable,
 	pub name: &'static str
@@ -61,7 +61,7 @@ static PROCESS_ID: AtomicUsize = AtomicUsize::new(0);
 static THREAD_ID: AtomicUsize = AtomicUsize::new(0);
 
 impl Thread {
-	pub fn new(process: Arc<Mutex<Box<Process>>>) -> Arc<Thread> {
+	pub fn new(process: Arc<Mutex<Process>>) -> Arc<Thread> {
 		let kernel_stack_size = 0x1000;
 
 		let kernel_stack = unsafe {
@@ -86,7 +86,7 @@ impl Thread {
 }
 
 impl Process {
-	pub fn new(name: &'static str, aspace: Box<AddressSpace>) -> Process {
+	pub fn new(name: &'static str, aspace: AddressSpace) -> Process {
 		let p = Process {
 			all_processes_link: LinkedListAtomicLink::new(),
 			address_space: aspace,

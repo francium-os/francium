@@ -91,7 +91,7 @@ pub fn load_process(elf_buf: &[u8], name: &'static str) -> Arc<Thread> {
 		AddressSpace::new(page_table_root.user_process())
 	};
 
-	let mut p = Box::new(Process::new(name, Box::new(aspace)));
+	let mut p = Process::new(name, aspace);
 	p.use_pages();
 	
 	let elf = Elf::from_bytes(elf_buf).unwrap();
