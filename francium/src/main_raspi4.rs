@@ -66,6 +66,7 @@ pub extern "C" fn rust_main() -> ! {
 	subscriber::init();
 
 	platform::scheduler_pre_init();
+	scheduler::init();
 
 	let fs_buf = include_bytes!("../../target/aarch64-unknown-francium/release/fs");
 	let test_buf = include_bytes!("../../target/aarch64-unknown-francium/release/test");

@@ -63,9 +63,12 @@ pub extern "C" fn rust_main() -> ! {
 		kernel_aspace.create(KERNEL_HEAP_BASE, KERNEL_HEAP_INITIAL_SIZE, PagePermission::KERNEL_READ_WRITE);
 	}
 
+	// Now we can create the tracing subscriber, and also set up the idle process.
+
 	subscriber::init();
 
 	platform::scheduler_pre_init();
+	scheduler::init();
 
 	let fs_buf = include_bytes!("../../target/aarch64-unknown-francium/release/fs");
 	let test_buf = include_bytes!("../../target/aarch64-unknown-francium/release/test");

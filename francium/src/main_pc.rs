@@ -92,6 +92,7 @@ fn bootloader_main(info: &'static mut bootloader::BootInfo) -> ! {
 	subscriber::init();
 
 	platform::scheduler_pre_init();
+	scheduler::init();
 
 	let fs_buf = include_bytes!("../../target/x86_64-unknown-francium/release/fs");
 	let test_buf = include_bytes!("../../target/x86_64-unknown-francium/release/test");

@@ -89,6 +89,17 @@ impl Scheduler {
 			return 0
 		}
 
+		let idle_thread = self.idle_thread.as_ref().unwrap();
+		// TODO: see comment in wake, this kind of sucks
+		if from.id == idle_thread.id {
+			// We are switching off the idle thread. Suspend it.
+			let mut cursor = unsafe {
+				self.runnable_threads.cursor_mut_from_ptr(Arc::<Thread>::as_ptr(&idle_thread))
+			};
+			cursor.remove();
+			idle_thread.state.store(ThreadState::Suspended, Ordering::Release);
+		}
+
 		self.current_thread = Some(to.clone());
 
 		// TODO: wow, this sucks
@@ -166,6 +177,7 @@ impl Scheduler {
 						//self.wake(&self.idle_thread, 0xffffffffffffffff);
 						idle_thread.state.store(ThreadState::Runnable, Ordering::Release);
 						cursor.insert_after(idle_thread.clone());
+						cursor.move_next();
 					} else {
 						// Huh?
 						panic!("Out of threads!!!");
@@ -194,17 +206,8 @@ impl Scheduler {
 			println!("Wake thread {}", thread.id);
 			self.runnable_threads.push_back(thread.clone());
 
-			// XXX: Big ol hack.
-			let idle_thread = self.idle_thread.as_ref().unwrap();
-			if idle_thread.state.load(Ordering::Acquire) == ThreadState::Runnable {
-				// We know runnable_threads can't be empty.
-				// We know the idle thread is running.
-				let mut cursor = unsafe {
-					self.runnable_threads.cursor_mut_from_ptr(Arc::<Thread>::as_ptr(&idle_thread))
-				};
-				cursor.remove();
-				idle_thread.state.store(ThreadState::Suspended, Ordering::Release);
-			}
+			// TODO: I tried to add an optimization to immediately suspend the idle thread if its running.
+			// but calling switch_thread in wake breaks things pretty badly
 		} else {
 			panic!("Trying to re-wake thread!");
 		}
@@ -220,6 +223,41 @@ impl Scheduler {
 
 		self.suspend(&this_thread);
 	}
+}
+
+#[cfg(target_arch = "aarch64")]
+unsafe fn idle_thread_func() {
+	loop {
+		core::arch::asm!("wfe");
+	}
+}
+
+#[cfg(target_arch = "x86_64")]
+unsafe fn idle_thread_func() {
+	loop {
+		core::arch::asm!("hlt");
+	}
+}
+
+// Set up the idle thread.
+pub fn init() {
+	use crate::KERNEL_ADDRESS_SPACE;
+	use crate::memory::AddressSpace;
+
+	let mut sched = SCHEDULER.lock();
+	let aspace = { 
+		let page_table_root = &KERNEL_ADDRESS_SPACE.read().page_table;
+		AddressSpace::new(page_table_root.user_process())
+	};
+
+	let idle_process = Arc::new(Mutex::new(Process::new("idle", aspace)));
+	let idle_thread = Thread::new(idle_process);
+	idle_thread.state.store(ThreadState::Suspended, Ordering::Release);
+
+	crate::init::setup_user_context(&idle_thread, idle_thread_func as usize, 0xaaaaaaaa);
+
+	sched.threads.push_back(idle_thread.clone());
+	sched.set_idle_thread(idle_thread);
 }
 
 pub fn tick() {

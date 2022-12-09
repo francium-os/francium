@@ -55,23 +55,6 @@ pub fn setup_user_context(new_thread: &Arc<Thread>, usermode_pc: usize, usermode
 		exc_context.regs.cs = 0x18 | 3;
 		exc_context.regs.ss = 0x20 | 3;
 
-		exc_context.regs.rax = 1;
-		exc_context.regs.rbx = 2;
-		exc_context.regs.rcx = 3;
-		exc_context.regs.rdx = 4;
-		exc_context.regs.rbp = 5;
-		exc_context.regs.rsi = 6;
-		exc_context.regs.rdi = 7;
-
-		exc_context.regs.r8 = 8;
-		exc_context.regs.r9 = 9;
-		exc_context.regs.r10 = 10;
-		exc_context.regs.r11 = 11;
-		exc_context.regs.r12 = 12;
-		exc_context.regs.r13 = 13;
-		exc_context.regs.r14 = 14;
-		exc_context.regs.r15 = 15;
-
 		context_locked.regs.rip = user_thread_starter as usize;
 		context_locked.regs.rsp = exc_context_location;
 	}
