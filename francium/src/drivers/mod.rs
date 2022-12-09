@@ -15,3 +15,7 @@ pub trait Timer {
 }
 
 pub mod pl011_uart;
+#[cfg(target_arch = "x86_64")]
+pub mod pit_timer;
+#[cfg(target_arch = "x86_64")]
+pub mod pc_uart;

@@ -232,11 +232,11 @@ unsafe fn idle_thread_func() {
 	}
 }
 
+// why 2? https://github.com/rust-lang/rust/issues/94426
+#[naked]
 #[cfg(target_arch = "x86_64")]
 unsafe fn idle_thread_func() {
-	loop {
-		core::arch::asm!("hlt");
-	}
+	core::arch::asm!("2: hlt; jmp 2b", options(noreturn));
 }
 
 // Set up the idle thread.
@@ -254,7 +254,7 @@ pub fn init() {
 	let idle_thread = Thread::new(idle_process);
 	idle_thread.state.store(ThreadState::Suspended, Ordering::Release);
 
-	crate::init::setup_user_context(&idle_thread, idle_thread_func as usize, 0xaaaaaaaa);
+	crate::init::setup_thread_context(&idle_thread, idle_thread_func as usize, 0xaaaaaaaa, true);
 
 	sched.threads.push_back(idle_thread.clone());
 	sched.set_idle_thread(idle_thread);

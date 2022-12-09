@@ -132,7 +132,7 @@ pub fn setup_gdt() {
 		TSS_STORAGE.rsp1 = 0xaaaaaaaaaaaaaaaa;
 		TSS_STORAGE.rsp2 = 0xaaaaaaaaaaaaaaaa;
 
-		TSS_STORAGE.ist[0] = 0xaaaaaaaaaaaaaaaa;
+		TSS_STORAGE.ist[0] = &interrupt_stack_top as *const i32 as u64;;
 		TSS_STORAGE.ist[1] = 0xaaaaaaaaaaaaaaaa;
 		TSS_STORAGE.ist[2] = 0xaaaaaaaaaaaaaaaa;
 		TSS_STORAGE.ist[3] = 0xaaaaaaaaaaaaaaaa;

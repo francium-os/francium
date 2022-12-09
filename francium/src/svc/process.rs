@@ -22,7 +22,7 @@ pub fn svc_create_thread(entry_point: usize, stack_top: usize) -> (ResultCode, u
 	let process = scheduler::get_current_process();
 	let new_thread = Thread::new(process);
 
-	init::setup_user_context(&new_thread, entry_point, stack_top);
+	init::setup_thread_context(&new_thread, entry_point, stack_top, false);
 	let tid = new_thread.id;
 	scheduler::register_thread(new_thread);
 

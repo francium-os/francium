@@ -26,7 +26,7 @@ extern "C" {
 
 use crate::arch::context::ExceptionContext;
 #[cfg(target_arch = "aarch64")]
-pub fn setup_user_context(new_thread: &Arc<Thread>, usermode_pc: usize, usermode_sp: usize) {
+pub fn setup_thread_context(new_thread: &Arc<Thread>, usermode_pc: usize, usermode_sp: usize, is_kernel: bool) {
 	unsafe {
 		let mut context_locked = new_thread.context.lock();
 
@@ -35,7 +35,11 @@ pub fn setup_user_context(new_thread: &Arc<Thread>, usermode_pc: usize, usermode
 
 		exc_context.regs[31] = usermode_sp;
 		exc_context.saved_pc = usermode_pc;
-		exc_context.saved_spsr = 0;
+		if is_kernel {
+			exc_context.saved_spsr = 0b0101; // TODO: EL1t vs EL1h?
+		} else {
+			exc_context.saved_spsr = 0;
+		}
 
 		context_locked.regs[30] = user_thread_starter as usize;
 		context_locked.regs[31] = exc_context_location;
@@ -43,7 +47,7 @@ pub fn setup_user_context(new_thread: &Arc<Thread>, usermode_pc: usize, usermode
 }
 
 #[cfg(target_arch = "x86_64")]
-pub fn setup_user_context(new_thread: &Arc<Thread>, usermode_pc: usize, usermode_sp: usize) {
+pub fn setup_thread_context(new_thread: &Arc<Thread>, usermode_pc: usize, usermode_sp: usize, is_kernel: bool) {
 	unsafe {
 		let mut context_locked = new_thread.context.lock();
 
@@ -52,8 +56,13 @@ pub fn setup_user_context(new_thread: &Arc<Thread>, usermode_pc: usize, usermode
 
 		exc_context.regs.rsp = usermode_sp;
 		exc_context.regs.rip = usermode_pc;
-		exc_context.regs.cs = 0x18 | 3;
-		exc_context.regs.ss = 0x20 | 3;
+		if is_kernel {
+			exc_context.regs.cs = 0x08;
+			exc_context.regs.ss = 0x10;
+		} else {
+			exc_context.regs.cs = 0x18 | 3;
+			exc_context.regs.ss = 0x20 | 3;
+		}
 
 		context_locked.regs.rip = user_thread_starter as usize;
 		context_locked.regs.rsp = exc_context_location;
@@ -215,7 +224,7 @@ pub fn load_process(elf_buf: &[u8], name: &'static str) -> Arc<Thread> {
 
 		println!("Making new thread");
 		let new_thread = Thread::new(arc.clone());
-		setup_user_context(&new_thread, user_code_base, auxv_base);
+		setup_thread_context(&new_thread, user_code_base, auxv_base, false);
 		return new_thread
 	}
 	panic!("Failed to load process??");
