@@ -6,10 +6,10 @@ pub trait InterruptController {
 }
 
 pub trait Timer {
-	fn init(&self);
-	fn set_period_us(&self, n: u64);
-	fn reset_timer(&self);
-	fn enable_timer(&self);
+	fn init(&mut self);
+	fn set_period_us(&mut self, n: u64);
+	fn reset_timer(&mut self);
+	fn enable_timer(&mut self);
 
 	fn get_counter_ns(&self) -> u64;
 }
@@ -19,3 +19,5 @@ pub mod pl011_uart;
 pub mod pit_timer;
 #[cfg(target_arch = "x86_64")]
 pub mod pc_uart;
+#[cfg(target_arch = "x86_64")]
+pub mod pic_interrupt_controller;

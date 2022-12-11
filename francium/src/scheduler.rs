@@ -1,4 +1,3 @@
-use alloc::boxed::Box;
 use alloc::sync::Arc;
 use spin::{Mutex, MutexGuard};
 use core::ptr::NonNull;

@@ -7,6 +7,7 @@ mod interrupt_handlers;
 pub mod idt;
 pub mod syscall;
 pub mod svc_wrappers;
+pub mod io_port;
 
 use core::arch::global_asm;
 global_asm!(include_str!("asm/stack.s"));

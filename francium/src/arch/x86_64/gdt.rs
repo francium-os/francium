@@ -99,7 +99,6 @@ pub fn setup_gdt() {
 		let tss_location = &TSS_STORAGE as *const TSS as usize;
 		let limit = core::mem::size_of::<TSS>() - 1;
 
-
 		GDT_ENTRIES[5] = GDTEntry {
 			limit_low: (limit & 0xffff) as u16,
 			base_low: (tss_location & 0xffff) as u16,
@@ -132,7 +131,7 @@ pub fn setup_gdt() {
 		TSS_STORAGE.rsp1 = 0xaaaaaaaaaaaaaaaa;
 		TSS_STORAGE.rsp2 = 0xaaaaaaaaaaaaaaaa;
 
-		TSS_STORAGE.ist[0] = &interrupt_stack_top as *const i32 as u64;;
+		TSS_STORAGE.ist[0] = &interrupt_stack_top as *const i32 as u64;
 		TSS_STORAGE.ist[1] = 0xaaaaaaaaaaaaaaaa;
 		TSS_STORAGE.ist[2] = 0xaaaaaaaaaaaaaaaa;
 		TSS_STORAGE.ist[3] = 0xaaaaaaaaaaaaaaaa;

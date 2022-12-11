@@ -9,7 +9,6 @@ use crate::arch::mmu::{get_current_page_table, invalidate_tlb_for_range};
 use crate::arch::cache::clear_cache_for_address;
 use crate::align::align_up;
 
-use alloc::boxed::Box;
 use alloc::sync::Arc;
 use spin::Mutex;
 use elf_rs::*;
@@ -63,6 +62,8 @@ pub fn setup_thread_context(new_thread: &Arc<Thread>, usermode_pc: usize, usermo
 			exc_context.regs.cs = 0x18 | 3;
 			exc_context.regs.ss = 0x20 | 3;
 		}
+
+		exc_context.regs.eflags = 1 << 9; // enable interrupt flag
 
 		context_locked.regs.rip = user_thread_starter as usize;
 		context_locked.regs.rsp = exc_context_location;

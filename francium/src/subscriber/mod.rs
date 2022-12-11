@@ -1,5 +1,5 @@
 use tracing::Subscriber;
-use tracing::{Metadata, span::Attributes, span::Record, Id, Event, field::{Value, Visit, Field}};
+use tracing::{Metadata, span::Attributes, span::Record, Id, Event, field::{/*Value,*/ Visit, Field}};
 
 pub fn init() {
 	use tracing_subscriber::util::SubscriberInitExt;
@@ -31,7 +31,7 @@ impl Visit for PrintVisitor {
 
 impl Subscriber for LogSubscriber {
 	// todo
-	fn enabled(&self, metadata: &Metadata<'_>) -> bool {
+	fn enabled(&self, _metadata: &Metadata<'_>) -> bool {
 		//println!("meta: {:?}", metadata);
 		true
 	}

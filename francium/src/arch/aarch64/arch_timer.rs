@@ -1,7 +1,10 @@
 use core::arch::asm;
 use crate::drivers::Timer;
 
-pub struct ArchTimer{}
+pub struct ArchTimer {
+
+}
+
 impl ArchTimer {
     pub fn new() -> ArchTimer {
         ArchTimer{}
@@ -33,22 +36,22 @@ unsafe fn set_cntp_ctl_el0(value: u64) {
 }
 
 impl Timer for ArchTimer {
-    fn init(&self) {}
+    fn init(&mut self) {}
 
-    fn set_period_us(&self, us: u64) {
+    fn set_period_us(&mut self, us: u64) {
         unsafe {
             // TODO: properly do this somehow, or at least with more precision
             TIMER_VAL = (get_cntfrq()/1000000) * us;
         }
     }
 
-    fn reset_timer(&self) {
+    fn reset_timer(&mut self) {
         unsafe {
             set_cntp_tval_el0(TIMER_VAL);
         }
     }
 
-    fn enable_timer(&self) {
+    fn enable_timer(&mut self) {
         unsafe {
             set_cntp_ctl_el0(1);
         }

@@ -1,7 +1,7 @@
 use super::context::ExceptionContext;
 use crate::timer;
 use crate::arch::aarch64::svc_wrappers;
-use crate::platform::{DEFAULT_TIMER, GIC};
+use crate::platform::{DEFAULT_TIMER, DEFAULT_INTERRUPT};
 use crate::drivers::Timer;
 use crate::drivers::InterruptController;
 use core::arch::asm;
@@ -208,12 +208,12 @@ pub extern "C" fn rust_lower_el_aarch64_irq(_ctx: &mut ExceptionContext) {
 	// for now, just ack timer
 
 	{
-		let timer_lock = DEFAULT_TIMER.lock();
+		let mut timer_lock = DEFAULT_TIMER.lock();
 		timer_lock.reset_timer();
 	}
 
 	let timer_irq = 16 + 14;
-	{ GIC.lock().ack_interrupt(timer_irq); }
+	{ DEFAULT_INTERRUPT.lock().ack_interrupt(timer_irq); }
 
 	timer::tick();
 }

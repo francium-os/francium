@@ -12,14 +12,14 @@ extern crate alloc;
 extern crate smallvec;
 extern crate elf_rs;
 
+#[macro_use]
+pub mod print;
+
 pub mod constants;
 pub mod align;
 pub mod drivers;
 pub mod platform;
 pub mod panic;
-
-#[macro_use]
-pub mod print;
 
 pub mod handle;
 pub mod handle_table;

@@ -1,7 +1,10 @@
 use core::arch::asm;
 use crate::arch::msr;
 use crate::drivers::pc_uart::COMPort;
-use crate::drivers::pit_timer::PITTimer;
+use crate::drivers::pit_timer::PIT;
+use crate::drivers::pic_interrupt_controller::PIC;
+use crate::drivers::Timer;
+use crate::drivers::InterruptController;
 use spin::Mutex;
 
 pub const PHYS_MEM_BASE: usize = 0;
@@ -21,14 +24,24 @@ unsafe fn turn_on_floating_point() {
 
 lazy_static! {
 	pub static ref DEFAULT_UART: Mutex<COMPort> = Mutex::new(COMPort::new(0x3f8));
-	pub static ref DEFAULT_TIMER: Mutex<PITTimer> = Mutex::new(PITTimer::new());
+	pub static ref DEFAULT_TIMER: Mutex<PIT> = Mutex::new(PIT::new());
+	pub static ref DEFAULT_INTERRUPT: Mutex<PIC> = Mutex::new(PIC::new());
 }
 
 pub fn platform_specific_init() {
 }
 
 pub fn scheduler_pre_init() {
-	//unimplemented!();
+	// enable timer irq
+	let timer_irq = 0; // PIC on IRQ 0!
+	let gic_lock = DEFAULT_INTERRUPT.lock();
+	gic_lock.init();
+	gic_lock.enable_interrupt(timer_irq);
+
+	// enable arch timer, 100hz
+	let mut timer_lock = DEFAULT_TIMER.lock();
+	timer_lock.set_period_us(10000);
+	timer_lock.reset_timer();
 }
 
 pub fn scheduler_post_init() {

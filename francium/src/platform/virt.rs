@@ -12,7 +12,7 @@ const VIRT_GICC_BASE: usize = constants::PERIPHERAL_BASE + 0x08010000;
 lazy_static! {
 	// Qemu doesn't care about the baud rate, but we give it one and a UART clock anyway.
 	pub static ref DEFAULT_UART: Mutex<Pl011Uart> = Mutex::new(Pl011Uart::new(PhysAddr(0x09000000), 115200, 48000000));
-	pub static ref GIC: Mutex<GICv2> = Mutex::new(GICv2::new(VIRT_GICD_BASE, VIRT_GICC_BASE));
+	pub static ref DEFAULT_INTERRUPT: Mutex<GICv2> = Mutex::new(GICv2::new(VIRT_GICD_BASE, VIRT_GICC_BASE));
 	pub static ref DEFAULT_TIMER: Mutex<ArchTimer> = Mutex::new(ArchTimer::new());
 }
 
@@ -26,15 +26,12 @@ pub fn platform_specific_init() {
 pub fn scheduler_pre_init() {
 	// enable GIC
 	let timer_irq = 16 + 14; // ARCH_TIMER_NS_EL1_IRQ + 16 because "lol no u"
-	let gic_lock = GIC.lock();
+	let gic_lock = DEFAULT_INTERRUPT.lock();
 	gic_lock.init();
 	gic_lock.enable_interrupt(timer_irq);
-	aarch64::enable_interrupts();
 
-	// enable arch timer
-	let timer_lock = DEFAULT_TIMER.lock();
-
-	// 100Hz
+	// enable arch timer, 100hz
+	let mut timer_lock = DEFAULT_TIMER.lock();
 	timer_lock.set_period_us(10000);
 	timer_lock.reset_timer();
 }

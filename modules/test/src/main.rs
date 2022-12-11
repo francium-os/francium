@@ -1,5 +1,5 @@
 use process::syscalls;
-use process::ipc;
+//use process::ipc;
 
 const SECOND: u64 = 1_000_000_000;
 
@@ -20,5 +20,5 @@ fn main() {
 		syscalls::sleep_ns(1 * SECOND);
 	}
 
-	syscalls::exit_process();
+	//syscalls::exit_process();
 }

@@ -1,5 +1,7 @@
 use core::arch::{asm, global_asm};
 use crate::arch::context::ExceptionContext;
+use crate::platform::DEFAULT_INTERRUPT;
+use crate::drivers::InterruptController;
 
 macro_rules! interrupt_noerror {
 	($interrupt_name:ident, $interrupt_number:expr) => {
@@ -212,9 +214,8 @@ pub fn read_cr2() -> usize {
 
 #[no_mangle]
 unsafe extern "C" fn handle_exception(ctx: &ExceptionContext, error_code: u64, interrupt_number: u64) {
-
-	println!("Current process: {}", crate::scheduler::get_current_process().lock().name);
-	println!("register dump:\n{:?}", ctx.regs);
+	//println!("Current process: {}", crate::scheduler::get_current_process().lock().name);
+	//println!("register dump:\n{:?}", ctx.regs);
 
 	match interrupt_number {
 		0x6 => {
@@ -280,8 +281,33 @@ unsafe extern "C" fn handle_exception(ctx: &ExceptionContext, error_code: u64, i
 
 			panic!("Can't handle page fault!");
 		},
+		32..=39 => {
+			// IRQ0-7
+			let irq_number = interrupt_number - 32;
+
+			if irq_number == 7 {
+				// todo spurious irq handling
+			} else if irq_number == 0 {
+				println!("IRQ0!");
+				{
+					DEFAULT_INTERRUPT.lock().ack_interrupt(0);
+				}
+
+				crate::timer::tick();
+			}
+		},
+		40..=47 => {
+			// IRQ8-15
+			let irq_number = interrupt_number - 32;
+			if irq_number == 15 {
+				// todo spurious irq handling
+			}
+		}
 		_ => { 
+			println!("Current process: {}", crate::scheduler::get_current_process().lock().name);
+			println!("register dump:\n{:?}", ctx.regs);
 			panic!("Unhandled interrupt {:?}", interrupt_number);
 		}
 	}
+	println!("Wut {:x}", ctx.regs.cs);
 }
