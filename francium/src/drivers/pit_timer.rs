@@ -1,34 +1,32 @@
-use core::arch::asm;
 use crate::drivers::Timer;
+use core::arch::asm;
 
 pub struct PIT {
-    reload_value: u16
+    reload_value: u16,
 }
 
 impl PIT {
-	pub fn new() -> PIT {
-		// etc
-		PIT {
-            reload_value: 0
-        }
-	}
+    pub fn new() -> PIT {
+        // etc
+        PIT { reload_value: 0 }
+    }
 }
 
-const PIT_CHANNEL_0: u8 = 0<<6;
-const PIT_CHANNEL_1: u8 = 1<<6;
-const PIT_CHANNEL_2: u8 = 2<<6;
+const PIT_CHANNEL_0: u8 = 0 << 6;
+const PIT_CHANNEL_1: u8 = 1 << 6;
+const PIT_CHANNEL_2: u8 = 2 << 6;
 
-const PIT_ACCESS_LATCH: u8 = 0<<4;
-const PIT_ACCESS_LOW: u8 = 1<<4;
-const PIT_ACCESS_HIGH: u8 = 2<<4;
-const PIT_ACCESS_BOTH: u8 = 3<<4;
+const PIT_ACCESS_LATCH: u8 = 0 << 4;
+const PIT_ACCESS_LOW: u8 = 1 << 4;
+const PIT_ACCESS_HIGH: u8 = 2 << 4;
+const PIT_ACCESS_BOTH: u8 = 3 << 4;
 
-const PIT_OP_MODE_0: u8 = 0<<1;
-const PIT_OP_MODE_1: u8 = 1<<1;
-const PIT_OP_MODE_2: u8 = 2<<1;
-const PIT_OP_MODE_3: u8 = 3<<1;
-const PIT_OP_MODE_4: u8 = 4<<1;
-const PIT_OP_MODE_5: u8 = 5<<1;
+const PIT_OP_MODE_0: u8 = 0 << 1;
+const PIT_OP_MODE_1: u8 = 1 << 1;
+const PIT_OP_MODE_2: u8 = 2 << 1;
+const PIT_OP_MODE_3: u8 = 3 << 1;
+const PIT_OP_MODE_4: u8 = 4 << 1;
+const PIT_OP_MODE_5: u8 = 5 << 1;
 // 6,7 are aliases of 2/3
 const PIT_BCD_MODE: u8 = 1;
 const PIT_BINARY_MODE: u8 = 0;

@@ -18,7 +18,7 @@ pub enum Module {
     Kernel = 1,
     SM = 2,
     FS = 3,
-    Unknown = 0xffff
+    Unknown = 0xffff,
 }
 
 #[derive(Copy, Clone, Debug, TryFromPrimitive)]
@@ -30,14 +30,14 @@ pub enum Reason {
     InvalidHandle = 3,
     NotFound = 4,
     TryAgain = 5,
-    Unknown = 0xffff
+    Unknown = 0xffff,
 }
 
 #[derive(Debug)]
 #[allow(dead_code)]
 pub struct OSError {
-	pub module: Module,
-    pub reason: Reason
+    pub module: Module,
+    pub reason: Reason,
 }
 
 impl OSError {
@@ -46,9 +46,9 @@ impl OSError {
     }
 
     pub fn from_result_code(r: ResultCode) -> OSError {
-        OSError { 
+        OSError {
             module: Module::try_from((r.0 & 0xffff) as u16).unwrap_or(Module::Unknown),
-            reason: Reason::try_from(((r.0 & 0xffff0000) >> 16) as u16).unwrap_or(Reason::Unknown)
+            reason: Reason::try_from(((r.0 & 0xffff0000) >> 16) as u16).unwrap_or(Reason::Unknown),
         }
     }
 

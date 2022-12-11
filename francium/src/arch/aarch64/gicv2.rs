@@ -2,14 +2,14 @@ use crate::drivers::InterruptController;
 
 pub struct GICv2 {
     gicd_base: usize,
-    gicc_base: usize
+    gicc_base: usize,
 }
 
 impl GICv2 {
     pub fn new(gicd_base: usize, gicc_base: usize) -> GICv2 {
-        GICv2 { 
+        GICv2 {
             gicd_base: gicd_base,
-            gicc_base: gicc_base
+            gicc_base: gicc_base,
         }
     }
 }
@@ -40,28 +40,25 @@ impl InterruptController for GICv2 {
 
     fn enable_interrupt(&self, interrupt: u32) {
         unsafe {
-            ((self.gicd_base + GICD_ISENABLER) as *mut u32).add((interrupt / GICD_ISENABLER_SIZE) as usize)
-            .write_volatile(
-                1 << (interrupt % GICD_ISENABLER_SIZE)
-            );
+            ((self.gicd_base + GICD_ISENABLER) as *mut u32)
+                .add((interrupt / GICD_ISENABLER_SIZE) as usize)
+                .write_volatile(1 << (interrupt % GICD_ISENABLER_SIZE));
         }
     }
 
     fn disable_interrupt(&self, interrupt: u32) {
         unsafe {
-            ((self.gicd_base + GICD_ICENABLER) as *mut u32).add((interrupt / GICD_ISENABLER_SIZE) as usize)
-            .write_volatile(
-                1 << (interrupt % GICD_ICENABLER_SIZE)
-            );
+            ((self.gicd_base + GICD_ICENABLER) as *mut u32)
+                .add((interrupt / GICD_ISENABLER_SIZE) as usize)
+                .write_volatile(1 << (interrupt % GICD_ICENABLER_SIZE));
         }
     }
-    
+
     fn ack_interrupt(&self, interrupt: u32) {
         unsafe {
-            ((self.gicd_base + GICD_ICPENDR) as *mut u32).add((interrupt / GICD_ICPENDR_SIZE) as usize)
-            .write_volatile(
-                1 << (interrupt % GICD_ICPENDR_SIZE)
-            );
+            ((self.gicd_base + GICD_ICPENDR) as *mut u32)
+                .add((interrupt / GICD_ICPENDR_SIZE) as usize)
+                .write_volatile(1 << (interrupt % GICD_ICPENDR_SIZE));
         }
     }
 }

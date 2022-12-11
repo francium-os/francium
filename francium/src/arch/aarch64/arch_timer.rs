@@ -1,13 +1,11 @@
-use core::arch::asm;
 use crate::drivers::Timer;
+use core::arch::asm;
 
-pub struct ArchTimer {
-
-}
+pub struct ArchTimer {}
 
 impl ArchTimer {
     pub fn new() -> ArchTimer {
-        ArchTimer{}
+        ArchTimer {}
     }
 }
 
@@ -41,7 +39,7 @@ impl Timer for ArchTimer {
     fn set_period_us(&mut self, us: u64) {
         unsafe {
             // TODO: properly do this somehow, or at least with more precision
-            TIMER_VAL = (get_cntfrq()/1000000) * us;
+            TIMER_VAL = (get_cntfrq() / 1000000) * us;
         }
     }
 
@@ -60,7 +58,7 @@ impl Timer for ArchTimer {
     fn get_counter_ns(&self) -> u64 {
         let mut val: u64;
         unsafe {
-            asm!("mrs {val}, CNTPCT_EL0", val = out (reg) (val));
+            asm!("mrs {val}, CNTPCT_EL0", val = out(reg)(val));
         }
 
         // TODO: This is okay, but it feels a bit wrong.
@@ -71,7 +69,3 @@ impl Timer for ArchTimer {
         (val * 1000000000) / get_cntfrq()
     }
 }
-
-
-
-

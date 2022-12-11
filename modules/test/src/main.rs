@@ -4,21 +4,21 @@ use process::syscalls;
 const SECOND: u64 = 1_000_000_000;
 
 fn main() {
-	println!("Hello from test!");
+    println!("Hello from test!");
 
-	/*println!("FS IPC");
-	ipc::fs::stop();
-	println!("SM IPC");
-	ipc::sm::stop();
-	println!("Done");*/
+    /*println!("FS IPC");
+    ipc::fs::stop();
+    println!("SM IPC");
+    ipc::sm::stop();
+    println!("Done");*/
 
-	println!("Sleeping for 1 second...");
-	syscalls::sleep_ns(1 * SECOND);
-	println!("*yawn*");
+    println!("Sleeping for 1 second...");
+    syscalls::sleep_ns(1 * SECOND);
+    println!("*yawn*");
 
-	loop{
-		syscalls::sleep_ns(1 * SECOND);
-	}
+    loop {
+        syscalls::sleep_ns(1 * SECOND);
+    }
 
-	//syscalls::exit_process();
+    //syscalls::exit_process();
 }

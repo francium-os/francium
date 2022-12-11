@@ -1,6 +1,6 @@
 #![no_std]
-pub mod os_error;
-pub mod ipc;
-pub mod handle;
 pub mod constants;
+pub mod handle;
+pub mod ipc;
+pub mod os_error;
 pub use handle::*;

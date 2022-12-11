@@ -10,7 +10,9 @@ fn main() {
             }
 
             found_platform = true;
-            platform = var.as_str()[("CARGO_FEATURE_PLATFORM_".len())..].to_lowercase().clone();
+            platform = var.as_str()[("CARGO_FEATURE_PLATFORM_".len())..]
+                .to_lowercase()
+                .clone();
         }
     }
 

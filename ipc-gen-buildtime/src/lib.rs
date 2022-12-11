@@ -1,14 +1,14 @@
+use quote::{format_ident, quote};
 use serde_derive::Deserialize;
 use std::env;
 use std::fs;
 use std::path::Path;
-use quote::{quote, format_ident};
-use syn::{Type, Path as SynPath};
+use syn::{Path as SynPath, Type};
 
 #[derive(Debug, Deserialize)]
 struct Ty {
     name: String,
-    ty: String
+    ty: String,
 }
 
 #[derive(Debug, Deserialize)]
@@ -17,17 +17,25 @@ struct Method {
     id: u32,
     inputs: Vec<Ty>,
     output: String,
-    is_async: Option<bool>
+    is_async: Option<bool>,
 }
 
 impl Method {
     fn server(&self) -> syn::__private::TokenStream2 {
-        let input_names: Vec<_> = self.inputs.iter().map(|x| format_ident!("{}", x.name)).collect();
-        let inputs: Vec<_> = self.inputs.iter().map(|x| {
-            let name = format_ident!("{}", x.name);
-            let ty_ = format_ident!("{}", x.ty);
-            quote!(#name: #ty_)
-        }).collect();
+        let input_names: Vec<_> = self
+            .inputs
+            .iter()
+            .map(|x| format_ident!("{}", x.name))
+            .collect();
+        let inputs: Vec<_> = self
+            .inputs
+            .iter()
+            .map(|x| {
+                let name = format_ident!("{}", x.name);
+                let ty_ = format_ident!("{}", x.ty);
+                quote!(#name: #ty_)
+            })
+            .collect();
 
         let method_name = format_ident!("{}", self.name);
         let method_id: u32 = self.id;
@@ -44,7 +52,7 @@ impl Method {
             quote!()
         };
 
-        quote!{
+        quote! {
             #method_id => {
                 request_msg.read_translates();
 
@@ -66,16 +74,24 @@ impl Method {
     fn client(&self, handle_accessor: &str) -> syn::__private::TokenStream2 {
         let ipc_handle_accessor: SynPath = syn::parse_str(handle_accessor).unwrap();
 
-        let input_names: Vec<_> = self.inputs.iter().map(|x| format_ident!("{}", x.name)).collect();
-        let inputs: Vec<_> = self.inputs.iter().map(|x| {
-            let name = format_ident!("{}", x.name);
-            let ty_ = format_ident!("{}", x.ty);
-            quote!(#name: #ty_)
-        }).collect();
+        let input_names: Vec<_> = self
+            .inputs
+            .iter()
+            .map(|x| format_ident!("{}", x.name))
+            .collect();
+        let inputs: Vec<_> = self
+            .inputs
+            .iter()
+            .map(|x| {
+                let name = format_ident!("{}", x.name);
+                let ty_ = format_ident!("{}", x.ty);
+                quote!(#name: #ty_)
+            })
+            .collect();
 
         let output_type: Type = syn::parse_str(&self.output).unwrap();
         let dispatch_output = if self.output == "()" {
-            quote!{}
+            quote! {}
         } else {
             quote! {
                 let out: #output_type = reply_msg.read();
@@ -84,7 +100,7 @@ impl Method {
         };
 
         let write_inputs = if input_names.len() == 0 {
-            quote!{}
+            quote! {}
         } else {
             quote! { #(request_msg.write(#input_names));*; }
         };
@@ -119,7 +135,7 @@ struct ServerConfig {
     name: String,
     struct_name: String,
     handle_accessor: String,
-    methods: Vec<Method>
+    methods: Vec<Method>,
 }
 
 pub fn generate_server(path: &str) {
@@ -165,9 +181,13 @@ pub fn generate_client(path: &str) {
     let out_dir = env::var_os("OUT_DIR").unwrap();
     let dest_path = Path::new(&out_dir).join(spec.name + "_client_impl.rs");
 
-    let client_methods: Vec<_> = spec.methods.iter().map(|x| x.client(&spec.handle_accessor)).collect();
+    let client_methods: Vec<_> = spec
+        .methods
+        .iter()
+        .map(|x| x.client(&spec.handle_accessor))
+        .collect();
 
-    let client_impl = quote!{
+    let client_impl = quote! {
         use crate::ipc::message::IPC_BUFFER;
 
         #(#client_methods)*

@@ -1,16 +1,16 @@
-pub mod context;
-pub mod svc_wrappers;
-pub mod interrupt;
-pub mod gicv2;
-pub mod mmu;
+pub mod arch_registers;
 pub mod arch_timer;
 pub mod cache;
-pub mod arch_registers;
+pub mod context;
+pub mod gicv2;
+pub mod interrupt;
+pub mod mmu;
+pub mod svc_wrappers;
 
+pub use interrupt::enable_interrupts;
 pub use mmu::enable_mmu;
 pub use mmu::set_ttbr0_el1;
 pub use mmu::set_ttbr1_el1;
-pub use interrupt::enable_interrupts;
 
 use core::arch::global_asm;
 global_asm!(include_str!("asm/context.s"));

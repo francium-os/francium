@@ -1,3 +1,3 @@
 pub fn svc_break() {
-	panic!("svcBreak called!");
+    panic!("svcBreak called!");
 }

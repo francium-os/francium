@@ -1,10 +1,10 @@
 use alloc::sync::Arc;
-use spin::{Mutex, MutexGuard};
 use core::ptr::NonNull;
 use core::sync::atomic::Ordering;
+use spin::{Mutex, MutexGuard};
 
-use crate::process::{Thread, ThreadState, Process};
 use crate::arch::context::ThreadContext;
+use crate::process::{Process, Thread, ThreadState};
 
 use intrusive_collections::intrusive_adapter;
 use intrusive_collections::{LinkedList, LinkedListAtomicLink};
@@ -15,41 +15,46 @@ intrusive_adapter!(pub ThreadRunnableAdapter = Arc<Thread>: Thread { running_lin
 // TODO: idle_thread is an option because constructing an Arc needs the heap up.
 
 pub struct Scheduler {
-	pub threads: LinkedList<ThreadAdapter>,
-	pub runnable_threads: LinkedList<ThreadRunnableAdapter>,
-	pub current_thread: Option<Arc<Thread>>,
-	pub idle_thread: Option<Arc<Thread>>
+    pub threads: LinkedList<ThreadAdapter>,
+    pub runnable_threads: LinkedList<ThreadRunnableAdapter>,
+    pub current_thread: Option<Arc<Thread>>,
+    pub idle_thread: Option<Arc<Thread>>,
 }
 
 lazy_static! {
-	static ref SCHEDULER: Mutex<Scheduler> = Mutex::new(Scheduler::new());
+    static ref SCHEDULER: Mutex<Scheduler> = Mutex::new(Scheduler::new());
 }
 
 extern "C" {
-	fn switch_thread_asm(from_context: *mut ThreadContext, to_context: *const ThreadContext, from: usize, to: usize) -> usize;
+    fn switch_thread_asm(
+        from_context: *mut ThreadContext,
+        to_context: *const ThreadContext,
+        from: usize,
+        to: usize,
+    ) -> usize;
 }
 
 #[cfg(target_arch = "x86_64")]
 extern "C" {
-	#[link_name = "current_thread_kernel_stack"]
-	static mut CURRENT_THREAD_KERNEL_STACK: usize;
+    #[link_name = "current_thread_kernel_stack"]
+    static mut CURRENT_THREAD_KERNEL_STACK: usize;
 }
 
 #[no_mangle]
 pub extern "C" fn force_unlock_mutex(mutex: NonNull<Mutex<ThreadContext>>) {
-	unsafe {
-		mutex.as_ref().force_unlock();
-	}
+    unsafe {
+        mutex.as_ref().force_unlock();
+    }
 }
 
 #[cfg(target_arch = "aarch64")]
 fn set_thread_context_tag(p: &Arc<Thread>, tag: usize) {
-	p.context.lock().regs[0] = tag;
+    p.context.lock().regs[0] = tag;
 }
 
 #[cfg(target_arch = "x86_64")]
 fn set_thread_context_tag(p: &Arc<Thread>, tag: usize) {
-	p.context.lock().regs.rax = tag;
+    p.context.lock().regs.rax = tag;
 }
 
 #[cfg(target_arch = "x86_64")]
@@ -57,288 +62,312 @@ use crate::arch;
 
 #[cfg(target_arch = "x86_64")]
 pub unsafe fn set_current_thread_state(kernel_stack: usize, tls: usize) {
-	CURRENT_THREAD_KERNEL_STACK = kernel_stack;
-	arch::msr::write_fs_base(tls);
+    CURRENT_THREAD_KERNEL_STACK = kernel_stack;
+    arch::msr::write_fs_base(tls);
 }
 
 impl Scheduler {
-	fn new() -> Scheduler {
-		Scheduler {
-			threads: LinkedList::new(ThreadAdapter::new()),
-			runnable_threads: LinkedList::new(ThreadRunnableAdapter::new()),
-			current_thread: None,
-			idle_thread: None
-		}
-	}
+    fn new() -> Scheduler {
+        Scheduler {
+            threads: LinkedList::new(ThreadAdapter::new()),
+            runnable_threads: LinkedList::new(ThreadRunnableAdapter::new()),
+            current_thread: None,
+            idle_thread: None,
+        }
+    }
 
-	fn set_idle_thread(&mut self, thread: Arc<Thread>) {
-		self.idle_thread = Some(thread);
-	}
+    fn set_idle_thread(&mut self, thread: Arc<Thread>) {
+        self.idle_thread = Some(thread);
+    }
 
-	fn get_current_thread(&self) -> Arc<Thread> {
-		self.current_thread.as_ref().unwrap().clone()
-	}
+    fn get_current_thread(&self) -> Arc<Thread> {
+        self.current_thread.as_ref().unwrap().clone()
+    }
 
-	fn switch_thread(&mut self, from: &Arc<Thread>, to: &Arc<Thread>) -> usize {
-		//println!("Switch from {} to {}", from.process.lock().name, to.process.lock().name);
+    fn switch_thread(&mut self, from: &Arc<Thread>, to: &Arc<Thread>) -> usize {
+        //println!("Switch from {} to {}", from.process.lock().name, to.process.lock().name);
 
-		if from.id == to.id {
-			// don't do this, it'll deadlock
-			//panic!("Trying to switch to the same thread!");
-			return 0
-		}
+        if from.id == to.id {
+            // don't do this, it'll deadlock
+            //panic!("Trying to switch to the same thread!");
+            return 0;
+        }
 
-		let idle_thread = self.idle_thread.as_ref().unwrap();
-		// TODO: see comment in wake, this kind of sucks
-		if from.id == idle_thread.id {
-			// We are switching off the idle thread. Suspend it.
-			let mut cursor = unsafe {
-				self.runnable_threads.cursor_mut_from_ptr(Arc::<Thread>::as_ptr(&idle_thread))
-			};
-			cursor.remove();
-			idle_thread.state.store(ThreadState::Suspended, Ordering::Release);
-		}
+        let idle_thread = self.idle_thread.as_ref().unwrap();
+        // TODO: see comment in wake, this kind of sucks
+        if from.id == idle_thread.id {
+            // We are switching off the idle thread. Suspend it.
+            let mut cursor = unsafe {
+                self.runnable_threads
+                    .cursor_mut_from_ptr(Arc::<Thread>::as_ptr(&idle_thread))
+            };
+            cursor.remove();
+            idle_thread
+                .state
+                .store(ThreadState::Suspended, Ordering::Release);
+        }
 
-		self.current_thread = Some(to.clone());
+        self.current_thread = Some(to.clone());
 
-		// TODO: wow, this sucks
-		{
-			unsafe {
-				// TODO: lol
-				SCHEDULER.force_unlock();
-			}
+        // TODO: wow, this sucks
+        {
+            unsafe {
+                // TODO: lol
+                SCHEDULER.force_unlock();
+            }
 
-			{
-				to.process.lock().use_pages();
-			}
+            {
+                to.process.lock().use_pages();
+            }
 
-			let from_context_locked = MutexGuard::leak(from.context.lock());
-			let to_context_locked = MutexGuard::leak(to.context.lock());
+            let from_context_locked = MutexGuard::leak(from.context.lock());
+            let to_context_locked = MutexGuard::leak(to.context.lock());
 
-			let from_context_ptr = &from.context as *const Mutex<ThreadContext>;
-			let to_context_ptr = &to.context as *const Mutex<ThreadContext>;
+            let from_context_ptr = &from.context as *const Mutex<ThreadContext>;
+            let to_context_ptr = &to.context as *const Mutex<ThreadContext>;
 
-			unsafe {
-				#[cfg(target_arch = "x86_64")]
-				set_current_thread_state(to.kernel_stack_top, to_context_locked.regs.fs);
+            unsafe {
+                #[cfg(target_arch = "x86_64")]
+                set_current_thread_state(to.kernel_stack_top, to_context_locked.regs.fs);
 
-				return switch_thread_asm(from_context_locked, to_context_locked, from_context_ptr as usize, to_context_ptr as usize)
-			}
-		}
-	}
+                return switch_thread_asm(
+                    from_context_locked,
+                    to_context_locked,
+                    from_context_ptr as usize,
+                    to_context_ptr as usize,
+                );
+            }
+        }
+    }
 
-	pub fn advance_to_next_thread(&mut self) -> Arc<Thread> {
-		let mut cursor = unsafe {
-			self.runnable_threads.cursor_from_ptr(Arc::<Thread>::as_ptr(&self.current_thread.as_ref().unwrap()))
-		};
-		cursor.move_next();
-		if cursor.is_null() {
-			cursor.move_next();
-		}
+    pub fn advance_to_next_thread(&mut self) -> Arc<Thread> {
+        let mut cursor = unsafe {
+            self.runnable_threads.cursor_from_ptr(Arc::<Thread>::as_ptr(
+                &self.current_thread.as_ref().unwrap(),
+            ))
+        };
+        cursor.move_next();
+        if cursor.is_null() {
+            cursor.move_next();
+        }
 
-		let new_thread = cursor.clone_pointer().unwrap();
-		self.current_thread = Some(new_thread.clone());
-		new_thread
-	}
+        let new_thread = cursor.clone_pointer().unwrap();
+        self.current_thread = Some(new_thread.clone());
+        new_thread
+    }
 
-	pub fn tick(&mut self) {
-		// XXX TODO: O(h no)
-		if self.runnable_threads.iter().count() == 0 {
-			return
-		}
+    pub fn tick(&mut self) {
+        // XXX TODO: O(h no)
+        if self.runnable_threads.iter().count() == 0 {
+            return;
+        }
 
-		// do the thing
-		let this_thread = self.get_current_thread();
-		let next = self.advance_to_next_thread();
-		self.switch_thread(&this_thread, &next);
-	}
+        // do the thing
+        let this_thread = self.get_current_thread();
+        let next = self.advance_to_next_thread();
+        self.switch_thread(&this_thread, &next);
+    }
 
-	pub fn suspend(&mut self, thread: &Arc<Thread>) -> usize {
-		if thread.state.load(Ordering::Acquire) == ThreadState::Runnable {
-			thread.state.store(ThreadState::Suspended, Ordering::Release);
-			// Safety: thread is runnable
-			let current_thread = self.get_current_thread();
-			let current_id = current_thread.id;
-			let mut cursor = unsafe {
-				self.runnable_threads.cursor_mut_from_ptr(Arc::<Thread>::as_ptr(&current_thread))
-			};
+    pub fn suspend(&mut self, thread: &Arc<Thread>) -> usize {
+        if thread.state.load(Ordering::Acquire) == ThreadState::Runnable {
+            thread
+                .state
+                .store(ThreadState::Suspended, Ordering::Release);
+            // Safety: thread is runnable
+            let current_thread = self.get_current_thread();
+            let current_id = current_thread.id;
+            let mut cursor = unsafe {
+                self.runnable_threads
+                    .cursor_mut_from_ptr(Arc::<Thread>::as_ptr(&current_thread))
+            };
 
-			// Cursor now points to old thread
-			cursor.remove();
-			if cursor.is_null() {
-				cursor.move_next();
+            // Cursor now points to old thread
+            cursor.remove();
+            if cursor.is_null() {
+                cursor.move_next();
 
-				// If list is empty, it will still be on the null element.
-				if cursor.is_null() {
-					let idle_thread = self.idle_thread.as_ref().unwrap();
-					// Get the idle thread running.
-					if idle_thread.state.load(Ordering::Acquire) == ThreadState::Suspended {
-						//self.wake(&self.idle_thread, 0xffffffffffffffff);
-						idle_thread.state.store(ThreadState::Runnable, Ordering::Release);
-						cursor.insert_after(idle_thread.clone());
-						cursor.move_next();
-					} else {
-						// Huh?
-						panic!("Out of threads!!!");
-					}
-				}
-			}
+                // If list is empty, it will still be on the null element.
+                if cursor.is_null() {
+                    let idle_thread = self.idle_thread.as_ref().unwrap();
+                    // Get the idle thread running.
+                    if idle_thread.state.load(Ordering::Acquire) == ThreadState::Suspended {
+                        //self.wake(&self.idle_thread, 0xffffffffffffffff);
+                        idle_thread
+                            .state
+                            .store(ThreadState::Runnable, Ordering::Release);
+                        cursor.insert_after(idle_thread.clone());
+                        cursor.move_next();
+                    } else {
+                        // Huh?
+                        panic!("Out of threads!!!");
+                    }
+                }
+            }
 
-			let next_thread = cursor.as_cursor().clone_pointer().unwrap();
+            let next_thread = cursor.as_cursor().clone_pointer().unwrap();
 
-			// If we got switched out, switch to the new current process.
-			if current_id == thread.id {
-				return self.switch_thread(thread, &next_thread);
-			}
-		} else {
-			panic!("Invalid thread state {:?}", thread.state.load(Ordering::Acquire));
-		}
+            // If we got switched out, switch to the new current process.
+            if current_id == thread.id {
+                return self.switch_thread(thread, &next_thread);
+            }
+        } else {
+            panic!(
+                "Invalid thread state {:?}",
+                thread.state.load(Ordering::Acquire)
+            );
+        }
 
-		0
-	}
+        0
+    }
 
-	pub fn wake(&mut self, thread: &Arc<Thread>, tag: usize) {
-		if thread.state.load(Ordering::Acquire) != ThreadState::Runnable {
-			thread.state.store(ThreadState::Runnable, Ordering::Release);
-			// set x0 of the thread context
-			set_thread_context_tag(thread, tag);
-			println!("Wake thread {}", thread.id);
-			self.runnable_threads.push_back(thread.clone());
+    pub fn wake(&mut self, thread: &Arc<Thread>, tag: usize) {
+        if thread.state.load(Ordering::Acquire) != ThreadState::Runnable {
+            thread.state.store(ThreadState::Runnable, Ordering::Release);
+            // set x0 of the thread context
+            set_thread_context_tag(thread, tag);
+            println!("Wake thread {}", thread.id);
+            self.runnable_threads.push_back(thread.clone());
 
-			// TODO: I tried to add an optimization to immediately suspend the idle thread if its running.
-			// but calling switch_thread in wake breaks things pretty badly
-		} else {
-			panic!("Trying to re-wake thread!");
-		}
-	}
+        // TODO: I tried to add an optimization to immediately suspend the idle thread if its running.
+        // but calling switch_thread in wake breaks things pretty badly
+        } else {
+            panic!("Trying to re-wake thread!");
+        }
+    }
 
-	pub fn terminate_current_thread(&mut self) {
-		let current_thread = self.get_current_thread();
-		// Safety: Current thread is a thread
-		let mut cursor = unsafe {
-			self.threads.cursor_mut_from_ptr(Arc::<Thread>::as_ptr(&current_thread))
-		};
-		let this_thread = cursor.remove().unwrap();
+    pub fn terminate_current_thread(&mut self) {
+        let current_thread = self.get_current_thread();
+        // Safety: Current thread is a thread
+        let mut cursor = unsafe {
+            self.threads
+                .cursor_mut_from_ptr(Arc::<Thread>::as_ptr(&current_thread))
+        };
+        let this_thread = cursor.remove().unwrap();
 
-		self.suspend(&this_thread);
-	}
+        self.suspend(&this_thread);
+    }
 }
 
 #[cfg(target_arch = "aarch64")]
 unsafe fn idle_thread_func() {
-	loop {
-		core::arch::asm!("wfe");
-	}
+    loop {
+        core::arch::asm!("wfe");
+    }
 }
 
 // why 2? https://github.com/rust-lang/rust/issues/94426
 #[naked]
 #[cfg(target_arch = "x86_64")]
 unsafe fn idle_thread_func() {
-	core::arch::asm!("2: hlt; jmp 2b", options(noreturn));
+    core::arch::asm!("2: hlt; jmp 2b", options(noreturn));
 }
 
 // Set up the idle thread.
 pub fn init() {
-	use crate::KERNEL_ADDRESS_SPACE;
-	use crate::memory::AddressSpace;
+    use crate::memory::AddressSpace;
+    use crate::KERNEL_ADDRESS_SPACE;
 
-	let mut sched = SCHEDULER.lock();
-	let aspace = { 
-		let page_table_root = &KERNEL_ADDRESS_SPACE.read().page_table;
-		AddressSpace::new(page_table_root.user_process())
-	};
+    let mut sched = SCHEDULER.lock();
+    let aspace = {
+        let page_table_root = &KERNEL_ADDRESS_SPACE.read().page_table;
+        AddressSpace::new(page_table_root.user_process())
+    };
 
-	let idle_process = Arc::new(Mutex::new(Process::new("idle", aspace)));
-	let idle_thread = Thread::new(idle_process);
-	idle_thread.state.store(ThreadState::Suspended, Ordering::Release);
+    let idle_process = Arc::new(Mutex::new(Process::new("idle", aspace)));
+    let idle_thread = Thread::new(idle_process);
+    idle_thread
+        .state
+        .store(ThreadState::Suspended, Ordering::Release);
 
-	crate::init::setup_thread_context(&idle_thread, idle_thread_func as usize, 0xaaaaaaaa, true);
+    crate::init::setup_thread_context(&idle_thread, idle_thread_func as usize, 0xaaaaaaaa, true);
 
-	sched.threads.push_back(idle_thread.clone());
-	sched.set_idle_thread(idle_thread);
+    sched.threads.push_back(idle_thread.clone());
+    sched.set_idle_thread(idle_thread);
 }
 
 pub fn tick() {
-	let mut sched = SCHEDULER.lock();
-	sched.tick();
+    let mut sched = SCHEDULER.lock();
+    sched.tick();
 }
 
 pub fn register_thread(thread: Arc<Thread>) {
-	let mut sched = SCHEDULER.lock();
-	thread.state.store(ThreadState::Runnable, Ordering::Release);
-	
-	sched.threads.push_back(thread.clone());
-	sched.runnable_threads.push_back(thread);
+    let mut sched = SCHEDULER.lock();
+    thread.state.store(ThreadState::Runnable, Ordering::Release);
+
+    sched.threads.push_back(thread.clone());
+    sched.runnable_threads.push_back(thread);
 }
 
 pub fn get_current_thread() -> Arc<Thread> {
-	let sched = SCHEDULER.lock();
-	sched.get_current_thread()
+    let sched = SCHEDULER.lock();
+    sched.get_current_thread()
 }
 
 pub fn get_current_process() -> Arc<Mutex<Process>> {
-	get_current_thread().process.clone()
+    get_current_thread().process.clone()
 }
 
 pub fn suspend_process(p: Arc<Thread>) {
-	let mut sched = SCHEDULER.lock();
-	sched.suspend(&p);
+    let mut sched = SCHEDULER.lock();
+    sched.suspend(&p);
 }
 
 pub fn suspend_current_thread() -> usize {
-	let mut sched = SCHEDULER.lock();
-	let curr = sched.get_current_thread();
+    let mut sched = SCHEDULER.lock();
+    let curr = sched.get_current_thread();
 
-	return sched.suspend(&curr)
+    return sched.suspend(&curr);
 }
 
 pub fn wake_thread(p: &Arc<Thread>, tag: usize) {
-	let mut sched = SCHEDULER.lock();
-	sched.wake(p, tag);
+    let mut sched = SCHEDULER.lock();
+    sched.wake(p, tag);
 }
 
 pub fn terminate_current_thread() {
-	let mut sched = SCHEDULER.lock();
-	sched.terminate_current_thread();
+    let mut sched = SCHEDULER.lock();
+    sched.terminate_current_thread();
 }
 
 pub fn terminate_current_process() {
-	let mut sched = SCHEDULER.lock();
-	let current_thread = sched.get_current_thread();
-	let current_process = current_thread.process.clone();
-	let process = current_process.lock();
+    let mut sched = SCHEDULER.lock();
+    let current_thread = sched.get_current_thread();
+    let current_process = current_thread.process.clone();
+    let process = current_process.lock();
 
-	let cursor = process.threads.front();
-	while !cursor.is_null() {
-		let thread = cursor.get().unwrap();
-		if thread.id != current_thread.id {
-			sched.suspend(&cursor.clone_pointer().unwrap());
-		}
-	}
+    let cursor = process.threads.front();
+    while !cursor.is_null() {
+        let thread = cursor.get().unwrap();
+        if thread.id != current_thread.id {
+            sched.suspend(&cursor.clone_pointer().unwrap());
+        }
+    }
 
-	sched.terminate_current_thread();
+    sched.terminate_current_thread();
 }
 
 // see also: force_unlock_mutex
 extern "C" {
-	fn setup_initial_thread_context(ctx: &ThreadContext, mutex: usize);
+    fn setup_initial_thread_context(ctx: &ThreadContext, mutex: usize);
 }
 
 pub fn force_switch_to(thread: Arc<Thread>) {
-	{
-		thread.state.store(ThreadState::Runnable, Ordering::Release);
-		let mut sched = SCHEDULER.lock();
-		// TODO: assert in runnable?
-		sched.current_thread = Some(thread.clone());
-	}
+    {
+        thread.state.store(ThreadState::Runnable, Ordering::Release);
+        let mut sched = SCHEDULER.lock();
+        // TODO: assert in runnable?
+        sched.current_thread = Some(thread.clone());
+    }
 
-	thread.process.lock().use_pages();
+    thread.process.lock().use_pages();
 
-	let thread_context = MutexGuard::leak(thread.context.lock());
-	unsafe {
-		#[cfg(target_arch = "x86_64")]
-		set_current_thread_state(thread.kernel_stack_top, 0);
-		setup_initial_thread_context(thread_context, &thread.context as *const Mutex<ThreadContext> as usize);
-	}
+    let thread_context = MutexGuard::leak(thread.context.lock());
+    unsafe {
+        #[cfg(target_arch = "x86_64")]
+        set_current_thread_state(thread.kernel_stack_top, 0);
+        setup_initial_thread_context(
+            thread_context,
+            &thread.context as *const Mutex<ThreadContext> as usize,
+        );
+    }
 }

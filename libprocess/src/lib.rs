@@ -5,8 +5,8 @@
 extern crate alloc;
 
 //pub mod print;
-pub mod syscalls;
 pub mod ipc_server;
+pub mod syscalls;
 //pub mod allocator;
 pub mod ipc;
 

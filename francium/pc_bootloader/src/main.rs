@@ -16,8 +16,10 @@ fn main() {
 }
 
 pub fn create_disk_images(kernel_binary_path: &Path) -> PathBuf {
-    let kernel_manifest_path = PathBuf::from("/home/stary/develop/osdev/francium/francium/Cargo.toml");
-    let bootloader_manifest_path = bootloader_locator::locate_bootloader("bootloader", Some(&kernel_manifest_path)).unwrap();
+    let kernel_manifest_path =
+        PathBuf::from("/home/stary/develop/osdev/francium/francium/Cargo.toml");
+    let bootloader_manifest_path =
+        bootloader_locator::locate_bootloader("bootloader", Some(&kernel_manifest_path)).unwrap();
 
     let mut build_cmd = Command::new(env!("CARGO"));
     build_cmd.current_dir(bootloader_manifest_path.parent().unwrap());

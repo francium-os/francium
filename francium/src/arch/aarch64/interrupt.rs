@@ -1,64 +1,64 @@
 use super::context::ExceptionContext;
-use crate::timer;
 use crate::arch::aarch64::svc_wrappers;
-use crate::platform::{DEFAULT_TIMER, DEFAULT_INTERRUPT};
-use crate::drivers::Timer;
 use crate::drivers::InterruptController;
+use crate::drivers::Timer;
+use crate::platform::{DEFAULT_INTERRUPT, DEFAULT_TIMER};
+use crate::timer;
 use core::arch::asm;
 
 unsafe fn get_esr_el1() -> usize {
-	let mut value: usize;
-	asm!("mrs {esr_el1}, esr_el1", esr_el1 = out(reg) value);
-	value
+    let mut value: usize;
+    asm!("mrs {esr_el1}, esr_el1", esr_el1 = out(reg) value);
+    value
 }
 
 unsafe fn get_far_el1() -> usize {
-	let mut value: usize;
-	asm!("mrs {far_el1}, far_el1", far_el1 = out(reg) value);
-	value
+    let mut value: usize;
+    asm!("mrs {far_el1}, far_el1", far_el1 = out(reg) value);
+    value
 }
 
 fn stringify_ec(ec: usize) -> &'static str {
-	match ec {
-		0b000000 => "unknown",
-		0b000001 => "trapped wfi/wfe",
-		0b000011 => "trapped mcr/mrc",
-		0b000100 => "trapped mcrr/mrrc",
-		0b000101 => "trapped mcr/mrc",
-		0b000110 => "trapped ldc/stc",
-		0b000111 => "floating point trap",
-		0b001010 => "trapped 64 byte load",
-		0b001100 => "trapped mrrc",
-		0b001101 => "branch target exception",
-		0b001110 => "illegal execution state",
-		0b010001 => "aarch32 svc",
-		0b010101 => "aarch64 svc",
-		0b011000 => "trapped msr/mrs",
-		0b011001 => "trapped sve instruction",
-		0b011100 => "pac failure",
-		0b100000 => "instruction abort from lower level",
-		0b100001 => "instruction abort from same level",
-		0b100010 => "pc alignment",
-		0b100100 => "data abort from lower level",
-		0b100101 => "data abort from same level",
-		0b100110 => "sp alignment",
-		0b101000 => "floating point exception (aarch32)",
-		0b101100 => "floating point exception (aarch64)",
-		0b101111 => "serror",
-		0b110000 => "breakpoint from lower level",
-		0b110001 => "breakpoint from same level",
-		0b110010 => "software step from lower level",
-		0b110011 => "software step from same level",
-		0b110100 => "watchpoint from lower level",
-		0b110101 => "watchpoint from same level",
-		0b111000 => "aarch32 bkpt",
-		0b111100 => "aarch64 brk",
-		_ => "unknown ?"
-	}
+    match ec {
+        0b000000 => "unknown",
+        0b000001 => "trapped wfi/wfe",
+        0b000011 => "trapped mcr/mrc",
+        0b000100 => "trapped mcrr/mrrc",
+        0b000101 => "trapped mcr/mrc",
+        0b000110 => "trapped ldc/stc",
+        0b000111 => "floating point trap",
+        0b001010 => "trapped 64 byte load",
+        0b001100 => "trapped mrrc",
+        0b001101 => "branch target exception",
+        0b001110 => "illegal execution state",
+        0b010001 => "aarch32 svc",
+        0b010101 => "aarch64 svc",
+        0b011000 => "trapped msr/mrs",
+        0b011001 => "trapped sve instruction",
+        0b011100 => "pac failure",
+        0b100000 => "instruction abort from lower level",
+        0b100001 => "instruction abort from same level",
+        0b100010 => "pc alignment",
+        0b100100 => "data abort from lower level",
+        0b100101 => "data abort from same level",
+        0b100110 => "sp alignment",
+        0b101000 => "floating point exception (aarch32)",
+        0b101100 => "floating point exception (aarch64)",
+        0b101111 => "serror",
+        0b110000 => "breakpoint from lower level",
+        0b110001 => "breakpoint from same level",
+        0b110010 => "software step from lower level",
+        0b110011 => "software step from same level",
+        0b110100 => "watchpoint from lower level",
+        0b110101 => "watchpoint from same level",
+        0b111000 => "aarch32 bkpt",
+        0b111100 => "aarch64 brk",
+        _ => "unknown ?",
+    }
 }
 
 fn stringify_dfsc(dfsc: usize) -> &'static str {
-	match dfsc {
+    match dfsc {
 		0b000000 => "Address size fault, level 0 of translation or translation table base register.",
 		0b000001 => "Address size fault, level 1.",
 		0b000010 => "Address size fault, level 2.",
@@ -100,7 +100,7 @@ fn stringify_dfsc(dfsc: usize) -> &'static str {
 }
 
 fn stringify_ifsc(ifsc: usize) -> &'static str {
-	match ifsc {
+    match ifsc {
 		0b000000 => "Address size fault, level 0 of translation or translation table base register.",
 		0b000001 => "Address size fault, level 1.",
 		0b000010 => "Address size fault, level 2.",
@@ -139,106 +139,126 @@ fn stringify_ifsc(ifsc: usize) -> &'static str {
 
 #[no_mangle]
 pub extern "C" fn rust_curr_el_spx_sync(ctx: &ExceptionContext) -> ! {
-	unsafe {
-		let esr = get_esr_el1();
-		let ec = (esr & (0x3f << 26)) >> 26;
-		let iss = esr & 0xffffff;
+    unsafe {
+        let esr = get_esr_el1();
+        let ec = (esr & (0x3f << 26)) >> 26;
+        let iss = esr & 0xffffff;
 
-		if ec == 0b100101 {
-			println!("Data abort!");
-		}
+        if ec == 0b100101 {
+            println!("Data abort!");
+        }
 
-		println!("Exception!!! rust_curr_el_spx_sync!\n");
-		println!("lr: {:x}, ec: {:} ({}), iss: {:x}", ctx.saved_pc, stringify_ec(ec),ec, iss);
-		println!("FAR: {:x}", get_far_el1());
+        println!("Exception!!! rust_curr_el_spx_sync!\n");
+        println!(
+            "lr: {:x}, ec: {:} ({}), iss: {:x}",
+            ctx.saved_pc,
+            stringify_ec(ec),
+            ec,
+            iss
+        );
+        println!("FAR: {:x}", get_far_el1());
 
-		// better handling of data abort
-		if ec == 0b100101 {
-			let dfsc = iss & 0x3f;
-			println!("data fault status: {}", stringify_dfsc(dfsc));
-		}
+        // better handling of data abort
+        if ec == 0b100101 {
+            let dfsc = iss & 0x3f;
+            println!("data fault status: {}", stringify_dfsc(dfsc));
+        }
 
-	    loop {}
-	}
+        loop {}
+    }
 }
 
 #[no_mangle]
 pub extern "C" fn rust_lower_el_spx_sync(ctx: &mut ExceptionContext) {
-	unsafe {
-		let esr = get_esr_el1();
-		let ec = (esr & (0x3f << 26)) >> 26;
-		let iss = esr & 0xffffff;
+    unsafe {
+        let esr = get_esr_el1();
+        let ec = (esr & (0x3f << 26)) >> 26;
+        let iss = esr & 0xffffff;
 
-		// 0b010101 SVC instruction execution in AArch64 state.
-		if ec == 0b010101 {
-			if iss < svc_wrappers::SVC_HANDLERS.len() {
-				svc_wrappers::SVC_HANDLERS[iss](ctx);
-			} else {
-				panic!("Invalid SVC!");
-			}
-		} else {
-			println!("Exception!!! rust_lower_el_spx_sync!\n");
-			println!("pc: {:x}, ec: {:} ({}), iss: {:x}", ctx.saved_pc, stringify_ec(ec), ec, iss);
-			println!("FAR: {:x}", get_far_el1());
-			
-			println!("LR: {:x}", ctx.regs[30]);
+        // 0b010101 SVC instruction execution in AArch64 state.
+        if ec == 0b010101 {
+            if iss < svc_wrappers::SVC_HANDLERS.len() {
+                svc_wrappers::SVC_HANDLERS[iss](ctx);
+            } else {
+                panic!("Invalid SVC!");
+            }
+        } else {
+            println!("Exception!!! rust_lower_el_spx_sync!\n");
+            println!(
+                "pc: {:x}, ec: {:} ({}), iss: {:x}",
+                ctx.saved_pc,
+                stringify_ec(ec),
+                ec,
+                iss
+            );
+            println!("FAR: {:x}", get_far_el1());
 
-			// better handling of data abort
-			if ec == 0b100100 {
-				let dfsc = iss & 0x3f;
-				println!("data fault status: {}", stringify_dfsc(dfsc));
+            println!("LR: {:x}", ctx.regs[30]);
 
-				let current_process = crate::scheduler::get_current_process();
-				let proc_locked = current_process.lock();
-				println!("?? {:?}", proc_locked.address_space.page_table.virt_to_phys(get_far_el1()));
-			} else if ec == 0b100000 { // instruction abort
-				let ifsc = iss & 0x3f;
-				println!("instruction fault status: {}", stringify_ifsc(ifsc));
-			}
+            // better handling of data abort
+            if ec == 0b100100 {
+                let dfsc = iss & 0x3f;
+                println!("data fault status: {}", stringify_dfsc(dfsc));
 
-			loop {}
-		}
-	}
+                let current_process = crate::scheduler::get_current_process();
+                let proc_locked = current_process.lock();
+                println!(
+                    "?? {:?}",
+                    proc_locked
+                        .address_space
+                        .page_table
+                        .virt_to_phys(get_far_el1())
+                );
+            } else if ec == 0b100000 {
+                // instruction abort
+                let ifsc = iss & 0x3f;
+                println!("instruction fault status: {}", stringify_ifsc(ifsc));
+            }
+
+            loop {}
+        }
+    }
 }
 
 #[no_mangle]
 pub extern "C" fn rust_lower_el_aarch64_irq(_ctx: &mut ExceptionContext) {
-	// we know it's an interrupt
-	// which one?
-	// for now, just ack timer
+    // we know it's an interrupt
+    // which one?
+    // for now, just ack timer
 
-	{
-		let mut timer_lock = DEFAULT_TIMER.lock();
-		timer_lock.reset_timer();
-	}
+    {
+        let mut timer_lock = DEFAULT_TIMER.lock();
+        timer_lock.reset_timer();
+    }
 
-	let timer_irq = 16 + 14;
-	{ DEFAULT_INTERRUPT.lock().ack_interrupt(timer_irq); }
+    let timer_irq = 16 + 14;
+    {
+        DEFAULT_INTERRUPT.lock().ack_interrupt(timer_irq);
+    }
 
-	timer::tick();
+    timer::tick();
 }
 
-
 unsafe fn get_daif() -> usize {
-	let mut value: usize;
-	asm!("mrs {daif}, daif", daif = out(reg) value);
-	value
+    let mut value: usize;
+    asm!("mrs {daif}, daif", daif = out(reg) value);
+    value
 }
 
 unsafe fn set_daif(value: usize) {
-	asm!("msr daif, {daif}", daif = in(reg) value);
+    asm!("msr daif, {daif}", daif = in(reg) value);
 }
 
 pub fn enable_interrupts() {
-	unsafe {
-		const DAIF_I: usize = 1<<7;
-		set_daif(get_daif() & !DAIF_I);
-	}
+    unsafe {
+        const DAIF_I: usize = 1 << 7;
+        set_daif(get_daif() & !DAIF_I);
+    }
 }
 
 pub fn disable_interrupts() {
-	unsafe {
-		const DAIF_I: usize = 1<<7;
-		set_daif(get_daif() | DAIF_I);
-	}
+    unsafe {
+        const DAIF_I: usize = 1 << 7;
+        set_daif(get_daif() | DAIF_I);
+    }
 }

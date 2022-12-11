@@ -1,13 +1,13 @@
-pub mod msr;
-pub mod context;
-pub mod mmu;
 pub mod cache;
+pub mod context;
 pub mod gdt;
-mod interrupt_handlers;
 pub mod idt;
-pub mod syscall;
-pub mod svc_wrappers;
+mod interrupt_handlers;
 pub mod io_port;
+pub mod mmu;
+pub mod msr;
+pub mod svc_wrappers;
+pub mod syscall;
 
 use core::arch::global_asm;
 global_asm!(include_str!("asm/stack.s"));
