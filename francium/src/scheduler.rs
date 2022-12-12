@@ -259,7 +259,7 @@ unsafe fn idle_thread_func() {
 // why 2? https://github.com/rust-lang/rust/issues/94426
 #[naked]
 #[cfg(target_arch = "x86_64")]
-unsafe fn idle_thread_func() {
+unsafe extern "C" fn idle_thread_func() {
     core::arch::asm!("2: hlt; jmp 2b", options(noreturn));
 }
 

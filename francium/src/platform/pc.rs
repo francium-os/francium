@@ -11,7 +11,7 @@ pub const PHYS_MEM_BASE: usize = 0;
 pub const PHYS_MEM_SIZE: usize = 0x80000000; // 2gb?? for now
 
 unsafe fn turn_on_floating_point() {
-    core::arch::asm!(
+    asm!(
         "
 		mov rax, cr0
 		and ax, 0xFFFB

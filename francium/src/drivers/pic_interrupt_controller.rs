@@ -1,7 +1,5 @@
 use crate::arch::x86_64::io_port::{inb, io_wait, outb};
 use crate::drivers::InterruptController;
-use crate::drivers::Timer;
-use core::arch::asm;
 
 const PIC1_COMMAND: u16 = 0x20;
 const PIC2_COMMAND: u16 = 0xa0;
@@ -12,16 +10,16 @@ const PIC2_DATA: u16 = PIC2_COMMAND + 1;
 const PIC_CMD_EOI: u8 = 0x20;
 
 const ICW1_ICW4: u8 = 0x01; /* ICW4 (not) needed */
-const ICW1_SINGLE: u8 = 0x02; /* Single (cascade) mode */
-const ICW1_INTERVAL4: u8 = 0x04; /* Call address interval 4 (8) */
-const ICW1_LEVEL: u8 = 0x08; /* Level triggered (edge) mode */
+//const ICW1_SINGLE: u8 = 0x02; /* Single (cascade) mode */
+//const ICW1_INTERVAL4: u8 = 0x04; /* Call address interval 4 (8) */
+//const ICW1_LEVEL: u8 = 0x08; /* Level triggered (edge) mode */
 const ICW1_INIT: u8 = 0x10; /* Initialization - required! */
 
 const ICW4_8086: u8 = 0x01; /* 8086/88 (MCS-80/85) mode */
-const ICW4_AUTO: u8 = 0x02; /* Auto (normal) EOI */
-const ICW4_BUF_SLAVE: u8 = 0x08; /* Buffered mode/slave */
-const ICW4_BUF_MASTER: u8 = 0x0C; /* Buffered mode/master */
-const ICW4_SFNM: u8 = 0x10; /* Special fully nested (not) */
+//const ICW4_AUTO: u8 = 0x02; /* Auto (normal) EOI */
+//const ICW4_BUF_SLAVE: u8 = 0x08; /* Buffered mode/slave */
+//const ICW4_BUF_MASTER: u8 = 0x0C; /* Buffered mode/master */
+//const ICW4_SFNM: u8 = 0x10; /* Special fully nested (not) */
 
 fn pic_send_eoi(interrupt: u8) {
     if interrupt >= 8 {
