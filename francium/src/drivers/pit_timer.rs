@@ -3,12 +3,14 @@ use core::arch::asm;
 
 pub struct PIT {
     reload_value: u16,
+    period_ns: u64,
+    counter: u64,
 }
 
 impl PIT {
     pub fn new() -> PIT {
         // etc
-        PIT { reload_value: 0 }
+        PIT { counter: 0, period_ns: 0, reload_value: 0 }
     }
 }
 
@@ -53,8 +55,13 @@ fn write_data_reg(channel: u8, value: u8) {
 impl Timer for PIT {
     fn init(&mut self) {}
 
+    fn tick(&mut self) {
+        self.counter += self.period_ns;
+    }
+
     fn set_period_us(&mut self, us: u64) {
         // PIT ticks at 1.193182 mhz
+        self.period_ns = us*1000;
         self.reload_value = ((us * 1193182) / 1000000) as u16;
         println!("reload = {} {}", us, self.reload_value);
     }
@@ -70,8 +77,6 @@ impl Timer for PIT {
     }
 
     fn get_counter_ns(&self) -> u64 {
-        // hm
-        println!("We need a free running timer!");
-        0
+        self.counter
     }
 }

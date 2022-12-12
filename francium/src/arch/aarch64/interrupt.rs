@@ -228,6 +228,7 @@ pub extern "C" fn rust_lower_el_aarch64_irq(_ctx: &mut ExceptionContext) {
 
     {
         let mut timer_lock = DEFAULT_TIMER.lock();
+        timer_lock.tick();
         timer_lock.reset_timer();
     }
 

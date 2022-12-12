@@ -1,5 +1,7 @@
 use crate::arch::context::ExceptionContext;
 use crate::drivers::InterruptController;
+use crate::drivers::Timer;
+use crate::platform::DEFAULT_TIMER;
 use crate::platform::DEFAULT_INTERRUPT;
 use core::arch::{asm, global_asm};
 
@@ -315,9 +317,13 @@ unsafe extern "C" fn handle_exception(
             if irq_number == 7 {
                 // todo spurious irq handling
             } else if irq_number == 0 {
-                println!("IRQ0!");
                 {
                     DEFAULT_INTERRUPT.lock().ack_interrupt(0);
+                }
+
+                {
+                    let mut timer_lock = DEFAULT_TIMER.lock();
+                    timer_lock.tick();
                 }
 
                 crate::timer::tick();
@@ -339,5 +345,4 @@ unsafe extern "C" fn handle_exception(
             panic!("Unhandled interrupt {:?}", interrupt_number);
         }
     }
-    println!("IRQ return!");
 }

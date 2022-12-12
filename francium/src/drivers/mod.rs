@@ -7,6 +7,7 @@ pub trait InterruptController {
 
 pub trait Timer {
     fn init(&mut self);
+    fn tick(&mut self);
     fn set_period_us(&mut self, n: u64);
     fn reset_timer(&mut self);
     fn enable_timer(&mut self);

@@ -36,6 +36,8 @@ unsafe fn set_cntp_ctl_el0(value: u64) {
 impl Timer for ArchTimer {
     fn init(&mut self) {}
 
+    fn tick(&mut self) {}
+
     fn set_period_us(&mut self, us: u64) {
         unsafe {
             // TODO: properly do this somehow, or at least with more precision
