@@ -67,7 +67,7 @@ pub fn setup_thread_context(
 
         exc_context.regs.rsp = usermode_sp;
         exc_context.regs.rip = usermode_pc;
-	// XXX todo make these constants REALLY
+        // XXX todo make these constants REALLY
         if is_kernel {
             exc_context.regs.cs = 0x08;
             exc_context.regs.ss = 0x10;

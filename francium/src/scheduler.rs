@@ -280,7 +280,12 @@ pub fn init() {
         .state
         .store(ThreadState::Suspended, Ordering::Release);
 
-    crate::init::setup_thread_context(&idle_thread, idle_thread_func as usize, idle_thread.kernel_stack_top, true);
+    crate::init::setup_thread_context(
+        &idle_thread,
+        idle_thread_func as usize,
+        idle_thread.kernel_stack_top,
+        true,
+    );
 
     sched.threads.push_back(idle_thread.clone());
     sched.set_idle_thread(idle_thread);

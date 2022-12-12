@@ -61,7 +61,6 @@ impl GDTEntry {
 static mut GDT_ENTRIES: [GDTEntry; 8] = [
     // 0x0
     GDTEntry::null(),
-
     // 0x08 - Kernel code
     GDTEntry::new(0, 0xfffff, (1 << 7) | (1 << 4) | (1 << 3) | (1 << 1), true),
     // 0x10 - Kernel data

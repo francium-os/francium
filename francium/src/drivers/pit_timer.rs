@@ -10,7 +10,11 @@ pub struct PIT {
 impl PIT {
     pub fn new() -> PIT {
         // etc
-        PIT { counter: 0, period_ns: 0, reload_value: 0 }
+        PIT {
+            counter: 0,
+            period_ns: 0,
+            reload_value: 0,
+        }
     }
 }
 
@@ -46,10 +50,9 @@ fn write_data_reg(channel: u8, value: u8) {
 }
 
 fn write_data_reg_u16(channel: u8, value: u16) {
-    write_data_reg(channel, (value&0xff) as u8);
-    write_data_reg(channel, ((value&0xff00) >> 8) as u8);
+    write_data_reg(channel, (value & 0xff) as u8);
+    write_data_reg(channel, ((value & 0xff00) >> 8) as u8);
 }
-
 
 impl Timer for PIT {
     fn init(&mut self) {}
@@ -60,7 +63,7 @@ impl Timer for PIT {
 
     fn set_period_us(&mut self, us: u64) {
         // PIT ticks at 1.193182 mhz
-        self.period_ns = us*1000;
+        self.period_ns = us * 1000;
         self.reload_value = ((us * 1193182) / 1000000) as u16;
         println!("reload = {} {}", us, self.reload_value);
     }

@@ -1,8 +1,8 @@
 use crate::arch::context::ExceptionContext;
 use crate::drivers::InterruptController;
 use crate::drivers::Timer;
-use crate::platform::DEFAULT_TIMER;
 use crate::platform::DEFAULT_INTERRUPT;
+use crate::platform::DEFAULT_TIMER;
 use core::arch::{asm, global_asm};
 
 macro_rules! interrupt_noerror {
@@ -61,7 +61,8 @@ macro_rules! irq_handler {
     };
 }
 
-global_asm!("
+global_asm!(
+    "
 .global exception_error
 .global exception_no_error
 .global restore_exception_context
