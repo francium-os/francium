@@ -1,4 +1,4 @@
-use crate::arch::{aarch64, arch_timer::ArchTimer, gicv2::GICv2};
+use crate::arch::{arch_timer::ArchTimer, gicv2::GICv2};
 use crate::constants;
 use crate::drivers::pl011_uart::Pl011Uart;
 use crate::drivers::InterruptController;

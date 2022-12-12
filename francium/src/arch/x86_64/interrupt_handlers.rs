@@ -59,8 +59,7 @@ macro_rules! irq_handler {
     };
 }
 
-global_asm!(
-    "
+global_asm!("
 .global exception_error
 .global exception_no_error
 .global restore_exception_context
@@ -340,5 +339,5 @@ unsafe extern "C" fn handle_exception(
             panic!("Unhandled interrupt {:?}", interrupt_number);
         }
     }
-    println!("Wut {:x}", ctx.regs.cs);
+    println!("IRQ return!");
 }

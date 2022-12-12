@@ -15,9 +15,9 @@ struct GDTEntry {
 }
 
 #[repr(C, packed)]
-struct TSS {
+pub struct TSS {
     reserved_0: u32,
-    rsp0: u64,
+    pub rsp0: u64,
     rsp1: u64,
     rsp2: u64,
     reserved_1: u64,
@@ -58,29 +58,31 @@ impl GDTEntry {
     }
 }
 
-static mut GDT_ENTRIES: [GDTEntry; 7] = [
+static mut GDT_ENTRIES: [GDTEntry; 8] = [
+    // 0x0
     GDTEntry::null(),
-    // XXX: make proper bitfields!!
 
-    // Kernel code
+    // 0x08 - Kernel code
     GDTEntry::new(0, 0xfffff, (1 << 7) | (1 << 4) | (1 << 3) | (1 << 1), true),
-    // Kernel data
+    // 0x10 - Kernel data
     GDTEntry::new(0, 0xfffff, (1 << 7) | (1 << 4) | (1 << 1), false),
-    // User code
+    // 0x18 - User code (32 bit, placeholder)
+    GDTEntry::null(),
+    // 0x20 - User data
+    GDTEntry::new(0, 0xfffff, (1 << 7) | (3 << 5) | (1 << 4) | (1 << 1), false),
+    // 0x28 - User code (64 bit)
     GDTEntry::new(
         0,
         0xfffff,
         (1 << 7) | (3 << 5) | (1 << 4) | (1 << 3) | (1 << 1),
         true,
     ),
-    // User data
-    GDTEntry::new(0, 0xfffff, (1 << 7) | (3 << 5) | (1 << 4) | (1 << 1), false),
-    // TSS??
+    // 0x30 - TSS
     GDTEntry::null(),
     GDTEntry::null(),
 ];
 
-static mut TSS_STORAGE: TSS = TSS {
+pub static mut TSS_STORAGE: TSS = TSS {
     reserved_0: 0,
     rsp0: 0,
     rsp1: 0,
@@ -96,13 +98,17 @@ extern "C" {
     static interrupt_stack_top: i32;
 }
 
+pub fn set_ist() {
+    // tec
+}
+
 pub fn setup_gdt() {
     unsafe {
         // setup tss
         let tss_location = &TSS_STORAGE as *const TSS as usize;
         let limit = core::mem::size_of::<TSS>() - 1;
 
-        GDT_ENTRIES[5] = GDTEntry {
+        GDT_ENTRIES[6] = GDTEntry {
             limit_low: (limit & 0xffff) as u16,
             base_low: (tss_location & 0xffff) as u16,
             base_middle: ((tss_location & 0xff0000) >> 16) as u8,
@@ -111,7 +117,7 @@ pub fn setup_gdt() {
             base_high: ((tss_location & 0xff000000) >> 24) as u8,
         };
 
-        GDT_ENTRIES[6] = GDTEntry {
+        GDT_ENTRIES[7] = GDTEntry {
             limit_low: ((tss_location & 0x0000ffff00000000) >> 32) as u16,
             base_low: ((tss_location & 0xffff000000000000) >> 48) as u16,
             base_middle: 0,
@@ -128,13 +134,13 @@ pub fn setup_gdt() {
         let gdtr_loc = &gdtr as *const GDTR as usize;
 
         core::arch::asm!("lgdt [{gdtr_loc}]", gdtr_loc = in (reg) (gdtr_loc));
-        core::arch::asm!("mov ax, 0x2b; ltr ax");
+        core::arch::asm!("mov ax, 0x33; ltr ax");
 
         TSS_STORAGE.rsp0 = &interrupt_stack_top as *const i32 as u64;
         TSS_STORAGE.rsp1 = 0xaaaaaaaaaaaaaaaa;
         TSS_STORAGE.rsp2 = 0xaaaaaaaaaaaaaaaa;
 
-        TSS_STORAGE.ist[0] = &interrupt_stack_top as *const i32 as u64;
+        TSS_STORAGE.ist[0] = 0xaaaaaaaaaaaaaaaa;
         TSS_STORAGE.ist[1] = 0xaaaaaaaaaaaaaaaa;
         TSS_STORAGE.ist[2] = 0xaaaaaaaaaaaaaaaa;
         TSS_STORAGE.ist[3] = 0xaaaaaaaaaaaaaaaa;
