@@ -71,9 +71,13 @@ pub fn setup_thread_context(
         if is_kernel {
             exc_context.regs.cs = 0x08;
             exc_context.regs.ss = 0x10;
+            context_locked.regs.cs = 0x08;
+            context_locked.regs.ss = 0x10;
         } else {
             exc_context.regs.cs = 0x28 | 3;
             exc_context.regs.ss = 0x20 | 3;
+            context_locked.regs.cs = 0x28 | 3;
+            context_locked.regs.ss = 0x20 | 3;
         }
 
         exc_context.regs.eflags = 1 << 9; // enable interrupt flag
