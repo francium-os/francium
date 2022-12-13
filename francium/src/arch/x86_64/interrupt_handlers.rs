@@ -342,6 +342,7 @@ unsafe extern "C" fn handle_exception(
                 "Current process: {}",
                 crate::scheduler::get_current_process().lock().name
             );
+            println!("error_code: {}", error_code);
             println!("register dump:\n{:?}", ctx.regs);
             panic!("Unhandled interrupt {:?}", interrupt_number);
         }

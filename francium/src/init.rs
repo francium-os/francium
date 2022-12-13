@@ -275,7 +275,6 @@ pub fn load_process(elf_buf: &[u8], name: &'static str) -> Arc<Thread> {
             //assert!(auxv + strings_len + 8 == new_stack);
         }
 
-        println!("Making new thread");
         let new_thread = Thread::new(arc.clone());
         setup_thread_context(&new_thread, user_code_base, auxv_base, false);
         return new_thread;

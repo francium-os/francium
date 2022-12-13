@@ -226,7 +226,6 @@ impl Scheduler {
             thread.state.store(ThreadState::Runnable, Ordering::Release);
             // set x0 of the thread context
             set_thread_context_tag(thread, tag);
-            println!("Wake thread {}", thread.id);
             self.runnable_threads.push_back(thread.clone());
 
         // TODO: I tried to add an optimization to immediately suspend the idle thread if its running.

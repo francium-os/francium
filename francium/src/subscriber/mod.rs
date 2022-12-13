@@ -54,8 +54,8 @@ impl Subscriber for LogSubscriber {
 
     fn event(&self, event: &Event<'_>) {
         //println!("Event {:?}", event);
-        event.record(&mut PrintVisitor {});
-        println!();
+        //event.record(&mut PrintVisitor {});
+        //println!();
     }
 
     fn enter(&self, _: &Id) {

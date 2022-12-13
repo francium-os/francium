@@ -65,7 +65,6 @@ impl Timer for PIT {
         // PIT ticks at 1.193182 mhz
         self.period_ns = us * 1000;
         self.reload_value = ((us * 1193182) / 1000000) as u16;
-        println!("reload = {} {}", us, self.reload_value);
     }
 
     fn reset_timer(&mut self) {

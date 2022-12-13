@@ -45,7 +45,8 @@ pub fn svc_futex_wake(addr: usize) -> ResultCode {
             x.signal_one();
         }
         None => {
-            println!("No futex!");
+            // TODO: what do we do? currently nothing
+            //println!("No futex!");
         }
     }
 
