@@ -64,6 +64,8 @@ fn bootloader_main_thunk(info: &'static mut bootloader::BootInfo) -> ! {
     bootloader_main(info);
 }
 
+static mut RSDP_ADDRESS: Option<u64> = None;
+
 #[cfg(feature = "platform_pc")]
 fn bootloader_main(info: &'static mut bootloader::BootInfo) -> ! {
     platform::platform_specific_init();
@@ -80,6 +82,12 @@ fn bootloader_main(info: &'static mut bootloader::BootInfo) -> ! {
     arch::gdt::setup_gdt();
     arch::idt::setup_idt();
     arch::syscall::setup_syscall();
+
+    /* Be careful - bootloader memory mappings are clobbered when we switch. */
+    unsafe {
+        //FRAMEBUFFER = info.framebuffer;
+        RSDP_ADDRESS = info.rsdp_addr.into_option();
+    }
 
     println!("hello from rust before enabling mmu!");
     mmu::enable_mmu();

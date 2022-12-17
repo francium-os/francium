@@ -135,6 +135,11 @@ unsafe extern "C" fn syscall_wrapper_bodge(key: u32, addr: usize) -> usize {
 
             0
         }
+        common::constants::GET_ACPI_BASE => {
+            unsafe {
+                crate::RSDP_ADDRESS.unwrap() as usize
+            }
+        }
         _ => {
             panic!("unknown syscall_bodge key!");
         }
