@@ -16,6 +16,7 @@
 .global syscall_create_thread
 .global syscall_futex_wait
 .global syscall_futex_wake
+.global syscall_map_device_memory
 
 .section .text
 
@@ -146,4 +147,13 @@ ret
 syscall_futex_wake:
 mov eax, 0x12
 syscall
+ret
+
+syscall_map_device_memory:
+push rbx
+mov eax, 0x13
+mov rbx, r8
+syscall
+mov [rbx], rdx
+pop rbx
 ret

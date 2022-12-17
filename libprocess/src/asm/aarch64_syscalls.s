@@ -14,6 +14,7 @@
 .global syscall_create_thread
 .global syscall_futex_wait
 .global syscall_futex_wake
+.global syscall_map_device_memory
 .global get_tpidr_el0_asm
 
 .section .text
@@ -102,6 +103,12 @@ ret
 
 syscall_futex_wake:
 svc #0x12
+ret
+
+syscall_map_device_memory:
+mov x9, x4
+svc #0x13
+str x1, [x9]
 ret
 
 get_tpidr_el0_asm:

@@ -28,6 +28,13 @@ extern "C" {
     pub fn syscall_sleep_ns(ns: u64);
     pub fn syscall_bodge(key: u32, addr: usize) -> usize;
     pub fn syscall_get_thread_id() -> u64;
+    pub fn syscall_map_device_memory(
+        phys_addr: usize,
+        virt_addr: usize,
+        length: usize,
+        permission: u32,
+        address_out: *mut usize,
+    ) -> ResultCode;
 }
 
 pub fn print(s: &str) {
@@ -179,6 +186,18 @@ pub fn bodge(key: u32, addr: usize) -> usize {
 
 pub fn get_thread_id() -> u64 {
     unsafe { syscall_get_process_id() }
+}
+
+pub fn map_device_memory(phys_addr: usize, virt_addr: usize, length: usize, permission: u32) -> Result<usize, OSError> {
+    unsafe {
+        let mut address_out: usize = 0;
+        let res = syscall_map_device_memory(phys_addr, virt_addr, length, permission, &mut address_out);
+        if res == RESULT_OK {
+            Ok(address_out)
+        } else {
+            Err(OSError::from_result_code(res))
+        }
+    }
 }
 
 use core::arch::global_asm;

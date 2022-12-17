@@ -1,5 +1,6 @@
 use crate::{scheduler, svc};
 use core::arch::global_asm;
+use crate::mmu::PhysAddr;
 
 // The System V ABI returns 128 bit values in rax:rdx.
 // God help me if I need three return values.
@@ -163,6 +164,15 @@ unsafe extern "C" fn syscall_wrapper_futex_wake(addr: usize) -> u32 {
     svc::svc_futex_wake(addr).0
 }
 
+#[no_mangle]
+unsafe extern "C" fn syscall_wrapper_map_device_memory(phys_addr: PhysAddr, virt_addr: usize, length: usize, permission: u32) -> Pair {
+    let (res, out) = svc::svc_map_device_memory(phys_addr, virt_addr, length, permission);
+    Pair {
+        a: res.0 as usize,
+        b: out as usize,
+    }
+}
+
 // Rust complains loudly about this. As it should.
 global_asm!(
     "
@@ -187,6 +197,7 @@ syscall_wrappers:
 .quad syscall_wrapper_create_thread
 .quad syscall_wrapper_futex_wait
 .quad syscall_wrapper_futex_wake
+.quad syscall_wrapper_map_device_memory
 .quad syscall_wrapper_break
 "
 );
