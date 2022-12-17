@@ -340,12 +340,13 @@ pub fn terminate_current_process() {
     let current_process = current_thread.process.clone();
     let process = current_process.lock();
 
-    let cursor = process.threads.front();
+    let mut cursor = process.threads.front();
     while !cursor.is_null() {
         let thread = cursor.get().unwrap();
         if thread.id != current_thread.id {
             sched.suspend(&cursor.clone_pointer().unwrap());
         }
+        cursor.move_next();
     }
 
     sched.terminate_current_thread();
