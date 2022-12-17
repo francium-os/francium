@@ -18,6 +18,7 @@ francium = target/$(target)-kernel/release/francium_$(board)
 sm = target/$(target)-user/release/sm
 fs = target/$(target)-user/release/fs
 test = target/$(target)-user/release/test
+pcie = target/$(target)-user/release/pcie
 bootimg = target/x86_64-unknown-francium-kernel/release/boot-bios-francium_pc.img
 
 ifeq ($(arch), aarch64)
@@ -26,16 +27,16 @@ gdb=aarch64-unknown-francium-gdb
 qemu_args=-M virt,gic-version=2 -cpu cortex-a53 -kernel $(francium) -serial stdio -m 2048
 else ifeq ($(arch), x86_64)
 target=x86_64-unknown-francium
-qemu_args=-drive format=raw,file=$(bootimg) -serial stdio -m 2048 -no-reboot -enable-kvm
+qemu_args=-drive format=raw,file=$(bootimg),if=none,id=nvme -device nvme,serial=fee1dead,drive=nvme -serial stdio -m 2048 -no-reboot -enable-kvm
 gdb=rust-gdb
 endif
 
 CARGO_FLAGS = -Zbuild-std=core,alloc,compiler_builtins -Zbuild-std-features=compiler-builtins-mem
 
-.PHONY: qemu gdb bochs $(francium) $(bootimg) $(fs) $(sm) $(test) clean clean-user clean-kernel
+.PHONY: qemu gdb bochs $(francium) $(bootimg) $(fs) $(sm) $(test) $(pcie) clean clean-user clean-kernel
 
 all: $(francium) $(if $(filter $(board),raspi4), kernel8.bin)
-$(francium): $(fs) $(sm) $(test)
+$(francium): $(fs) $(sm) $(test) $(pcie)
 	$(CARGO) build $(CARGO_FLAGS) --package=francium --release --features=platform_$(board) --target=targets/$(target)-kernel.json
 
 $(bootimg): $(francium)
@@ -54,6 +55,9 @@ $(sm):
 
 $(test):
 	$(CARGO) build --package=test --release --target=$(target)
+
+$(pcie):
+	$(CARGO) build --package=pcie --release --target=$(target)
 
 qemu: $(francium) $(if $(filter $(board),pc), $(bootimg))
 	qemu-system-$(arch) $(qemu_args) -s

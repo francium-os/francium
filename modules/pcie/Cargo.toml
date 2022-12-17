@@ -1,0 +1,18 @@
+[package]
+name = "pcie"
+version = "0.1.0"
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+async-broadcast = "0.4.1"
+async-trait = "0.1.57"
+hashbrown = "0.12.3"
+"process" = { path = "../../libprocess" }
+"common" = { path = "../../libcommon" }
+tokio = { version = "1.21.2", features = ["rt", "rt-multi-thread", "macros"] }
+
+
+[build-dependencies]
+"ipc-gen-buildtime" = { path = "../../ipc-gen-buildtime" }
