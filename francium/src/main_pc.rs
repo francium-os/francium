@@ -37,12 +37,12 @@ pub mod timer;
 pub mod waitable;
 
 pub mod init;
-
 pub mod subscriber;
+pub mod acpi;
 
 use crate::constants::*;
 use crate::memory::KERNEL_ADDRESS_SPACE;
-use crate::mmu::PagePermission;
+use crate::mmu::{PhysAddr, PagePermission};
 
 extern "C" {
     fn switch_stacks();
@@ -69,6 +69,8 @@ static mut RSDP_ADDRESS: Option<u64> = None;
 #[cfg(feature = "platform_pc")]
 fn bootloader_main(info: &'static mut bootloader::BootInfo) -> ! {
     platform::platform_specific_init();
+
+    let rsdp_addr = info.rsdp_addr.into_option().unwrap();
 
     for m in info.memory_regions.iter() {
         if m.kind == bootloader::boot_info::MemoryRegionKind::Usable {
@@ -101,6 +103,17 @@ fn bootloader_main(info: &'static mut bootloader::BootInfo) -> ! {
             KERNEL_HEAP_INITIAL_SIZE,
             PagePermission::KERNEL_READ_WRITE,
         );
+    }
+
+    let rsdp_phys = PhysAddr(rsdp_addr as usize);
+    let rsdp = acpi::parse_rsdp(rsdp_phys);
+    match rsdp {
+        acpi::RSDP::Normal(rsdp) => {
+            let rsdt = acpi::parse_rsdt(PhysAddr(rsdp.rsdt_address as usize));
+        },
+        acpi::RSDP::Extended(xsdp) => {
+            unimplemented!();
+        }
     }
 
     subscriber::init();
