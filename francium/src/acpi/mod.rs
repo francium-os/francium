@@ -89,9 +89,9 @@ pub fn parse_rsdt(phys: PhysAddr) -> TableHeader {
 			let virt = mmu::phys_to_virt(PhysAddr(table_location as usize));
 
 			match &inner_header.signature {
-				b"MCFG" => {
+				/*b"MCFG" => {
 					parse_mcfg(virt + HEADER_SIZE, inner_header.length as usize - HEADER_SIZE);
-				}
+				}*/
 				_ => {
 					println!("Unhandled table {:?}!", inner_header.signature);
 				}
@@ -101,30 +101,5 @@ pub fn parse_rsdt(phys: PhysAddr) -> TableHeader {
 			//println!("{:x}", inner_len as usize - HEADER_SIZE - 8);
 		}
 		header
-	}
-}
-
-#[derive(Copy, Clone)]
-struct PCIEBus {
-	ecam_base: u64,
-	pcie_group: u16,
-	bus_start: u8,
-	bus_end: u8,
-	reserved: u32
-}
-const PCIEBUS_SIZE: usize = core::mem::size_of::<PCIEBus>();
-
-pub fn parse_mcfg(virt: usize, length: usize) {
-	let table_descriptors: *const PCIEBus = (virt + 8) as *const PCIEBus;
-	let num_buses = (length-8) / PCIEBUS_SIZE;
-
-	unsafe {
-		for i in 0..num_buses {
-			let descriptor = table_descriptors.add(i);
-			println!("ECAM base: {:x}", (*descriptor).ecam_base);
-			println!("for buses {:x} to {:x}", (*descriptor).bus_start, (*descriptor).bus_end);
-
-			//PCIE_BUSES.push(*descriptor);
-		}
 	}
 }

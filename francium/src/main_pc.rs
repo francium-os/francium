@@ -69,10 +69,10 @@ static mut RSDP_ADDRESS: Option<u64> = None;
 #[cfg(feature = "platform_pc")]
 fn bootloader_main(info: &'static mut bootloader::BootInfo) -> ! {
     platform::platform_specific_init();
-
     let rsdp_addr = info.rsdp_addr.into_option().unwrap();
 
     for m in info.memory_regions.iter() {
+        println!("{:x?}", m);
         if m.kind == bootloader::boot_info::MemoryRegionKind::Usable {
             println!("using {:?} for memory", m);
             init::setup_physical_allocator(m.start as usize, m.end as usize);

@@ -107,8 +107,14 @@ fn syscall_wrapper_map_device_memory(ctx: &mut ExceptionContext) {
     ctx.regs[1] = out as usize;
 }
 
+fn syscall_wrapper_get_system_info(ctx: &mut ExceptionContext) {
+    /* ty: usize, index: usize, out_ptr: *const usize */
+    let res = svc::svc_get_system_info(ctx.regs[0], ctx.regs[1], ctx.regs[2] as *const usize);
+    ctx.regs[0] = res.0 as usize;
+}
+
 type SVCHandler = fn(&mut ExceptionContext);
-pub const SVC_HANDLERS: [SVCHandler; 20] = [
+pub const SVC_HANDLERS: [SVCHandler; 21] = [
     syscall_wrapper_break,
     syscall_wrapper_debug_output,
     syscall_wrapper_create_port,
@@ -128,5 +134,6 @@ pub const SVC_HANDLERS: [SVCHandler; 20] = [
     syscall_wrapper_create_thread,
     syscall_wrapper_futex_wait,
     syscall_wrapper_futex_wake,
-    syscall_wrapper_map_device_memory
+    syscall_wrapper_map_device_memory,
+    syscall_wrapper_get_system_info
 ];

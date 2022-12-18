@@ -1,3 +1,4 @@
+use common::system_info::*;
 use common::os_error::{OSError, ResultCode, RESULT_OK};
 use common::{Handle, INVALID_HANDLE};
 use core::cmp::min;
@@ -34,6 +35,12 @@ extern "C" {
         length: usize,
         permission: u32,
         address_out: *mut usize,
+    ) -> ResultCode;
+
+    pub fn syscall_get_system_info(
+        ty: usize,
+        index: usize,
+        info_out: *mut usize
     ) -> ResultCode;
 }
 
@@ -199,6 +206,22 @@ pub fn map_device_memory(phys_addr: usize, virt_addr: usize, length: usize, perm
         }
     }
 }
+
+pub fn get_system_info(ty: SystemInfoType, index: usize) -> Result<SystemInfo, OSError> {
+    unimplemented!();
+    /*unsafe {
+        let mut address_out: usize = 0;
+
+        let output: SystemInfo;
+        let res = syscall_get_system_info(ty as usize, index, &mut output);
+        if res == RESULT_OK {
+            Ok(output)
+        } else {
+            Err(OSError::from_result_code(res))
+        }
+    }*/
+}
+
 
 use core::arch::global_asm;
 #[cfg(target_arch = "x86_64")]

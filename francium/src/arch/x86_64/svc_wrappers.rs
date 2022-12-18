@@ -178,9 +178,14 @@ unsafe extern "C" fn syscall_wrapper_map_device_memory(phys_addr: PhysAddr, virt
     }
 }
 
+#[no_mangle]
+unsafe extern "C" fn syscall_get_system_info(ty: usize, index: usize, out_ptr: *const usize) -> u32 {
+    let res = svc::svc_get_system_info(ty, index, out_ptr);
+    res.0 as u32
+}
+
 // Rust complains loudly about this. As it should.
-global_asm!(
-    "
+global_asm!("
 .global syscall_wrappers
 syscall_wrappers:
 .quad syscall_wrapper_break
@@ -203,6 +208,7 @@ syscall_wrappers:
 .quad syscall_wrapper_futex_wait
 .quad syscall_wrapper_futex_wake
 .quad syscall_wrapper_map_device_memory
+.quad syscall_get_system_info
 .quad syscall_wrapper_break
 "
 );
