@@ -17,7 +17,7 @@ pub mod print;
 
 pub mod align;
 pub mod constants;
-pub mod drivers;
+use francium_drivers as drivers;
 pub mod panic;
 pub mod platform;
 

@@ -1,6 +1,5 @@
 use crate::PhysAddr;
 use crate::mmu;
-use smallvec::SmallVec;
 
 #[derive(Copy, Clone)]
 #[repr(packed)]
@@ -86,7 +85,7 @@ pub fn parse_rsdt(phys: PhysAddr) -> TableHeader {
 			let table_location = *((virt+i) as *const u32);
 			let inner_header = parse_table(PhysAddr(table_location as usize));
 
-			let virt = mmu::phys_to_virt(PhysAddr(table_location as usize));
+			let _virt = mmu::phys_to_virt(PhysAddr(table_location as usize));
 
 			match &inner_header.signature {
 				/*b"MCFG" => {

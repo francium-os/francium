@@ -3,7 +3,6 @@ use crate::constants;
 use crate::drivers::pl011_uart::Pl011Uart;
 use crate::drivers::InterruptController;
 use crate::drivers::Timer;
-use crate::mmu::PhysAddr;
 use spin::Mutex;
 
 const VIRT_GICD_BASE: usize = constants::PERIPHERAL_BASE + 0x08000000;
@@ -11,7 +10,7 @@ const VIRT_GICC_BASE: usize = constants::PERIPHERAL_BASE + 0x08010000;
 
 lazy_static! {
     // Qemu doesn't care about the baud rate, but we give it one and a UART clock anyway.
-    pub static ref DEFAULT_UART: Mutex<Pl011Uart> = Mutex::new(Pl011Uart::new(PhysAddr(0x09000000), 115200, 48000000));
+    pub static ref DEFAULT_UART: Mutex<Pl011Uart> = Mutex::new(Pl011Uart::new(constants::PERIPHERAL_BASE + 0x09000000, 115200, 48000000));
     pub static ref DEFAULT_INTERRUPT: Mutex<GICv2> = Mutex::new(GICv2::new(VIRT_GICD_BASE, VIRT_GICC_BASE));
     pub static ref DEFAULT_TIMER: Mutex<ArchTimer> = Mutex::new(ArchTimer::new());
 }

@@ -1,4 +1,4 @@
-use crate::drivers::Timer;
+use crate::Timer;
 use core::arch::asm;
 
 pub struct PIT {

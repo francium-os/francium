@@ -1,6 +1,3 @@
-use crate::constants::*;
-use crate::mmu::PhysAddr;
-
 pub struct Pl011Uart {
     base_address: usize,
     baud: u32,
@@ -15,9 +12,9 @@ const FR_TXFULL: u32 = 1 << 5;
 const FR_RXEMPTY: u32 = 1 << 4;
 
 impl Pl011Uart {
-    pub fn new(base_address: PhysAddr, baud: u32, uart_clock: u32) -> Pl011Uart {
+    pub fn new(base_address: usize, baud: u32, uart_clock: u32) -> Pl011Uart {
         let mut uart = Pl011Uart {
-            base_address: (PERIPHERAL_BASE + base_address.0),
+            base_address: base_address,
             baud: baud,
         };
 

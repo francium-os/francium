@@ -1,6 +1,5 @@
-use common::os_error::{ResultCode, RESULT_OK};
+use common::os_error::ResultCode;
 
-pub fn svc_get_system_info(ty: usize, index: usize, out_ptr: *const usize) -> ResultCode {
+pub fn svc_get_system_info(_ty: usize, _index: usize, _out_ptr: *const usize) -> ResultCode {
 	unimplemented!();
-	RESULT_OK
 }

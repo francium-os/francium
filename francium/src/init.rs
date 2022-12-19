@@ -1,10 +1,11 @@
+use francium_common::types::PhysAddr;
 use crate::align::align_up;
 use crate::arch::cache::clear_cache_for_address;
 use crate::arch::mmu::{get_current_page_table, invalidate_tlb_for_range};
 use crate::constants::*;
 use crate::memory::AddressSpace;
 use crate::memory::KERNEL_ADDRESS_SPACE;
-use crate::mmu::{MapType, PagePermission, PhysAddr};
+use crate::mmu::{MapType, PagePermission};
 use crate::phys_allocator;
 use crate::platform;
 use crate::process::{Process, Thread};

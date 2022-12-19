@@ -207,7 +207,7 @@ pub fn map_device_memory(phys_addr: usize, virt_addr: usize, length: usize, perm
     }
 }
 
-pub fn get_system_info(ty: SystemInfoType, index: usize) -> Result<SystemInfo, OSError> {
+pub fn get_system_info(_ty: SystemInfoType, _index: usize) -> Result<SystemInfo, OSError> {
     unimplemented!();
     /*unsafe {
         let mut address_out: usize = 0;

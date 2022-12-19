@@ -18,7 +18,9 @@ pub mod print;
 
 pub mod align;
 pub mod constants;
-pub mod drivers;
+
+use francium_drivers as drivers;
+
 pub mod panic;
 pub mod platform;
 
@@ -40,9 +42,10 @@ pub mod init;
 pub mod subscriber;
 pub mod acpi;
 
+use francium_common::types::PhysAddr;
 use crate::constants::*;
 use crate::memory::KERNEL_ADDRESS_SPACE;
-use crate::mmu::{PhysAddr, PagePermission};
+use crate::mmu::PagePermission;
 
 extern "C" {
     fn switch_stacks();
@@ -109,9 +112,9 @@ fn bootloader_main(info: &'static mut bootloader::BootInfo) -> ! {
     let rsdp = acpi::parse_rsdp(rsdp_phys);
     match rsdp {
         acpi::RSDP::Normal(rsdp) => {
-            let rsdt = acpi::parse_rsdt(PhysAddr(rsdp.rsdt_address as usize));
+            let _rsdt = acpi::parse_rsdt(PhysAddr(rsdp.rsdt_address as usize));
         },
-        acpi::RSDP::Extended(xsdp) => {
+        acpi::RSDP::Extended(_xsdp) => {
             unimplemented!();
         }
     }

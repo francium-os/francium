@@ -1,6 +1,6 @@
 use crate::arch::context::ExceptionContext;
 use crate::svc;
-use crate::mmu::PhysAddr;
+use francium_common::types::PhysAddr;
 
 fn syscall_wrapper_break(_ctx: &mut ExceptionContext) {
     svc::svc_break();

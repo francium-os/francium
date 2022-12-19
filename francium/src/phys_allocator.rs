@@ -1,4 +1,5 @@
-use crate::mmu::{phys_to_virt, PhysAddr};
+use francium_common::types::PhysAddr;
+use crate::mmu::phys_to_virt;
 
 // classic 4k pages everywhere
 // dumb linked list

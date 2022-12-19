@@ -1,4 +1,5 @@
-use crate::mmu::{MapType, PagePermission, PageTable, PhysAddr};
+use francium_common::types::PhysAddr;
+use crate::mmu::{MapType, PagePermission, PageTable};
 use crate::phys_allocator;
 use smallvec::SmallVec;
 use spin::RwLock;

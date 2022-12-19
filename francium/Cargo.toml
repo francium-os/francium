@@ -20,6 +20,12 @@ intrusive-collections = "0.9.4"
 tracing = { version = "0.1.37", default-features = false }
 tracing-subscriber = { version = "0.3.16", default-features = false, features = [] }
 
+francium_common = { path = "../crates/francium_common" }
+francium_drivers = { path = "../crates/francium_drivers" }
+
+[target.'cfg(target_arch = "x86_64")'.dependencies]
+francium_x86 = { path = "../crates/francium_x86" }
+
 [build-dependencies]
 
 [features]

@@ -1,0 +1,12 @@
+[package]
+name = "francium_drivers"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+francium_common = { path = "../francium_common" }
+
+[target.'cfg(target_arch = "x86_64")'.dependencies]
+francium_x86 = { path = "../francium_x86" }

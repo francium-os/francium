@@ -1,7 +1,7 @@
 use tracing::{event, Level};
 
 use crate::{scheduler, PagePermission};
-use crate::mmu::PhysAddr;
+use francium_common::types::PhysAddr;
 use common::os_error::{ResultCode, RESULT_OK};
 
 //pub const PROT_NONE: u32 = 0x0000;

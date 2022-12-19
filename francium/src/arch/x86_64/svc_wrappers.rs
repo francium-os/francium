@@ -1,6 +1,6 @@
 use crate::{scheduler, svc};
 use core::arch::global_asm;
-use crate::mmu::PhysAddr;
+use francium_common::types::PhysAddr;
 
 // The System V ABI returns 128 bit values in rax:rdx.
 // God help me if I need three return values.
@@ -136,9 +136,7 @@ unsafe extern "C" fn syscall_wrapper_bodge(key: u32, addr: usize) -> usize {
             0
         }
         common::constants::GET_ACPI_BASE => {
-            unsafe {
-                crate::RSDP_ADDRESS.unwrap() as usize
-            }
+            crate::RSDP_ADDRESS.unwrap() as usize
         }
         _ => {
             panic!("unknown syscall_bodge key!");

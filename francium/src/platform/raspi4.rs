@@ -2,7 +2,7 @@ use crate::arch::{aarch64, arch_timer::ArchTimer, gicv2::GICv2};
 use crate::constants::*;
 use crate::drivers::pl011_uart::Pl011Uart;
 use crate::drivers::{InterruptController, Timer};
-use crate::mmu::PhysAddr;
+use francium_common::types::PhysAddr;
 use spin::Mutex;
 
 pub const PHYS_MEM_BASE: usize = 0;

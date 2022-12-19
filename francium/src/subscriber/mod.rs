@@ -52,7 +52,7 @@ impl Subscriber for LogSubscriber {
         todo!()
     }
 
-    fn event(&self, event: &Event<'_>) {
+    fn event(&self, _event: &Event<'_>) {
         //println!("Event {:?}", event);
         //event.record(&mut PrintVisitor {});
         //println!();

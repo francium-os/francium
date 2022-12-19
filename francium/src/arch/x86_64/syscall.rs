@@ -1,4 +1,3 @@
-use crate::arch::x86_64::msr;
 use core::arch::asm;
 
 #[naked]
@@ -44,14 +43,5 @@ unsafe extern "C" fn syscall_handler() {
 }
 
 pub fn setup_syscall() {
-    unsafe {
-        // enable syscall instructions
-        msr::write_efer(msr::read_efer() | (1 << 0));
-
-        msr::write_fmask(1 << 9); // clear interrupt flag
-                                  // kernel segment base = 0x08 (code seg = 0x08, stack seg = 0x10)
-                                  // user segment base = 0x18 (32bit code seg = 0x18, stack seg = 0x20, 64bit code seg = 0x28)
-        msr::write_star(0x08 << 32 | (0x18|3) << 48);
-        msr::write_lstar(syscall_handler as usize); // syscall handler location
-    }
+	francium_x86::syscall::setup_syscall(syscall_handler as usize);
 }

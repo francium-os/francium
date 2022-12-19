@@ -1,6 +1,6 @@
 use crate::memory::KERNEL_ADDRESS_SPACE;
 use crate::mmu::PageTable;
-use crate::mmu::PhysAddr;
+use francium_common::types::PhysAddr;
 use core::arch::asm;
 
 unsafe fn get_ttbr0_el1() -> PhysAddr {

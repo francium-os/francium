@@ -1,3 +1,5 @@
+#![no_std]
+
 pub trait InterruptController {
     fn init(&self);
     fn enable_interrupt(&self, n: u32);

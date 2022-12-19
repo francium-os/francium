@@ -1,5 +1,5 @@
-use crate::arch::x86_64::io_port::{inb, io_wait, outb};
-use crate::drivers::InterruptController;
+use francium_x86::io_port::{inb, io_wait, outb};
+use crate::InterruptController;
 
 const PIC1_COMMAND: u16 = 0x20;
 const PIC2_COMMAND: u16 = 0xa0;
