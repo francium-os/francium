@@ -37,7 +37,7 @@ pub unsafe fn set_sctlr_el1(value: usize) {
 
 pub unsafe fn get_tcr_el1() -> usize {
     let mut value: usize;
-    asm!("msr {tcr_el1}, tcr_el1", tcr_el1 = out(reg) value);
+    asm!("mrs {tcr_el1}, tcr_el1", tcr_el1 = out(reg) value);
     value
 }
 

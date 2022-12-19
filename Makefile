@@ -5,21 +5,24 @@ CARGO ?= cargo +francium
 ifeq ($(board), virt)
 arch=aarch64
 target=aarch64-unknown-francium
+kernel_target=aarch64-unknown-none
 else ifeq ($(board), raspi4)
 target=aarch64-unknown-francium
+kernel_target=aarch64-unknown-none
 else ifeq ($(board), pc)
 arch=x86_64
 target=x86_64-unknown-francium
+kernel_target=x86_64-unknown-none
 else
 $(error Bad board!)
 endif
 
-francium = target/$(target)-kernel/release/francium_$(board)
-sm = target/$(target)-user/release/sm
-fs = target/$(target)-user/release/fs
-test = target/$(target)-user/release/test
-pcie = target/$(target)-user/release/pcie
-bootimg = target/x86_64-unknown-francium-kernel/release/boot-bios-francium_pc.img
+francium = target/$(kernel_target)/release/francium_$(board)
+sm = target/$(target)/release/sm
+fs = target/$(target)/release/fs
+test = target/$(target)/release/test
+pcie = target/$(target)/release/pcie
+bootimg = target/release/bios.img
 
 ifeq ($(arch), aarch64)
 target=aarch64-unknown-francium
@@ -31,16 +34,16 @@ qemu_args=-M q35 -drive format=raw,file=$(bootimg),if=none,id=nvme -device nvme,
 gdb=rust-gdb
 endif
 
-CARGO_FLAGS = -Zbuild-std=core,alloc,compiler_builtins -Zbuild-std-features=compiler-builtins-mem
+CARGO_FLAGS =
 
 .PHONY: qemu gdb bochs $(francium) $(bootimg) $(fs) $(sm) $(test) $(pcie) clean clean-user clean-kernel
 
 all: $(francium) $(if $(filter $(board),raspi4), kernel8.bin)
 $(francium): $(fs) $(sm) $(test) $(pcie)
-	$(CARGO) build $(CARGO_FLAGS) --package=francium --release --features=platform_$(board) --target=targets/$(target)-kernel.json
+	cargo build --package=francium_$(board) --release --target=$(kernel_target)
 
 $(bootimg): $(francium)
-	$(CARGO) run --package=simple_boot target/x86_64-unknown-francium-kernel/release/francium_pc
+	cargo run --package=francium_pc_bootimg --release
 
 ifeq ($(board), raspi4)
 kernel8.bin: $(francium)

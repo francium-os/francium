@@ -19,6 +19,4 @@ fn main() {
     if platform == "" {
         panic!("No platform specified!");
     }
-
-    println!("cargo:rustc-link-arg=-Ttargets/link_{}.x", platform);
 }

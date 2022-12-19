@@ -1,6 +1,7 @@
 use tracing::{event, Level};
 
-use crate::{scheduler, PagePermission};
+use crate::scheduler;
+use crate::mmu::PagePermission;
 use francium_common::types::PhysAddr;
 use common::os_error::{ResultCode, RESULT_OK};
 

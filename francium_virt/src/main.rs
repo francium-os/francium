@@ -1,47 +1,10 @@
 #![no_std]
 #![no_main]
-#![feature(default_alloc_error_handler)]
 
-#[macro_use]
-extern crate bitflags;
-
-#[macro_use]
-extern crate lazy_static;
-
-extern crate alloc;
-extern crate elf_rs;
-extern crate smallvec;
-
-#[macro_use]
-pub mod print;
-
-pub mod align;
-pub mod constants;
-use francium_drivers as drivers;
-pub mod panic;
-pub mod platform;
-
-pub mod bump_allocator;
-pub mod handle;
-pub mod handle_table;
-pub mod mmu;
-pub mod phys_allocator;
-
-pub mod arch;
-pub mod memory;
-pub mod process;
-pub mod scheduler;
-pub mod svc;
-pub mod timer;
-pub mod waitable;
-
-pub mod init;
-
-pub mod subscriber;
-
-use crate::constants::*;
-use crate::memory::KERNEL_ADDRESS_SPACE;
-use crate::mmu::PagePermission;
+use francium_kernel::*;
+use francium_kernel::constants::*;
+use francium_kernel::mmu::PagePermission;
+use francium_kernel::memory::KERNEL_ADDRESS_SPACE;
 
 #[no_mangle]
 pub extern "C" fn rust_main() -> ! {

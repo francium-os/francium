@@ -1,4 +1,4 @@
-use crate::PhysAddr;
+use francium_common::types::PhysAddr;
 use crate::mmu;
 
 #[derive(Copy, Clone)]

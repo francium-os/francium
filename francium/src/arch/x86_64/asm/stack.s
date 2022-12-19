@@ -8,7 +8,8 @@
 switch_stacks:
     // Setup stack
     pop rax
-	movabs rsp, offset __bootstrap_stack_top
+
+	lea rsp, [rip+__bootstrap_stack_top]
 	push rax
 	ret
 

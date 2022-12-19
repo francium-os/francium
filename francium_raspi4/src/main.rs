@@ -1,47 +1,11 @@
 #![no_std]
 #![no_main]
-#![feature(default_alloc_error_handler)]
 
-#[macro_use]
-extern crate bitflags;
-
-#[macro_use]
-extern crate lazy_static;
-
-extern crate alloc;
-extern crate elf_rs;
-extern crate smallvec;
-
-#[macro_use]
-pub mod print;
-
-pub mod align;
-pub mod constants;
-pub mod drivers;
-pub mod panic;
-pub mod platform;
-
-pub mod bump_allocator;
-pub mod handle;
-pub mod handle_table;
-pub mod mmu;
-pub mod phys_allocator;
-
-pub mod arch;
-pub mod memory;
-pub mod process;
-pub mod scheduler;
-pub mod svc;
-pub mod timer;
-pub mod waitable;
-
-pub mod init;
-
-pub mod subscriber;
-
-use crate::constants::*;
-use crate::memory::KERNEL_ADDRESS_SPACE;
-use crate::mmu::PagePermission;
+use francium_kernel::*;
+use francium_kernel::constants::*;
+use francium_kernel::mmu::PagePermission;
+use francium_kernel::memory::KERNEL_ADDRESS_SPACE;
+use francium_common::types::PhysAddr;
 
 #[no_mangle]
 pub extern "C" fn rust_main() -> ! {
@@ -67,6 +31,8 @@ pub extern "C" fn rust_main() -> ! {
         );
     }
 
+    // Now we can create the tracing subscriber, and also set up the idle process.
+
     subscriber::init();
 
     platform::scheduler_pre_init();
@@ -80,15 +46,15 @@ pub extern "C" fn rust_main() -> ! {
     scheduler::register_thread(fs_main_thread.clone());
 
     let test_main_thread = init::load_process(test_buf, "test");
-    scheduler::register_thread(test_main_thread.clone());
+    scheduler::register_thread(test_main_thread);
 
     let sm_main_thread = init::load_process(sm_buf, "sm");
-    scheduler::register_thread(sm_main_thread.clone());
+    scheduler::register_thread(sm_main_thread);
 
     platform::scheduler_post_init();
 
     println!("Running...");
-    scheduler::force_switch_to(test_main_thread);
+    scheduler::force_switch_to(fs_main_thread);
     println!("We shouldn't get here, ever!!");
 
     loop {}

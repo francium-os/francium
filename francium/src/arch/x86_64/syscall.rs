@@ -4,8 +4,8 @@ use core::arch::asm;
 unsafe extern "C" fn syscall_handler() {
     asm!(
         "
-		mov r10, rsp
-		movabs r9, offset current_thread_kernel_stack
+        mov r10, rsp
+		lea r9, [rip + current_thread_kernel_stack]
 		mov rsp, [r9]
 
 		push r11
@@ -20,7 +20,7 @@ unsafe extern "C" fn syscall_handler() {
 		push r15
 		push rbp
 
-		movabs rcx, offset syscall_wrappers
+		lea rcx, [rip+syscall_wrappers]
 		mov r10, [rcx + rax*8]
 		call r10
 

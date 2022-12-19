@@ -1,4 +1,5 @@
 use crate::{scheduler, svc};
+use crate::arch::x86_64::info::*;
 use core::arch::global_asm;
 use francium_common::types::PhysAddr;
 
@@ -136,7 +137,7 @@ unsafe extern "C" fn syscall_wrapper_bodge(key: u32, addr: usize) -> usize {
             0
         }
         common::constants::GET_ACPI_BASE => {
-            crate::RSDP_ADDRESS.unwrap() as usize
+            SYSTEM_INFO_RSDP_ADDR.unwrap() as usize
         }
         _ => {
             panic!("unknown syscall_bodge key!");

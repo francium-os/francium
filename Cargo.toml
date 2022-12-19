@@ -1,7 +1,11 @@
 [workspace]
+resolver = "2"
 members = [
   "francium",
-  "francium/pc_bootloader",
+  "francium_pc",
+  "francium_virt",
+  "francium_raspi4",
+  "francium_pc_bootimg",
   "libprocess",
   "libcommon",
   "modules/fs",

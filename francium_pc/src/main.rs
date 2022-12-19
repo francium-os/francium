@@ -1,62 +1,25 @@
 #![no_std]
 #![no_main]
-#![feature(default_alloc_error_handler)]
-#![feature(naked_functions)]
 
-#[macro_use]
-extern crate bitflags;
-
-#[macro_use]
-extern crate lazy_static;
-
-extern crate alloc;
-extern crate elf_rs;
-extern crate smallvec;
-
-#[macro_use]
-pub mod print;
-
-pub mod align;
-pub mod constants;
-
-use francium_drivers as drivers;
-
-pub mod panic;
-pub mod platform;
-
-pub mod bump_allocator;
-pub mod handle;
-pub mod handle_table;
-pub mod mmu;
-pub mod phys_allocator;
-
-pub mod arch;
-pub mod memory;
-pub mod process;
-pub mod scheduler;
-pub mod svc;
-pub mod timer;
-pub mod waitable;
-
-pub mod init;
-pub mod subscriber;
-pub mod acpi;
-
+use francium_kernel::*;
+use francium_kernel::constants::*;
+use francium_kernel::mmu::PagePermission;
+use francium_kernel::memory::KERNEL_ADDRESS_SPACE;
 use francium_common::types::PhysAddr;
-use crate::constants::*;
-use crate::memory::KERNEL_ADDRESS_SPACE;
-use crate::mmu::PagePermission;
 
 extern "C" {
     fn switch_stacks();
     static __bootstrap_stack_top: i32;
 }
 
-#[cfg(feature = "platform_pc")]
-bootloader::entry_point!(bootloader_main_thunk);
+const CONFIG: bootloader_api::BootloaderConfig = {
+    let mut config = bootloader_api::BootloaderConfig::new_default();
+    config.mappings.physical_memory = Some(bootloader_api::config::Mapping::FixedAddress(0xffff_f000_0000_0000));
+    config
+};
+bootloader_api::entry_point!(bootloader_main_thunk, config = &CONFIG);
 
-#[cfg(feature = "platform_pc")]
-fn bootloader_main_thunk(info: &'static mut bootloader::BootInfo) -> ! {
+fn bootloader_main_thunk(info: &'static mut bootloader_api::BootInfo) -> ! {
     // TODO: uh, not this, please.
     // I think we need a thunk so that locals don't get allocated in the wrong stack. Maybe.
     // This is probably some kind of undefined.
@@ -67,16 +30,13 @@ fn bootloader_main_thunk(info: &'static mut bootloader::BootInfo) -> ! {
     bootloader_main(info);
 }
 
-static mut RSDP_ADDRESS: Option<u64> = None;
-
-#[cfg(feature = "platform_pc")]
-fn bootloader_main(info: &'static mut bootloader::BootInfo) -> ! {
+fn bootloader_main(info: &'static mut bootloader_api::BootInfo) -> ! {
     platform::platform_specific_init();
     let rsdp_addr = info.rsdp_addr.into_option().unwrap();
 
     for m in info.memory_regions.iter() {
         println!("{:x?}", m);
-        if m.kind == bootloader::boot_info::MemoryRegionKind::Usable {
+        if m.kind == bootloader_api::info::MemoryRegionKind::Usable {
             println!("using {:?} for memory", m);
             init::setup_physical_allocator(m.start as usize, m.end as usize);
         }
@@ -91,7 +51,7 @@ fn bootloader_main(info: &'static mut bootloader::BootInfo) -> ! {
     /* Be careful - bootloader memory mappings are clobbered when we switch. */
     unsafe {
         //FRAMEBUFFER = info.framebuffer;
-        RSDP_ADDRESS = info.rsdp_addr.into_option();
+        francium_kernel::arch::x86_64::info::SYSTEM_INFO_RSDP_ADDR = info.rsdp_addr.into_option();
     }
 
     println!("hello from rust before enabling mmu!");

@@ -1,5 +1,6 @@
 pub use francium_x86::*;
 pub mod syscall;
+pub mod info;
 mod svc_wrappers;
 mod interrupt_handlers;
 pub mod gdt;
