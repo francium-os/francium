@@ -1,3 +1,5 @@
+use crate::SerialPort;
+
 pub struct Pl011Uart {
     base_address: usize,
     baud: u32,
@@ -82,8 +84,10 @@ impl Pl011Uart {
             self.write_cr(0x301);
         }
     }
+}
 
-    pub fn write_byte(&mut self, byte: u8) {
+impl SerialPort for Pl011Uart {
+    fn write_byte(&mut self, byte: u8) {
         unsafe {
             // Wait until TX full is 0 (TX fifo is empty)
             loop {
@@ -97,7 +101,7 @@ impl Pl011Uart {
         }
     }
 
-    pub fn read_byte(&mut self) -> u8 {
+    fn read_byte(&mut self) -> u8 {
         unsafe {
             loop {
                 if (self.read_fr() & FR_RXEMPTY) == 0 {
@@ -106,18 +110,6 @@ impl Pl011Uart {
                 // nop?
             }
             self.read_dr()
-        }
-    }
-
-    pub fn write_string(&mut self, a: &str) {
-        for c in a.chars() {
-            self.write_byte(c as u8);
-        }
-    }
-
-    pub fn write_bytes(&mut self, a: &[u8]) {
-        for c in a {
-            self.write_byte(*c);
         }
     }
 }

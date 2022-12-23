@@ -12,7 +12,7 @@ pub mod print;
 pub mod align;
 pub mod constants;
 
-use francium_drivers as drivers;
+pub use francium_drivers as drivers;
 
 pub mod panic;
 pub mod platform;

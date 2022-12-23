@@ -1,35 +1,22 @@
-use crate::platform::DEFAULT_UART;
-
 #[macro_export]
 macro_rules! print {
     ($($arg:tt)*) => {{
-        let _ = core::fmt::Write::write_fmt(
-            &mut $crate::print::Writer,
-            format_args!($($arg)*)
-        );
+        use core::ops::DerefMut;
+        let mut lock_guard = crate::platform::DEFAULT_UART.lock();
+        $crate::drivers::uart_print!(lock_guard.deref_mut(), $($arg)*);
     }};
 }
 
 #[macro_export]
 macro_rules! println {
     () => {{
-        print!("\n");
+        use core::ops::DerefMut;
+        let mut lock_guard = crate::platform::DEFAULT_UART.lock();
+        $crate::drivers::uart_print!(lock_guard.deref_mut(), "\n");
     }};
     ($($arg:tt)*) => {{
-        let writer = &mut $crate::print::Writer;
-        let _ = core::fmt::Write::write_fmt(
-            writer,
-            format_args!($($arg)*)
-        );
-        let _ = core::fmt::Write::write_str(writer, "\r\n");
+        use core::ops::DerefMut;
+        let mut lock_guard = crate::platform::DEFAULT_UART.lock();
+        $crate::drivers::uart_println!(lock_guard.deref_mut(), $($arg)*);
     }}
-}
-
-/// writes characters to the system log device
-pub struct Writer;
-impl core::fmt::Write for Writer {
-    fn write_str(&mut self, s: &str) -> core::fmt::Result {
-        DEFAULT_UART.lock().write_string(s);
-        Ok(())
-    }
 }

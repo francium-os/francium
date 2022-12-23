@@ -1,4 +1,5 @@
 use core::arch::asm;
+use crate::SerialPort;
 
 pub struct COMPort {
     port_base: u16,
@@ -12,8 +13,10 @@ impl COMPort {
 
         COMPort { port_base }
     }
+}
 
-    pub fn write_byte(&mut self, byte: u8) {
+impl SerialPort for COMPort {
+    fn write_byte(&mut self, byte: u8) {
         unsafe {
             let line_status_reg = self.port_base + 5;
 
@@ -27,15 +30,7 @@ impl COMPort {
         }
     }
 
-    pub fn write_string(&mut self, a: &str) {
-        for c in a.chars() {
-            self.write_byte(c as u8);
-        }
-    }
-
-    pub fn write_bytes(&mut self, a: &[u8]) {
-        for c in a {
-            self.write_byte(*c);
-        }
+    fn read_byte(&mut self) -> u8 {
+        unimplemented!();
     }
 }
