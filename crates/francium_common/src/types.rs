@@ -13,3 +13,28 @@ impl PhysAddr {
         self.0 & (n - 1) == 0
     }
 }
+
+bitflags! {
+    pub struct PagePermission : u64 {
+        const READ_ONLY = 0;
+        const WRITE = 1;
+        const EXECUTE = 2;
+        const KERNEL = 4;
+
+        const USER_READ_ONLY = Self::READ_ONLY.bits;
+        const USER_READ_WRITE = Self::READ_ONLY.bits | Self::WRITE.bits;
+        const USER_READ_EXECUTE = Self::READ_ONLY.bits | Self::EXECUTE.bits;
+        const USER_RWX = Self::READ_ONLY.bits | Self::WRITE.bits | Self::EXECUTE.bits;
+
+        const KERNEL_READ_ONLY = Self::READ_ONLY.bits | Self::KERNEL.bits;
+        const KERNEL_READ_WRITE = Self::READ_ONLY.bits | Self::WRITE.bits | Self::KERNEL.bits;
+        const KERNEL_READ_EXECUTE = Self::READ_ONLY.bits| Self::EXECUTE.bits | Self::KERNEL.bits;
+        const KERNEL_RWX = Self::KERNEL_READ_EXECUTE.bits | Self::WRITE.bits;
+    }
+}
+
+pub enum MapType {
+    NormalCachable,
+    NormalUncachable,
+    Device,
+}

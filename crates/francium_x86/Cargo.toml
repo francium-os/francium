@@ -7,3 +7,5 @@ edition = "2021"
 
 [dependencies]
 francium_common = { path = "../francium_common" }
+francium_mmu = { path = "../francium_mmu" }
+"bitflags" = "1.2.1"

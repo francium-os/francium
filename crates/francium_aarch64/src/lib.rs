@@ -3,4 +3,4 @@
 #[macro_use]
 extern crate bitflags;
 
-pub mod types;
+pub mod page_table;

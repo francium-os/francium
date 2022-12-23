@@ -14,7 +14,9 @@ members = [
   "modules/pcie",
   "ipc-gen-buildtime",
   "crates/francium_common",
-  "crates/francium_drivers"
+  "crates/francium_drivers",
+  "crates/francium_x86",
+  "crates/francium_aarch64"
 ]
 
 [profile.dev]
