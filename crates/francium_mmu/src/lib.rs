@@ -1,6 +1,5 @@
 #![no_std]
 #![feature(generic_const_exprs)]
-extern crate alloc;
 
 use core::marker::PhantomData;
 use francium_common::types::*;
