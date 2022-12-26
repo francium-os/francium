@@ -56,3 +56,13 @@ pub unsafe fn get_tcr_el1() -> usize {
 pub unsafe fn set_tcr_el1(value: usize) {
     asm!("msr tcr_el1, {tcr_el1}", tcr_el1 = in(reg) value);
 }
+
+pub unsafe fn get_hcr_el2() -> usize {
+    let mut value: usize;
+    asm!("mrs {hcr_el2}, hcr_el2", hcr_el2 = out(reg) value);
+    value
+}
+
+pub unsafe fn set_hcr_el2(value: usize) {
+    asm!("msr hcr_el2, {hcr_el2}", hcr_el1 = in(reg) value);
+}
