@@ -4,21 +4,11 @@ use crate::drivers::InterruptController;
 use crate::drivers::Timer;
 use crate::platform::{DEFAULT_INTERRUPT, DEFAULT_TIMER};
 use crate::timer;
-use core::arch::asm;
 
-unsafe fn get_esr_el1() -> usize {
-    let mut value: usize;
-    asm!("mrs {esr_el1}, esr_el1", esr_el1 = out(reg) value);
-    value
-}
+use tock_registers::interfaces::{Readable};
+use aarch64_cpu::{registers::*};
 
-unsafe fn get_far_el1() -> usize {
-    let mut value: usize;
-    asm!("mrs {far_el1}, far_el1", far_el1 = out(reg) value);
-    value
-}
-
-fn stringify_ec(ec: usize) -> &'static str {
+fn stringify_ec(ec: u64) -> &'static str {
     match ec {
         0b000000 => "unknown",
         0b000001 => "trapped wfi/wfe",
@@ -57,7 +47,7 @@ fn stringify_ec(ec: usize) -> &'static str {
     }
 }
 
-fn stringify_dfsc(dfsc: usize) -> &'static str {
+fn stringify_dfsc(dfsc: u64) -> &'static str {
     match dfsc {
 		0b000000 => "Address size fault, level 0 of translation or translation table base register.",
 		0b000001 => "Address size fault, level 1.",
@@ -99,7 +89,7 @@ fn stringify_dfsc(dfsc: usize) -> &'static str {
 	}
 }
 
-fn stringify_ifsc(ifsc: usize) -> &'static str {
+fn stringify_ifsc(ifsc: u64) -> &'static str {
     match ifsc {
 		0b000000 => "Address size fault, level 0 of translation or translation table base register.",
 		0b000001 => "Address size fault, level 1.",
@@ -139,84 +129,80 @@ fn stringify_ifsc(ifsc: usize) -> &'static str {
 
 #[no_mangle]
 pub extern "C" fn rust_curr_el_spx_sync(ctx: &ExceptionContext) -> ! {
-    unsafe {
-        let esr = get_esr_el1();
-        let ec = (esr & (0x3f << 26)) >> 26;
-        let iss = esr & 0xffffff;
+    let esr = ESR_EL1.get();
+    let ec = (esr & (0x3f << 26)) >> 26;
+    let iss = esr & 0xffffff;
 
-        if ec == 0b100101 {
-            println!("Data abort!");
+    if ec == 0b100101 {
+        println!("Data abort!");
+    }
+
+    println!("Exception!!! rust_curr_el_spx_sync!\n");
+    println!(
+        "lr: {:x}, ec: {:} ({}), iss: {:x}",
+        ctx.saved_pc,
+        stringify_ec(ec),
+        ec,
+        iss
+    );
+    println!("FAR: {:x}", FAR_EL1.get());
+
+    // better handling of data abort
+    if ec == 0b100101 {
+        let dfsc = iss & 0x3f;
+        println!("data fault status: {}", stringify_dfsc(dfsc));
+    }
+
+    loop {}
+}
+
+#[no_mangle]
+pub extern "C" fn rust_lower_el_spx_sync(ctx: &mut ExceptionContext) {
+    let esr = ESR_EL1.get();
+    let ec = (esr & (0x3f << 26)) >> 26;
+    let iss = esr & 0xffffff;
+
+    // 0b010101 SVC instruction execution in AArch64 state.
+    if ec == 0b010101 {
+        if (iss as usize) < svc_wrappers::SVC_HANDLERS.len() {
+            svc_wrappers::SVC_HANDLERS[iss as usize](ctx);
+        } else {
+            panic!("Invalid SVC!");
         }
-
-        println!("Exception!!! rust_curr_el_spx_sync!\n");
+    } else {
+        println!("Exception!!! rust_lower_el_spx_sync!\n");
         println!(
-            "lr: {:x}, ec: {:} ({}), iss: {:x}",
+            "pc: {:x}, ec: {:} ({}), iss: {:x}",
             ctx.saved_pc,
             stringify_ec(ec),
             ec,
             iss
         );
-        println!("FAR: {:x}", get_far_el1());
+        println!("FAR: {:x}", FAR_EL1.get());
+
+        println!("LR: {:x}", ctx.regs[30]);
 
         // better handling of data abort
-        if ec == 0b100101 {
+        if ec == 0b100100 {
             let dfsc = iss & 0x3f;
             println!("data fault status: {}", stringify_dfsc(dfsc));
+
+            let current_process = crate::scheduler::get_current_process();
+            let proc_locked = current_process.lock();
+            println!(
+                "?? {:?}",
+                proc_locked
+                    .address_space
+                    .page_table
+                    .virt_to_phys(FAR_EL1.get() as usize)
+            );
+        } else if ec == 0b100000 {
+            // instruction abort
+            let ifsc = iss & 0x3f;
+            println!("instruction fault status: {}", stringify_ifsc(ifsc));
         }
 
         loop {}
-    }
-}
-
-#[no_mangle]
-pub extern "C" fn rust_lower_el_spx_sync(ctx: &mut ExceptionContext) {
-    unsafe {
-        let esr = get_esr_el1();
-        let ec = (esr & (0x3f << 26)) >> 26;
-        let iss = esr & 0xffffff;
-
-        // 0b010101 SVC instruction execution in AArch64 state.
-        if ec == 0b010101 {
-            if iss < svc_wrappers::SVC_HANDLERS.len() {
-                svc_wrappers::SVC_HANDLERS[iss](ctx);
-            } else {
-                panic!("Invalid SVC!");
-            }
-        } else {
-            println!("Exception!!! rust_lower_el_spx_sync!\n");
-            println!(
-                "pc: {:x}, ec: {:} ({}), iss: {:x}",
-                ctx.saved_pc,
-                stringify_ec(ec),
-                ec,
-                iss
-            );
-            println!("FAR: {:x}", get_far_el1());
-
-            println!("LR: {:x}", ctx.regs[30]);
-
-            // better handling of data abort
-            if ec == 0b100100 {
-                let dfsc = iss & 0x3f;
-                println!("data fault status: {}", stringify_dfsc(dfsc));
-
-                let current_process = crate::scheduler::get_current_process();
-                let proc_locked = current_process.lock();
-                println!(
-                    "?? {:?}",
-                    proc_locked
-                        .address_space
-                        .page_table
-                        .virt_to_phys(get_far_el1())
-                );
-            } else if ec == 0b100000 {
-                // instruction abort
-                let ifsc = iss & 0x3f;
-                println!("instruction fault status: {}", stringify_ifsc(ifsc));
-            }
-
-            loop {}
-        }
     }
 }
 
@@ -240,26 +226,10 @@ pub extern "C" fn rust_lower_el_aarch64_irq(_ctx: &mut ExceptionContext) {
     timer::tick();
 }
 
-unsafe fn get_daif() -> usize {
-    let mut value: usize;
-    asm!("mrs {daif}, daif", daif = out(reg) value);
-    value
-}
-
-unsafe fn set_daif(value: usize) {
-    asm!("msr daif, {daif}", daif = in(reg) value);
-}
-
 pub fn enable_interrupts() {
-    unsafe {
-        const DAIF_I: usize = 1 << 7;
-        set_daif(get_daif() & !DAIF_I);
-    }
+    unimplemented!();
 }
 
 pub fn disable_interrupts() {
-    unsafe {
-        const DAIF_I: usize = 1 << 7;
-        set_daif(get_daif() | DAIF_I);
-    }
+    unimplemented!();
 }

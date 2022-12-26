@@ -1,3 +1,4 @@
+.section .text
 .global switch_thread_asm
 .extern force_unlock_mutex
 

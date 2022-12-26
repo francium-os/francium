@@ -1,3 +1,4 @@
+.section .text
 .global spin_for_cycles
 
 spin_for_cycles:

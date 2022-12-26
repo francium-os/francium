@@ -1,62 +1,51 @@
 use crate::memory::KERNEL_ADDRESS_SPACE;
 use crate::mmu::PageTable;
 use francium_common::types::PhysAddr;
-pub use francium_aarch64::sys_regs::*;
 use core::arch::asm;
+
+use tock_registers::interfaces::{Readable, Writeable};
+use aarch64_cpu::{asm::barrier, registers::*};
 
 pub fn enable_mmu() {
     KERNEL_ADDRESS_SPACE.read().make_active();
 
-    unsafe {
-        // enable caches + mmu
-        // enable sp alignment?
+    TCR_EL1.write(
+        TCR_EL1::IPS::Bits_48 +
+        TCR_EL1::TG0::KiB_4 +
+        TCR_EL1::TG1::KiB_4 +
+        TCR_EL1::T1SZ.val(16) +
+        TCR_EL1::T0SZ.val(16)
+    );
 
-        const SCTLR_LSMAOE: usize = 1 << 29;
-        const SCTLR_NTLSMD: usize = 1 << 28;
-        const SCTLR_TSCXT: usize = 1 << 20;
-        //const SCTLR_ITD = 1<<7;
+    barrier::isb(barrier::SY);
 
-        const SCTLR_I: usize = 1 << 12;
-        const SCTLR_SPAN: usize = 1 << 3;
-        const SCTLR_C: usize = 1 << 2;
-        const SCTLR_M: usize = 1 << 0;
+    SCTLR_EL1.write(
+        SCTLR_EL1::SA0::Enable +
+        SCTLR_EL1::SA::Enable +
+        SCTLR_EL1::M::Enable +
+        SCTLR_EL1::C::Cacheable +
+        SCTLR_EL1::I::Cacheable);
 
-        const TCR_IPS_48_BIT: usize = 0b101 << 32;
-        const TCR_TG1_GRANULE_4K: usize = 0 << 30;
-        const TCR_TG0_GRANULE_4K: usize = 0 << 14;
-
-        const TCR_T0SZ_48_BIT: usize = 16;
-        const TCR_T1SZ_48_BIT: usize = 16 << 16;
-
-        let tcr = TCR_IPS_48_BIT
-            | TCR_TG0_GRANULE_4K
-            | TCR_TG1_GRANULE_4K
-            | TCR_T0SZ_48_BIT
-            | TCR_T1SZ_48_BIT;
-        set_tcr_el1(tcr);
-
-        // RES1 bits
-        let mut sctlr = SCTLR_LSMAOE | SCTLR_NTLSMD | SCTLR_TSCXT;
-
-        // icache, dcache, sp alignment, mmu enable
-        sctlr |= SCTLR_I | SCTLR_SPAN | SCTLR_C | SCTLR_M;
-        set_sctlr_el1(sctlr);
-    }
+    barrier::isb(barrier::SY);
 }
 
 // > &'static
 pub unsafe fn get_current_page_table() -> &'static PageTable {
-    let ttbr0 = get_ttbr0_el1();
-    let ttbr1 = get_ttbr1_el1();
-    assert!(ttbr0.0 == ttbr1.0);
+    let ttbr0 = TTBR0_EL1.get();
+    let ttbr1 = TTBR1_EL1.get();
+    assert!(ttbr0 == ttbr1);
 
-    let current_pages_virt: *const PageTable = crate::mmu::phys_to_virt(ttbr1) as *const PageTable;
+    let current_pages_virt: *const PageTable = crate::mmu::phys_to_virt(PhysAddr(ttbr1 as usize)) as *const PageTable;
     current_pages_virt.as_ref().unwrap()
 }
 
 pub unsafe fn switch_to_page_table(phys_addr: PhysAddr) {
-    set_ttbr0_el1(phys_addr);
-    set_ttbr1_el1(phys_addr);
+    TTBR0_EL1.set(phys_addr.0 as u64);
+    TTBR1_EL1.set(phys_addr.0 as u64);
+
+    asm!("tlbi vmalle1");
+    barrier::dsb(barrier::ISH);
+    barrier::isb(barrier::SY);
 }
 
 pub unsafe fn invalidate_tlb_for_range(_start: usize, _size: usize) {
