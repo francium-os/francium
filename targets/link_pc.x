@@ -15,6 +15,7 @@ SECTIONS
     *(.text .text.*);
     __text_end = .;
   }
+
   .rodata : ALIGN(0x1000)
   {
     __rodata_start = .;
@@ -22,16 +23,31 @@ SECTIONS
     __rodata_end = .;
   }
 
+  .bootloader-config :
+  {
+    *(.bootloader-config)
+  }
+
+  .hash : { *(.hash) }
+  .dynsym : { *(.dynsym) }
+  .dynstr : { *(.dynstr) }
+
+  .rela.dyn : { *(.rela.dyn) }
+  .rela.plt : {  *(.rela.plt) }
+
+  . = ALIGN(0x1000);
+
+  .data.rel.ro : { *(.data.rel.ro.local* .gnu.linkonce.d.rel.ro.local.*) *(.data.rel.ro .data.rel.ro.* .gnu.linkonce.d.rel.ro.*) }
+  .dynamic        : { *(.dynamic) }
+  .got            : { *(.got) *(.igot) }
+  . = DATA_SEGMENT_RELRO_END (SIZEOF (.got.plt) >= 24 ? 24 : 0, .);
+  .got.plt        : { *(.got.plt) *(.igot.plt) }
+
   .data : ALIGN(0x1000)
   {
     __data_start = .;
     *(.data .data.*)
     __data_end = .;
-
-    // Why do we have a GOT?????
-    __got = .;
-    *(.got)
-    __got_end = .;
   }
 
   .bss : ALIGN(0x1000)
