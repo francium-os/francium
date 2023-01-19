@@ -10,7 +10,7 @@ floppy_bootsig_check: disabled=0
 floppya: type=1_44
 # no floppyb
 ata0: enabled=true, ioaddr1=0x1f0, ioaddr2=0x3f0, irq=14
-ata0-master: type=disk, path="target/x86_64-unknown-francium-kernel/release/boot-bios-francium_pc.img_bochs", mode=flat, cylinders=0, heads=0, spt=0, sect_size=512, model="Generic 1234", biosdetect=auto, translation=auto
+ata0-master: type=disk, path="target/release/bios.img_bochs", mode=flat, cylinders=0, heads=0, spt=0, sect_size=512, model="Generic 1234", biosdetect=auto, translation=auto
 ata0-slave: type=none
 ata1: enabled=true, ioaddr1=0x170, ioaddr2=0x370, irq=15
 ata1-master: type=none
@@ -40,9 +40,9 @@ port_e9_hack: enabled=0
 private_colormap: enabled=0
 clock: sync=none, time0=local, rtc_sync=0
 # no cmosimage
-log: -
+log: bochs.log
 logprefix: %t%e%d
-debug: action=ignore,cpu0=report
+debug: action=ignore,cpu0=ignore
 info: action=report
 error: action=report
 panic: action=ask

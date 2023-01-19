@@ -22,7 +22,8 @@ sm = target/$(target)/release/sm
 fs = target/$(target)/release/fs
 test = target/$(target)/release/test
 pcie = target/$(target)/release/pcie
-bootimg = target/release/bios.img
+bootimg_bios = target/release/bios.img
+bootimg_uefi = target/release/uefi.img
 
 ifeq ($(arch), aarch64)
 target=aarch64-unknown-francium
@@ -30,19 +31,20 @@ gdb=aarch64-unknown-francium-gdb
 qemu_args=-M virt,gic-version=2 -cpu cortex-a53 -kernel $(francium) -serial stdio -m 2048
 else ifeq ($(arch), x86_64)
 target=x86_64-unknown-francium
-qemu_args=-M q35 -drive format=raw,file=$(bootimg),if=none,id=nvme -device nvme,serial=fee1dead,drive=nvme -serial stdio -m 2048 -no-reboot -enable-kvm
+#qemu_args=-M q35 -bios /usr/share/edk2/x64/OVMF.fd -drive format=raw,file=$(bootimg_uefi),if=none,id=nvme -device nvme,serial=fee1dead,drive=nvme -serial stdio -m 2048 -no-reboot -d int
+qemu_args=-M q35 -drive format=raw,file=$(bootimg_bios),if=none,id=nvme -device nvme,serial=fee1dead,drive=nvme -serial stdio -m 2048 -no-reboot -enable-kvm -d int
 gdb=rust-gdb
 endif
 
 CARGO_FLAGS =
 
-.PHONY: qemu gdb bochs $(francium) $(bootimg) $(fs) $(sm) $(test) $(pcie) clean clean-user clean-kernel
+.PHONY: qemu gdb bochs $(francium) $(bootimg_bios) $(bootimg_uefi) $(fs) $(sm) $(test) $(pcie) clean clean-user clean-kernel
 
 all: $(francium) $(if $(filter $(board),raspi4), kernel8.bin)
 $(francium): $(fs) $(sm) $(test) $(pcie)
 	cargo build --package=francium_$(board) --release --target=$(kernel_target)
 
-$(bootimg): $(francium)
+$(bootimg_bios) $(bootimg_uefi): $(francium)
 	cargo run --package=francium_pc_bootimg --release
 
 ifeq ($(board), raspi4)
@@ -62,18 +64,18 @@ $(test):
 $(pcie):
 	$(CARGO) build --package=pcie --release --target=$(target)
 
-qemu: $(francium) $(if $(filter $(board),pc), $(bootimg))
+qemu: $(francium) $(if $(filter $(board),pc), $(bootimg_uefi))
 	qemu-system-$(arch) $(qemu_args) -s
 
 ifeq ($(board), pc)
-bochs: $(bootimg)
-	cp $(bootimg) $(bootimg)_bochs; \
-	dd if=/dev/zero of=$(bootimg)_bochs conv=notrunc bs=1 seek=67092479 count=1; \
-	rm $(bootimg)_bochs.lock; \
+bochs: $(bootimg_bios)
+	cp $(bootimg_bios) $(bootimg_bios)_bochs; \
+	dd if=/dev/zero of=$(bootimg_bios)_bochs conv=notrunc bs=1 seek=67092479 count=1; \
+	rm $(bootimg_bios)_bochs.lock; \
 	bochs
 endif
 
-qemu-gdb: $(francium) $(if $(filter $(board),pc), $(bootimg))
+qemu-gdb: $(francium) $(if $(filter $(board),pc), $(bootimg_uefi))
 	qemu-system-$(arch) $(qemu_args) -s -S
 
 gdb:
