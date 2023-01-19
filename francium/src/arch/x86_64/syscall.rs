@@ -1,10 +1,8 @@
 use core::arch::asm;
-
+use crate::arch::x86_64::svc_wrappers::SYSCALL_WRAPPERS;
 #[naked]
 unsafe extern "C" fn syscall_handler() {
-    asm!(
-        "
-        mov r10, rsp
+    asm!("mov r10, rsp
 		lea r9, [rip + current_thread_kernel_stack]
 		mov rsp, [r9]
 
@@ -20,7 +18,7 @@ unsafe extern "C" fn syscall_handler() {
 		push r15
 		push rbp
 
-		lea rcx, [rip+syscall_wrappers]
+		lea rcx, [rip+{}]
 		mov r10, [rcx + rax*8]
 		call r10
 
@@ -38,6 +36,7 @@ unsafe extern "C" fn syscall_handler() {
 
 		sysretq
 	",
+        sym SYSCALL_WRAPPERS,
         options(noreturn)
     );
 }

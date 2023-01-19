@@ -178,36 +178,32 @@ unsafe extern "C" fn syscall_wrapper_map_device_memory(phys_addr: PhysAddr, virt
 }
 
 #[no_mangle]
-unsafe extern "C" fn syscall_get_system_info(ty: usize, index: usize, out_ptr: *const usize) -> u32 {
+unsafe extern "C" fn syscall_wrapper_get_system_info(ty: usize, index: usize, out_ptr: *const usize) -> u32 {
     let res = svc::svc_get_system_info(ty, index, out_ptr);
     res.0 as u32
 }
 
-// Rust complains loudly about this. As it should.
-global_asm!("
-.global syscall_wrappers
-syscall_wrappers:
-.quad syscall_wrapper_break
-.quad syscall_wrapper_debug_output
-.quad syscall_wrapper_create_port
-.quad syscall_wrapper_connect_to_named_port
-.quad syscall_wrapper_exit_process
-.quad syscall_wrapper_close_handle
-.quad syscall_wrapper_ipc_request
-.quad syscall_wrapper_ipc_reply
-.quad syscall_wrapper_ipc_receive
-.quad syscall_wrapper_ipc_accept
-.quad syscall_wrapper_get_process_id
-.quad syscall_wrapper_connect_to_port_handle
-.quad syscall_wrapper_map_memory
-.quad syscall_wrapper_sleep_ns
-.quad syscall_wrapper_bodge
-.quad syscall_wrapper_get_thread_id
-.quad syscall_wrapper_create_thread
-.quad syscall_wrapper_futex_wait
-.quad syscall_wrapper_futex_wake
-.quad syscall_wrapper_map_device_memory
-.quad syscall_get_system_info
-.quad syscall_wrapper_break
-"
-);
+// Don't modify this. Honest.
+pub static mut SYSCALL_WRAPPERS: [*const usize; 21] = [
+    syscall_wrapper_break as *const usize,
+    syscall_wrapper_debug_output as *const usize,
+    syscall_wrapper_create_port as *const usize,
+    syscall_wrapper_connect_to_named_port as *const usize,
+    syscall_wrapper_exit_process as *const usize,
+    syscall_wrapper_close_handle as *const usize,
+    syscall_wrapper_ipc_request as *const usize,
+    syscall_wrapper_ipc_reply as *const usize,
+    syscall_wrapper_ipc_receive as *const usize,
+    syscall_wrapper_ipc_accept as *const usize,
+    syscall_wrapper_get_process_id as *const usize,
+    syscall_wrapper_connect_to_port_handle as *const usize,
+    syscall_wrapper_map_memory as *const usize,
+    syscall_wrapper_sleep_ns as *const usize,
+    syscall_wrapper_bodge as *const usize,
+    syscall_wrapper_get_thread_id as *const usize,
+    syscall_wrapper_create_thread as *const usize,
+    syscall_wrapper_futex_wait as *const usize,
+    syscall_wrapper_futex_wake as *const usize,
+    syscall_wrapper_map_device_memory as *const usize,
+    syscall_wrapper_get_system_info as *const usize
+];
