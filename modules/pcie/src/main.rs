@@ -5,9 +5,9 @@ use common::system_info::*;
 fn main() {
     println!("Hello from pcie!");
 
-    if let Ok(SystemInfo::MemoryRegion(memory_region)) = syscalls::get_system_info(SystemInfoType::MemoryRegion, 0) {
+    /*if let Ok(SystemInfo::MemoryRegion(memory_region)) = syscalls::get_system_info(SystemInfoType::MemoryRegion, 0) {
         println!("memory region 0: {:?}", memory_region);
-    }
+    }*/
 
     let acpi_table_base = syscalls::bodge(constants::GET_ACPI_BASE, 0);
     println!("Acpi table base: {:?}", acpi_table_base);
