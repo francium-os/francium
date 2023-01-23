@@ -13,7 +13,7 @@ lazy_static! {
 
 pub fn svc_futex_wait(addr: usize, expected: u32, _timeout_ns: usize) -> ResultCode {
     event!(
-        Level::DEBUG,
+        Level::TRACE,
         svc_name = "futex_wait",
         addr = addr,
         expected = expected,

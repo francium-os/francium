@@ -31,9 +31,7 @@ pub extern "C" fn rust_main() -> ! {
         );
     }
 
-    // Now we can create the tracing subscriber, and also set up the idle process.
-
-    subscriber::init();
+    log_sink::init().unwrap();
 
     platform::scheduler_pre_init();
     scheduler::init();

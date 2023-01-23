@@ -12,7 +12,7 @@ pub const PROT_READ: u32 = 0x0004;
 
 pub fn svc_map_memory(address: usize, length: usize, permission: u32) -> (ResultCode, usize) {
     event!(
-        Level::DEBUG,
+        Level::TRACE,
         svc_name = "map_memory",
         address = address,
         length = length,
@@ -60,7 +60,7 @@ pub fn svc_map_memory(address: usize, length: usize, permission: u32) -> (Result
 
 pub fn svc_map_device_memory(phys_address: PhysAddr, virt_address: usize, length: usize, permission: u32) -> (ResultCode, usize) {
     event!(
-        Level::DEBUG,
+        Level::TRACE,
         svc_name = "map_device_memory",
         phys_address = phys_address.0,
         virt_address = virt_address,

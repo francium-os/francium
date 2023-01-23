@@ -5,7 +5,7 @@ use crate::timer;
 use alloc::boxed::Box;
 
 pub fn svc_sleep_ns(ns: u64) {
-    event!(Level::DEBUG, svc_name = "svc_sleep_ns", delay = ns);
+    event!(Level::TRACE, svc_name = "svc_sleep_ns", delay = ns);
 
     let thread = scheduler::get_current_thread();
 

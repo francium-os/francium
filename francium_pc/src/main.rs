@@ -68,6 +68,8 @@ fn bootloader_main(info: &'static mut bootloader_api::BootInfo) -> ! {
         );
     }
 
+    log_sink::init().unwrap();
+
     let rsdp_phys = PhysAddr(rsdp_addr as usize);
     let rsdp = acpi::parse_rsdp(rsdp_phys);
     match rsdp {
@@ -78,8 +80,6 @@ fn bootloader_main(info: &'static mut bootloader_api::BootInfo) -> ! {
             unimplemented!();
         }
     }
-
-    subscriber::init();
 
     platform::scheduler_pre_init();
     scheduler::init();
