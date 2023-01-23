@@ -9,4 +9,5 @@ resolver = "2"
 [dependencies]
 "francium_kernel" = { path = "../francium", features = ["platform_pc"] }
 "francium_common" = { path = "../crates/francium_common" }
+"francium_acpi" = { path = "../crates/francium_acpi"}
 bootloader_api = { path = "../../bootloader/api" }

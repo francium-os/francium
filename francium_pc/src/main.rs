@@ -6,6 +6,9 @@ use francium_kernel::constants::*;
 use francium_kernel::mmu::PagePermission;
 use francium_kernel::memory::KERNEL_ADDRESS_SPACE;
 use francium_common::types::PhysAddr;
+use francium_acpi as acpi;
+
+use crate::mmu::FranciumPhysAccess;
 
 extern "C" {
     fn switch_stacks();
@@ -71,10 +74,10 @@ fn bootloader_main(info: &'static mut bootloader_api::BootInfo) -> ! {
     log_sink::init().unwrap();
 
     let rsdp_phys = PhysAddr(rsdp_addr as usize);
-    let rsdp = acpi::parse_rsdp(rsdp_phys);
+    let rsdp = acpi::parse_rsdp::<FranciumPhysAccess>(rsdp_phys);
     match rsdp {
         acpi::RSDP::Normal(rsdp) => {
-            let _rsdt = acpi::parse_rsdt(PhysAddr(rsdp.rsdt_address as usize));
+            let _rsdt = acpi::parse_rsdt::<FranciumPhysAccess>(PhysAddr(rsdp.rsdt_address as usize));
         },
         acpi::RSDP::Extended(_xsdp) => {
             unimplemented!();

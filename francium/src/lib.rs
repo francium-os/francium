@@ -33,6 +33,5 @@ pub mod waitable;
 
 pub mod init;
 pub mod log_sink;
-pub mod acpi;
 
 use crate::memory::KERNEL_ADDRESS_SPACE;
