@@ -12,6 +12,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "acpi"
+version = "4.1.1"
+source = "git+https://github.com/rust-osdev/acpi.git?branch=main#a474afb46dfb3d1cb15742d8c3904b66c6b30c7c"
+dependencies = [
+ "bit_field",
+ "rsdp",
+]
+
+[[package]]
 name = "ahash"
 version = "0.7.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -166,6 +175,12 @@ checksum = "b1f45e9417d87227c7a56d22e471c6206462cba514c7590c09aff4cf6d1ddcad"
 dependencies = [
  "serde",
 ]
+
+[[package]]
+name = "bit_field"
+version = "0.10.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dcb6dd1c2376d2e096796e234a70e17e94cc2d5d54ff8ce42b28cef1d0d359a4"
 
 [[package]]
 name = "bitflags"
@@ -404,15 +419,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "francium_acpi"
-version = "0.1.0"
-dependencies = [
- "francium_common",
- "francium_mmu",
- "log",
-]
-
-[[package]]
 name = "francium_common"
 version = "0.1.0"
 dependencies = [
@@ -462,8 +468,8 @@ dependencies = [
 name = "francium_pc"
 version = "0.1.0"
 dependencies = [
+ "acpi",
  "bootloader_api",
- "francium_acpi",
  "francium_common",
  "francium_kernel",
 ]
@@ -755,7 +761,7 @@ dependencies = [
 
 [[package]]
 name = "libc"
-version = "0.2.126"
+version = "0.2.139"
 
 [[package]]
 name = "link-cplusplus"
@@ -907,9 +913,11 @@ dependencies = [
 name = "pcie"
 version = "0.1.0"
 dependencies = [
+ "acpi",
  "async-broadcast",
  "async-trait",
  "common",
+ "francium_common",
  "hashbrown 0.12.3",
  "ipc-gen-buildtime",
  "process",
@@ -1013,6 +1021,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3acd125665422973a33ac9d3dd2df85edad0f4ae9b00dafb1a05e43a9f5ef8e7"
 dependencies = [
  "winapi",
+]
+
+[[package]]
+name = "rsdp"
+version = "2.0.0"
+source = "git+https://github.com/rust-osdev/acpi.git?branch=main#a474afb46dfb3d1cb15742d8c3904b66c6b30c7c"
+dependencies = [
+ "log",
 ]
 
 [[package]]

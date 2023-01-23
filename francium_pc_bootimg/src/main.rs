@@ -8,7 +8,6 @@ fn main() {
     let kernel_path_str = "target/x86_64-unknown-none/release/francium_pc";
     let kernel = Path::new(&kernel_path_str);
 
-
     // create an UEFI disk image (optional)
     let uefi_path = out_dir.join("uefi.img");
     bootloader::UefiBoot::new(&kernel).create_disk_image(&uefi_path).unwrap();

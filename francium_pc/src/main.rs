@@ -1,14 +1,14 @@
 #![no_std]
 #![no_main]
+#![feature(allocator_api)]
+
+extern crate alloc;
 
 use francium_kernel::*;
 use francium_kernel::constants::*;
 use francium_kernel::mmu::PagePermission;
 use francium_kernel::memory::KERNEL_ADDRESS_SPACE;
 use francium_common::types::PhysAddr;
-use francium_acpi as acpi;
-
-use crate::mmu::FranciumPhysAccess;
 
 extern "C" {
     fn switch_stacks();
@@ -31,6 +31,23 @@ fn bootloader_main_thunk(info: &'static mut bootloader_api::BootInfo) -> ! {
         switch_stacks();
     }
     bootloader_main(info);
+}
+
+use acpi::{AcpiHandler, AcpiTables, PhysicalMapping};
+use core::ptr::NonNull;
+
+#[derive(Copy, Clone)]
+struct FranciumACPIHandler {}
+impl AcpiHandler for FranciumACPIHandler {
+    unsafe fn map_physical_region<T>(
+        &self,
+        physical_address: usize,
+        size: usize
+    ) -> PhysicalMapping<Self, T> {
+        PhysicalMapping::new(physical_address, NonNull::new(mmu::phys_to_virt(PhysAddr(physical_address)) as *mut T).unwrap(), size, size, *self)
+    }
+
+    fn unmap_physical_region<T>(_region: &PhysicalMapping<Self, T>) {}
 }
 
 fn bootloader_main(info: &'static mut bootloader_api::BootInfo) -> ! {
@@ -73,16 +90,13 @@ fn bootloader_main(info: &'static mut bootloader_api::BootInfo) -> ! {
 
     log_sink::init().unwrap();
 
-    let rsdp_phys = PhysAddr(rsdp_addr as usize);
-    let rsdp = acpi::parse_rsdp::<FranciumPhysAccess>(rsdp_phys);
-    match rsdp {
-        acpi::RSDP::Normal(rsdp) => {
-            let _rsdt = acpi::parse_rsdt::<FranciumPhysAccess>(PhysAddr(rsdp.rsdt_address as usize));
-        },
-        acpi::RSDP::Extended(_xsdp) => {
-            unimplemented!();
-        }
-    }
+    let handler = FranciumACPIHandler{};
+    let tables = unsafe { 
+        AcpiTables::from_rsdp(handler, rsdp_addr as usize).unwrap()
+    };
+
+    let plat = acpi::platform::PlatformInfo::new_in(&tables, &alloc::alloc::Global).unwrap();
+    println!("{:?}", plat.interrupt_model);
 
     platform::scheduler_pre_init();
     scheduler::init();

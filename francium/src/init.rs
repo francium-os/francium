@@ -1,5 +1,5 @@
 use francium_common::types::PhysAddr;
-use crate::align::align_up;
+use francium_common::align::align_up;
 use crate::arch::cache::clear_cache_for_address;
 use crate::arch::mmu::{get_current_page_table, invalidate_tlb_for_range};
 use crate::constants::*;

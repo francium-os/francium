@@ -4,3 +4,4 @@
 extern crate bitflags;
 
 pub mod types;
+pub mod align;

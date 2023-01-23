@@ -11,8 +11,9 @@ async-trait = "0.1.57"
 hashbrown = "0.12.3"
 "process" = { path = "../../libprocess" }
 "common" = { path = "../../libcommon" }
+"francium_common" = { path = "../../crates/francium_common" }
 tokio = { version = "1.21.2", features = ["rt", "rt-multi-thread", "macros"] }
-
+acpi = { git = "https://github.com/rust-osdev/acpi.git", branch = "main" }
 
 [build-dependencies]
 "ipc-gen-buildtime" = { path = "../../ipc-gen-buildtime" }

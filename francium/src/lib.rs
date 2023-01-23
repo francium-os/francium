@@ -9,7 +9,6 @@ extern crate lazy_static;
 #[macro_use]
 pub mod print;
 
-pub mod align;
 pub mod constants;
 
 pub use francium_drivers as drivers;
