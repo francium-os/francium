@@ -1,6 +1,5 @@
 use crate::{scheduler, svc};
 use crate::arch::x86_64::info::*;
-use core::arch::global_asm;
 use francium_common::types::PhysAddr;
 
 // The System V ABI returns 128 bit values in rax:rdx.
