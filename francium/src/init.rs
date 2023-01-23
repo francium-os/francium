@@ -109,8 +109,7 @@ pub fn load_process(elf_buf: &[u8], name: &'static str) -> Arc<Thread> {
     if let Elf::Elf64(e) = elf {
         let mut smallest_base = usize::MAX;
 
-        for phdr in e.program_header_iter() {
-            let ph = phdr.ph;
+        for ph in e.program_header_iter() {
             if ph.ph_type() == ProgramType::LOAD {
                 let mut section_start: usize = ph.vaddr() as usize;
                 let section_size: usize = ph.memsz() as usize;
@@ -127,8 +126,7 @@ pub fn load_process(elf_buf: &[u8], name: &'static str) -> Arc<Thread> {
                     section_start = section_start & !(PAGE_SIZE - 1);
                 }
 
-                if (ph.flags() & 1) == 1 {
-                    // TODO: where did `1` come from?
+                if (ph.flags() & ProgramHeaderFlags::EXECUTE) == ProgramHeaderFlags::EXECUTE {
                     p.address_space.create_with_overlap(
                         section_start,
                         section_size_aligned,
@@ -178,7 +176,7 @@ pub fn load_process(elf_buf: &[u8], name: &'static str) -> Arc<Thread> {
             }
         }
 
-        let user_code_base = e.header().entry_point() as usize;
+        let user_code_base = e.elf_header().entry_point() as usize;
         let user_stack_base = 0x40000000;
         let user_stack_size = 0x4000;
 
@@ -199,10 +197,10 @@ pub fn load_process(elf_buf: &[u8], name: &'static str) -> Arc<Thread> {
         let auxv_entries: [(usize, usize); 3] = [
             (
                 AT_PHDR,
-                smallest_base + e.header().program_header_offset() as usize,
+                smallest_base + e.elf_header().program_header_offset() as usize,
             ),
-            (AT_PHENT, e.header().program_header_entry_size() as usize),
-            (AT_PHNUM, e.header().program_header_entry_num() as usize),
+            (AT_PHENT, e.elf_header().program_header_entry_size() as usize),
+            (AT_PHNUM, e.elf_header().program_header_entry_num() as usize),
         ];
 
         // XXX: ptr size?
