@@ -1,5 +1,5 @@
 pub fn svc_debug_output(user_ptr: *const u8, len: usize) {
-    let mut temp_buffer: [u8; 512] = [0; 512];
+    let mut temp_buffer: [u8; 1024] = [0; 1024];
     unsafe {
         core::ptr::copy_nonoverlapping(user_ptr, temp_buffer.as_mut_ptr(), len);
     }
