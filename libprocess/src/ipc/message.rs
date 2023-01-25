@@ -117,6 +117,46 @@ impl IPCValue for u32 {
     }
 }
 
+impl IPCValue for u16 {
+    fn read(msg: &mut IPCMessage, buffer: &[u8]) -> u16 {
+        let val = u16::from_le_bytes(buffer[0..2].try_into().unwrap());
+        msg.read_offset += 2;
+        val
+    }
+
+    fn write(msg: &mut IPCMessage, buffer: &mut [u8], val: &u16) {
+        buffer[0..2].copy_from_slice(&u16::to_le_bytes(*val));
+        msg.write_offset += 2;
+    }
+}
+
+impl IPCValue for u8 {
+    fn read(msg: &mut IPCMessage, buffer: &[u8]) -> u8 {
+        let val = buffer[0];
+        msg.read_offset += 1;
+        val
+    }
+
+    fn write(msg: &mut IPCMessage, buffer: &mut [u8], val: &u8) {
+        buffer[0] = *val;
+        msg.write_offset += 1;
+    }
+}
+
+// TODO: sizeof(usize)=4?
+impl IPCValue for usize {
+    fn read(msg: &mut IPCMessage, buffer: &[u8]) -> usize {
+        let val = u64::from_le_bytes(buffer[0..8].try_into().unwrap());
+        msg.read_offset += 8;
+        val as usize
+    }
+
+    fn write(msg: &mut IPCMessage, buffer: &mut [u8], val: &usize) {
+        buffer[0..8].copy_from_slice(&u64::to_le_bytes(*val as u64));
+        msg.write_offset += 8;
+    }
+}
+
 impl IPCValue for ResultCode {
     fn read(msg: &mut IPCMessage, buffer: &[u8]) -> ResultCode {
         ResultCode(u32::read(msg, buffer))
@@ -210,4 +250,30 @@ impl IPCValue for () {
     fn read(_msg: &mut IPCMessage, _: &[u8]) {}
 
     fn write(_msg: &mut IPCMessage, _: &mut [u8], _: &()) {}
+}
+
+impl<T> IPCValue for Vec<T> where T: IPCValue {
+    fn read(msg: &mut IPCMessage, buffer: &[u8]) -> Vec<T> {
+        let length = usize::read(msg, buffer);
+        println!("{:?}", buffer);
+        println!("read vec! len={:?}", length);
+
+        let mut new_vec = Vec::with_capacity(length);
+        for i in 0..length {
+            new_vec.push(T::read(msg, buffer))
+        }
+
+        new_vec
+    }
+
+    fn write(msg: &mut IPCMessage, buffer: &mut [u8], value: &Vec<T>) {
+        println!("write vec! len={:?}", value.len());
+
+        usize::write(msg, buffer, &value.len());
+        for item in value {
+            T::write(msg, buffer, &item)
+        }
+
+        println!("got cursor {:?}", msg.write_offset);
+    }
 }

@@ -1,0 +1,9 @@
+name = "pcie"
+struct_name = "PCIEServerStruct"
+handle_accessor = "crate::ipc::pcie::get_handle_for_pcie"
+
+[[methods]]
+name = "list_devices"
+id = 1
+inputs = []
+output = "Vec<PCIDeviceInfo>"

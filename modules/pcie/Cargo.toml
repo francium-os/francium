@@ -14,6 +14,7 @@ hashbrown = "0.12.3"
 "francium_common" = { path = "../../crates/francium_common" }
 tokio = { version = "1.21.2", features = ["rt", "rt-multi-thread", "macros"] }
 acpi = { git = "https://github.com/rust-osdev/acpi.git", branch = "main" }
+smallvec = "1.10.0"
 
 [build-dependencies]
 "ipc-gen-buildtime" = { path = "../../ipc-gen-buildtime" }
