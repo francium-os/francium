@@ -41,7 +41,6 @@ async fn main() {
     println!("Hello from pcie!");
 
     let pcie_buses = pcie::scan_via_acpi();
-    println!("Hello again from pcie");
 
     let port = syscalls::create_port("").unwrap();
     sm::register_port(syscalls::make_tag("pcie"), TranslateCopyHandle(port)).unwrap();

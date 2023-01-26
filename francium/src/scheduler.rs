@@ -9,6 +9,8 @@ use crate::process::{Process, Thread, ThreadState};
 use intrusive_collections::intrusive_adapter;
 use intrusive_collections::{LinkedList, LinkedListAtomicLink};
 
+use log::trace;
+
 intrusive_adapter!(pub ThreadAdapter = Arc<Thread>: Thread { all_threads_link: LinkedListAtomicLink });
 intrusive_adapter!(pub ThreadRunnableAdapter = Arc<Thread>: Thread { running_link: LinkedListAtomicLink });
 
@@ -23,8 +25,8 @@ pub struct Scheduler {
 
 lazy_static! {
     static ref SCHEDULER: Mutex<Scheduler> = Mutex::new(Scheduler::new());
-}
 
+}
 extern "C" {
     fn switch_thread_asm(
         from_context: *mut ThreadContext,
@@ -223,15 +225,19 @@ impl Scheduler {
 
     pub fn wake(&mut self, thread: &Arc<Thread>, tag: usize) {
         if thread.state.load(Ordering::Acquire) != ThreadState::Runnable {
+            trace!("Waking thread {:?} ({})", thread.id, thread.process.lock().name);
+
             thread.state.store(ThreadState::Runnable, Ordering::Release);
             // set x0 of the thread context
             set_thread_context_tag(thread, tag);
             self.runnable_threads.push_back(thread.clone());
 
-        // TODO: I tried to add an optimization to immediately suspend the idle thread if its running.
-        // but calling switch_thread in wake breaks things pretty badly
+            // TODO: I tried to add an optimization to immediately suspend the idle thread if its running.
+            // but calling switch_thread in wake breaks things pretty badly
+            // self.switch_thread(&self.get_current_thread(), thread);
         } else {
-            panic!("Trying to re-wake thread!");
+            // This should be OK, hopefully.
+            trace!("Trying to re-wake thread {:?} !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!", thread.id);
         }
     }
 

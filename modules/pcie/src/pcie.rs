@@ -156,7 +156,7 @@ pub fn scan_via_acpi() -> Vec<PCIBus> {
     let mut buses = Vec::new();
 
     for ecam_block in pci_regions.iter() {
-        println!("ECAM block: segment_group={}, bus_range={:?}, addr={:08x}", ecam_block.segment_group, ecam_block.bus_range, ecam_block.physical_address);
+        //println!("ECAM block: segment_group={}, bus_range={:?}, addr={:08x}", ecam_block.segment_group, ecam_block.bus_range, ecam_block.physical_address);
         let ecam_size: usize = (*ecam_block.bus_range.end() as usize - *ecam_block.bus_range.start() as usize + 1) << 20;
         let ecam_virt = syscalls::map_device_memory(ecam_block.physical_address, 0, ecam_size, PagePermission::USER_READ_WRITE.bits() as u32).unwrap();
 
@@ -164,7 +164,7 @@ pub fn scan_via_acpi() -> Vec<PCIBus> {
 
         for bus_num in ecam_block.bus_range {
             if let Some(pci_bus) = PCIBus::new(ecam_virt, bus_num) {
-                println!("bus: {:?}", pci_bus);
+                //println!("bus: {:?}", pci_bus);
 
                 buses.push(pci_bus);
             }

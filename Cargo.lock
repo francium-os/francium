@@ -921,6 +921,7 @@ dependencies = [
  "hashbrown 0.12.3",
  "ipc-gen-buildtime",
  "process",
+ "smallvec",
  "tokio",
 ]
 
