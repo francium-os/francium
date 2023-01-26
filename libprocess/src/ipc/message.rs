@@ -83,62 +83,62 @@ impl IPCMessage {
     }
 
     pub fn read<T: IPCValue>(&mut self) -> T {
-        unsafe { T::read(self, &IPC_BUFFER[self.read_offset..]) }
+        unsafe { T::read(self, &IPC_BUFFER) }
     }
 
     pub fn write<T: IPCValue>(&mut self, a: T) {
-        unsafe { T::write(self, &mut IPC_BUFFER[self.write_offset..], &a) }
+        unsafe { T::write(self, &mut IPC_BUFFER, &a) }
     }
 }
 
 impl IPCValue for u64 {
     fn read(msg: &mut IPCMessage, buffer: &[u8]) -> u64 {
-        let val = u64::from_le_bytes(buffer[0..8].try_into().unwrap());
+        let val = u64::from_le_bytes(buffer[msg.read_offset..msg.read_offset+8].try_into().unwrap());
         msg.read_offset += 8;
         val
     }
 
     fn write(msg: &mut IPCMessage, buffer: &mut [u8], val: &u64) {
-        buffer[0..8].copy_from_slice(&u64::to_le_bytes(*val));
+        buffer[msg.write_offset..msg.write_offset+8].copy_from_slice(&u64::to_le_bytes(*val));
         msg.write_offset += 8;
     }
 }
 
 impl IPCValue for u32 {
     fn read(msg: &mut IPCMessage, buffer: &[u8]) -> u32 {
-        let val = u32::from_le_bytes(buffer[0..4].try_into().unwrap());
+        let val = u32::from_le_bytes(buffer[msg.read_offset..msg.read_offset+4].try_into().unwrap());
         msg.read_offset += 4;
         val
     }
 
     fn write(msg: &mut IPCMessage, buffer: &mut [u8], val: &u32) {
-        buffer[0..4].copy_from_slice(&u32::to_le_bytes(*val));
+        buffer[msg.write_offset..msg.write_offset+4].copy_from_slice(&u32::to_le_bytes(*val));
         msg.write_offset += 4;
     }
 }
 
 impl IPCValue for u16 {
     fn read(msg: &mut IPCMessage, buffer: &[u8]) -> u16 {
-        let val = u16::from_le_bytes(buffer[0..2].try_into().unwrap());
+        let val = u16::from_le_bytes(buffer[msg.read_offset..msg.read_offset+2].try_into().unwrap());
         msg.read_offset += 2;
         val
     }
 
     fn write(msg: &mut IPCMessage, buffer: &mut [u8], val: &u16) {
-        buffer[0..2].copy_from_slice(&u16::to_le_bytes(*val));
+        buffer[msg.write_offset..msg.write_offset+2].copy_from_slice(&u16::to_le_bytes(*val));
         msg.write_offset += 2;
     }
 }
 
 impl IPCValue for u8 {
     fn read(msg: &mut IPCMessage, buffer: &[u8]) -> u8 {
-        let val = buffer[0];
+        let val = buffer[msg.read_offset];
         msg.read_offset += 1;
         val
     }
 
     fn write(msg: &mut IPCMessage, buffer: &mut [u8], val: &u8) {
-        buffer[0] = *val;
+        buffer[msg.write_offset] = *val;
         msg.write_offset += 1;
     }
 }
@@ -146,13 +146,13 @@ impl IPCValue for u8 {
 // TODO: sizeof(usize)=4?
 impl IPCValue for usize {
     fn read(msg: &mut IPCMessage, buffer: &[u8]) -> usize {
-        let val = u64::from_le_bytes(buffer[0..8].try_into().unwrap());
+        let val = u64::from_le_bytes(buffer[msg.read_offset..msg.read_offset+8].try_into().unwrap());
         msg.read_offset += 8;
         val as usize
     }
 
     fn write(msg: &mut IPCMessage, buffer: &mut [u8], val: &usize) {
-        buffer[0..8].copy_from_slice(&u64::to_le_bytes(*val as u64));
+        buffer[msg.write_offset..msg.write_offset+8].copy_from_slice(&u64::to_le_bytes(*val as u64));
         msg.write_offset += 8;
     }
 }
@@ -239,7 +239,7 @@ impl<T: IPCValue> IPCValue for OSResult<T> {
             Ok(x) => {
                 ResultCode::write(msg, buffer, &RESULT_OK);
                 // TODO: sizeof(resultcode) == 4
-                T::write(msg, &mut buffer[4..], &x)
+                T::write(msg, buffer, &x)
             }
             Err(err) => OSError::write(msg, buffer, &err),
         }
