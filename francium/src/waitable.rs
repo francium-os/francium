@@ -133,7 +133,8 @@ pub fn wait_handles(handles: &[u32]) -> usize {
         match handle {
             // What handles are waitable?
             HandleObject::Port(port) => {
-                if port.post_wait(index) {
+                // XXX: Big hack, we love to see it. Ordering here is important, post_wait has to remove the pending status first.
+                if port.post_wait(index) || port.queue.lock().len() > 0 {
                     any_pending = true;
                     tag = index;
                     break;
@@ -141,7 +142,8 @@ pub fn wait_handles(handles: &[u32]) -> usize {
             }
 
             HandleObject::ServerSession(server_session) => {
-                if server_session.post_wait(index) {
+                // XXX: Big hack, we love to see it. Ordering here is important, post_wait has to remove the pending status first.
+                if server_session.post_wait(index) || server_session.queue.lock().len() > 0 {
                     any_pending = true;
                     tag = index;
                     break;

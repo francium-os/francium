@@ -22,7 +22,7 @@ use smallvec::SmallVec;
 pub struct ServerSession {
     wait: Waiter,
     connect_wait: Waiter,
-    queue: Mutex<SmallVec<[(Arc<Thread>, usize); 1]>>,
+    pub queue: Mutex<SmallVec<[(Arc<Thread>, usize); 1]>>,
     client: Mutex<Weak<ClientSession>>,
     client_thread: Mutex<Option<(Arc<Thread>, usize)>>,
 }
@@ -37,7 +37,7 @@ pub struct ClientSession {
 pub struct Port {
     wait: Waiter,
     // todo: queue default length
-    queue: Mutex<SmallVec<[Arc<ServerSession>; 1]>>,
+    pub queue: Mutex<SmallVec<[Arc<ServerSession>; 1]>>,
 }
 
 impl Port {
