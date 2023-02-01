@@ -1,6 +1,4 @@
-use crate::ipc::message::IPC_BUFFER;
 use crate::syscalls;
-use alloc::boxed::Box;
 use alloc::sync::Arc;
 use common::{Handle, INVALID_HANDLE};
 use core::sync::atomic::{AtomicBool, Ordering};
@@ -35,7 +33,7 @@ impl<T: IPCServer + Send + Sync + 'static> ServerImpl<T> {
             let handles_copy = self.handles.clone();
 
             let (index, mut ipc_buffer) = tokio::task::spawn_blocking(move || {
-                let i = unsafe { syscalls::ipc_receive(&handles_copy, &mut ipc_buffer).unwrap() };
+                let i = syscalls::ipc_receive(&handles_copy, &mut ipc_buffer).unwrap();
                 (i, ipc_buffer)
             }).await.unwrap();
 

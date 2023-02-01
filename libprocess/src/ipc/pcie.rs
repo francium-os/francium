@@ -1,6 +1,3 @@
-use crate::syscalls;
-use common::ipc::*;
-use common::os_error::OSResult;
 use common::Handle;
 use spin::Mutex;
 

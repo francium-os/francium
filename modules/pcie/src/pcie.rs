@@ -1,14 +1,12 @@
 use crate::ecam::ECAMHeader;
 use process::syscalls;
 use common::constants;
-use common::system_info::*;
+//use common::system_info::*;
 use francium_common::align::align_up;
-use francium_common::types::{PhysAddr, PagePermission};
+use francium_common::types::PagePermission;
 use acpi::{AcpiHandler, AcpiTables, PhysicalMapping, PciConfigRegions};
 use std::ptr::NonNull;
 use smallvec::SmallVec;
-
-use process::ipc_server::ServerImpl;
 
 #[derive(Copy, Clone)]
 struct UserACPIHandler {}
@@ -27,7 +25,7 @@ impl AcpiHandler for UserACPIHandler {
         PhysicalMapping::new(physical_address, NonNull::new((virt + page_offset) as *mut T).unwrap(), size, size, *self)
     }
 
-    fn unmap_physical_region<T>(region: &PhysicalMapping<Self, T>) {
+    fn unmap_physical_region<T>(_region: &PhysicalMapping<Self, T>) {
         // XXX there's no unmap_device_memory yet. we have enough address space. probably.
     }
 }

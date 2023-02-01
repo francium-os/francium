@@ -45,8 +45,7 @@ impl IPCMessage<'_> {
     }
 
     pub fn read_header(&mut self) {
-        let packed = unsafe { u32::from_le_bytes(self.buffer[0..4].try_into().unwrap()) };
-
+        let packed = u32::from_le_bytes(self.buffer[0..4].try_into().unwrap());
         self.header = IPCHeader::unpack(packed);
     }
 
@@ -254,7 +253,7 @@ impl<T> IPCValue for Vec<T> where T: IPCValue {
         println!("read vec! len={:?}", length);
 
         let mut new_vec = Vec::with_capacity(length);
-        for i in 0..length {
+        for _ in 0..length {
             new_vec.push(T::read(msg))
         }
 
