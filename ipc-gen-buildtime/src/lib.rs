@@ -60,7 +60,7 @@ impl Method {
 
                 tokio::spawn(async move {
                     let res: #output_type = self.#method_name (#(#input_names),*) #maybe_await;
-                    let mut reply_msg = process::ipc::message::IPCMessage::new();
+                    let mut reply_msg = unsafe { process::ipc::message::IPCMessage::new(&mut IPC_BUFFER) };
                     reply_msg.write(res);
                     reply_msg.write_translates();
                     reply_msg.write_header_for(0);
@@ -111,7 +111,7 @@ impl Method {
         quote! {
             pub fn #method_name ( #(#inputs),* ) -> #output_type {
                 let h = #ipc_handle_accessor();
-                let mut request_msg = crate::ipc::message::IPCMessage::new();
+                let mut request_msg = unsafe { crate::ipc::message::IPCMessage::new(&mut IPC_BUFFER) };
 
                 #write_inputs
 
@@ -120,7 +120,7 @@ impl Method {
 
                 unsafe { crate::syscalls::ipc_request(h, &mut IPC_BUFFER).unwrap(); }
 
-                let mut reply_msg = crate::ipc::message::IPCMessage::new();
+                let mut reply_msg = unsafe { crate::ipc::message::IPCMessage::new(&mut IPC_BUFFER) };
                 reply_msg.read_header();
                 reply_msg.read_translates();
 
@@ -152,14 +152,14 @@ pub fn generate_server(path: &str) {
 
         #[async_trait::async_trait]
         impl IPCServer for #server_struct_name {
-            async fn process(self: std::sync::Arc<Self>, h: Handle) {
-                self.process_internal(h).await
+            fn process(self: std::sync::Arc<Self>, h: Handle, ipc_buffer: &mut [u8]) {
+                self.process_internal(h, ipc_buffer)
             }
         }
 
         impl #server_struct_name {
-            async fn process_internal(self: std::sync::Arc<Self>, h: Handle) {
-                let mut request_msg = process::ipc::message::IPCMessage::new();
+            fn process_internal(self: std::sync::Arc<Self>, h: Handle, ipc_buffer: &mut [u8]) {
+                let mut request_msg = process::ipc::message::IPCMessage::new(ipc_buffer);
                 request_msg.read_header();
 
                 match request_msg.header.id {

@@ -15,21 +15,21 @@ pub struct PCIDeviceInfo {
 use crate::ipc::message::IPCMessage;
 use crate::ipc::message::IPCValue;
 impl IPCValue for PCIDeviceInfo {
-    fn read(msg: &mut IPCMessage, buffer: &[u8]) -> PCIDeviceInfo {
+    fn read(msg: &mut IPCMessage) -> PCIDeviceInfo {
         PCIDeviceInfo {
-            bus: u8::read(msg, buffer),
-            device: u8::read(msg, buffer),
-            vendor_id: u16::read(msg, buffer),
-            device_id: u16::read(msg, buffer)
+            bus: u8::read(msg),
+            device: u8::read(msg),
+            vendor_id: u16::read(msg),
+            device_id: u16::read(msg)
         }
     }
 
-    fn write(msg: &mut IPCMessage, buffer: &mut [u8], val: &PCIDeviceInfo) {
-        u8::write(msg, buffer, &val.bus);
-        u8::write(msg, buffer, &val.device);
+    fn write(msg: &mut IPCMessage, val: &PCIDeviceInfo) {
+        u8::write(msg, &val.bus);
+        u8::write(msg, &val.device);
 
-        u16::write(msg, buffer, &val.vendor_id);
-        u16::write(msg, buffer, &val.device_id);
+        u16::write(msg, &val.vendor_id);
+        u16::write(msg, &val.device_id);
     }
 }
 

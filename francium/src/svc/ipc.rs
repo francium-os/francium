@@ -15,7 +15,6 @@ use common::os_error::{Module, Reason, ResultCode, RESULT_OK};
 use common::Handle;
 use core::convert::TryInto;
 use spin::Mutex;
-use log::trace;
 
 use smallvec::SmallVec;
 

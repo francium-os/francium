@@ -989,6 +989,7 @@ dependencies = [
  "ipc-gen-buildtime",
  "smallvec",
  "spin 0.9.4",
+ "tokio",
 ]
 
 [[package]]
