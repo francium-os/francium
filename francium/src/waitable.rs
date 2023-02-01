@@ -66,7 +66,7 @@ impl Waiter {
         match self.waiters.lock().pop() {
             Some(waiter) => {
                 callback(&waiter.0);
-                scheduler::wake_thread(&waiter.0, waiter.1)
+                scheduler::wake_thread(&waiter.0, waiter.1);
             }
             None => self.pending.store(true, Ordering::Release),
         }
@@ -76,7 +76,7 @@ impl Waiter {
         self.waiters
             .lock()
             .drain(..)
-            .map(|x| scheduler::wake_thread(&x.0, x.1))
+            .map(|x| {scheduler::wake_thread(&x.0, x.1);})
             .collect()
     }
 }

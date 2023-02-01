@@ -88,7 +88,7 @@ impl Scheduler {
     }
 
     fn switch_thread(&mut self, from: &Arc<Thread>, to: &Arc<Thread>) -> usize {
-        //println!("Switch from {} to {}", from.process.lock().name, to.process.lock().name);
+        trace!("Switch from {} to {}", from.id, to.id);
 
         if from.id == to.id {
             // don't do this, it'll deadlock
@@ -176,9 +176,14 @@ impl Scheduler {
             thread
                 .state
                 .store(ThreadState::Suspended, Ordering::Release);
+
+
             // Safety: thread is runnable
             let current_thread = self.get_current_thread();
             let current_id = current_thread.id;
+
+            trace!("Suspending thread {} ({})", current_id, current_thread.process.lock().name);
+
             let mut cursor = unsafe {
                 self.runnable_threads
                     .cursor_mut_from_ptr(Arc::<Thread>::as_ptr(&current_thread))
@@ -191,6 +196,12 @@ impl Scheduler {
 
                 // If list is empty, it will still be on the null element.
                 if cursor.is_null() {
+                    trace!("Starting idle thread.");
+
+                    for t in self.threads.iter() {
+                        trace!("Thread: {:?}, {:?} {:?}", t, t.process.lock().name, t.state);
+                    }
+
                     let idle_thread = self.idle_thread.as_ref().unwrap();
                     // Get the idle thread running.
                     if idle_thread.state.load(Ordering::Acquire) == ThreadState::Suspended {
@@ -237,7 +248,7 @@ impl Scheduler {
             // self.switch_thread(&self.get_current_thread(), thread);
         } else {
             // This should be OK, hopefully.
-            trace!("Trying to re-wake thread {:?} !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!", thread.id);
+            trace!("Trying to re-wake thread {:?}!", thread.id);
         }
     }
 
