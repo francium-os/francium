@@ -40,9 +40,15 @@ pub fn svc_futex_wait(addr: usize, expected: u32, _timeout_ns: usize) -> ResultC
 }
 
 pub fn svc_futex_wake(addr: usize) -> ResultCode {
+    event!(
+        Level::TRACE,
+        svc_name = "futex_wake",
+        addr = addr
+    );
+
     match FUTEX_TABLE.lock().get(&addr) {
         Some(x) => {
-            x.signal_one();
+            x.signal_all();
         }
         None => {
             // TODO: what do we do? currently nothing
