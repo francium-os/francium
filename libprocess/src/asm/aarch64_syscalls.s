@@ -1,3 +1,4 @@
+.global syscall_break
 .global syscall_debug_output
 .global syscall_create_port
 .global syscall_connect_to_port
@@ -20,6 +21,10 @@
 .global get_tpidr_el0_asm
 
 .section .text
+syscall_break:
+svc #0
+ret
+
 syscall_debug_output:
 svc #1
 ret

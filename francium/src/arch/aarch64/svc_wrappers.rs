@@ -119,7 +119,7 @@ fn syscall_wrapper_get_system_tick(ctx: &mut ExceptionContext) {
 }
 
 type SVCHandler = fn(&mut ExceptionContext);
-pub const SVC_HANDLERS: [SVCHandler; 21] = [
+pub const SVC_HANDLERS: [SVCHandler; 22] = [
     syscall_wrapper_break,
     syscall_wrapper_debug_output,
     syscall_wrapper_create_port,
