@@ -113,6 +113,11 @@ fn syscall_wrapper_get_system_info(ctx: &mut ExceptionContext) {
     ctx.regs[0] = res.0 as usize;
 }
 
+fn syscall_wrapper_get_system_tick(ctx: &mut ExceptionContext) {
+    let res = svc::svc_get_system_tick();
+    ctx.regs[0] = res as usize;
+}
+
 type SVCHandler = fn(&mut ExceptionContext);
 pub const SVC_HANDLERS: [SVCHandler; 21] = [
     syscall_wrapper_break,
@@ -135,5 +140,6 @@ pub const SVC_HANDLERS: [SVCHandler; 21] = [
     syscall_wrapper_futex_wait,
     syscall_wrapper_futex_wake,
     syscall_wrapper_map_device_memory,
-    syscall_wrapper_get_system_info
+    syscall_wrapper_get_system_info,
+    syscall_wrapper_get_system_tick
 ];

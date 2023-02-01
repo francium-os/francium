@@ -182,8 +182,13 @@ unsafe extern "C" fn syscall_wrapper_get_system_info(ty: usize, index: usize, ou
     res.0 as u32
 }
 
+#[no_mangle]
+unsafe extern "C" fn syscall_wrapper_get_system_tick() -> u64 {
+    svc::svc_get_system_tick()
+}
+
 // Don't modify this. Honest.
-pub static mut SYSCALL_WRAPPERS: [*const usize; 21] = [
+pub static mut SYSCALL_WRAPPERS: [*const usize; 22] = [
     syscall_wrapper_break as *const usize,
     syscall_wrapper_debug_output as *const usize,
     syscall_wrapper_create_port as *const usize,
@@ -204,5 +209,6 @@ pub static mut SYSCALL_WRAPPERS: [*const usize; 21] = [
     syscall_wrapper_futex_wait as *const usize,
     syscall_wrapper_futex_wake as *const usize,
     syscall_wrapper_map_device_memory as *const usize,
-    syscall_wrapper_get_system_info as *const usize
+    syscall_wrapper_get_system_info as *const usize,
+    syscall_wrapper_get_system_tick as *const usize,
 ];

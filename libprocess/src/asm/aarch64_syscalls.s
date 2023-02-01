@@ -15,6 +15,8 @@
 .global syscall_futex_wait
 .global syscall_futex_wake
 .global syscall_map_device_memory
+.global syscall_get_system_tick
+
 .global get_tpidr_el0_asm
 
 .section .text
@@ -111,6 +113,13 @@ svc #0x13
 str x1, [x9]
 ret
 
+// syscall_get_system_info
+
+syscall_get_system_tick:
+svc #0x15
+ret
+
 get_tpidr_el0_asm:
 mrs x0, tpidr_el0
 ret
+

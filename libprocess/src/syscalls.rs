@@ -42,6 +42,8 @@ extern "C" {
         index: usize,
         info_out: *mut usize
     ) -> ResultCode;
+
+    pub fn syscall_get_system_tick() -> u64;
 }
 
 pub fn print(s: &str) {
@@ -220,6 +222,10 @@ pub fn get_system_info(_ty: SystemInfoType, _index: usize) -> Result<SystemInfo,
             Err(OSError::from_result_code(res))
         }
     }*/
+}
+
+pub fn get_system_tick() -> u64 {
+    unsafe { syscall_get_system_tick() }
 }
 
 

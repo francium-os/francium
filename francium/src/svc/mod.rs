@@ -8,6 +8,7 @@ mod process;
 mod svc_break;
 mod thread;
 mod get_system_info;
+mod get_system_tick;
 
 pub use debug_output::svc_debug_output;
 pub use exit_process::svc_exit_process;
@@ -35,3 +36,5 @@ pub use futex::svc_futex_wait;
 pub use futex::svc_futex_wake;
 
 pub use get_system_info::svc_get_system_info;
+
+pub use get_system_tick::svc_get_system_tick;

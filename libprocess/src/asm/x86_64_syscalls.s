@@ -17,6 +17,7 @@
 .global syscall_futex_wait
 .global syscall_futex_wake
 .global syscall_map_device_memory
+.global syscall_get_system_tick
 
 .section .text
 
@@ -156,4 +157,9 @@ mov rbx, r8
 syscall
 mov [rbx], rdx
 pop rbx
+ret
+
+syscall_get_system_tick:
+mov eax, 0x15
+syscall
 ret
