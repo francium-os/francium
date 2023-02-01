@@ -2,13 +2,12 @@ use core::arch::asm;
 use crate::arch::x86_64::svc_wrappers::SYSCALL_WRAPPERS;
 #[naked]
 unsafe extern "C" fn syscall_handler() {
-    asm!("mov r10, rsp
-		lea r9, [rip + current_thread_kernel_stack]
-		mov rsp, [r9]
+    asm!("mov r9, rsp
+		mov rsp, [rip + current_thread_kernel_stack]
 
 		push r11
 		push rcx
-		push r10
+		push r9
 
 		// We need to save and restore the usermode (callee-save) registers here.
 		push rbx
@@ -18,9 +17,11 @@ unsafe extern "C" fn syscall_handler() {
 		push r15
 		push rbp
 
-		lea rcx, [rip+{}]
-		mov r10, [rcx + rax*8]
-		call r10
+		mov rcx, r10
+
+		lea r11, [rip+{}]
+		mov r11, [r11 + rax*8]
+		call r11
 
 		pop rbp
 		pop r15
@@ -29,10 +30,10 @@ unsafe extern "C" fn syscall_handler() {
 		pop r12
 		pop rbx
 
-		pop r10
+		pop r9
 		pop rcx
 		pop r11
-		mov rsp, r10
+		mov rsp, r9
 
 		sysretq
 	",

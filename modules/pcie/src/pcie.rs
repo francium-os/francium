@@ -21,7 +21,7 @@ impl AcpiHandler for UserACPIHandler {
         let new_size = align_up(size + page_offset, 0x1000);
 
         // TODO: make this not, really awful
-        let virt = syscalls::map_device_memory(page_addr, 0, new_size, PagePermission::USER_READ_WRITE.bits() as u32).unwrap();
+        let virt = syscalls::map_device_memory(page_addr, 0, new_size, PagePermission::USER_READ_WRITE).unwrap();
         PhysicalMapping::new(physical_address, NonNull::new((virt + page_offset) as *mut T).unwrap(), size, size, *self)
     }
 
@@ -156,7 +156,7 @@ pub fn scan_via_acpi() -> Vec<PCIBus> {
     for ecam_block in pci_regions.iter() {
         //println!("ECAM block: segment_group={}, bus_range={:?}, addr={:08x}", ecam_block.segment_group, ecam_block.bus_range, ecam_block.physical_address);
         let ecam_size: usize = (*ecam_block.bus_range.end() as usize - *ecam_block.bus_range.start() as usize + 1) << 20;
-        let ecam_virt = syscalls::map_device_memory(ecam_block.physical_address, 0, ecam_size, PagePermission::USER_READ_WRITE.bits() as u32).unwrap();
+        let ecam_virt = syscalls::map_device_memory(ecam_block.physical_address, 0, ecam_size, PagePermission::USER_READ_WRITE).unwrap();
 
         assert!(ecam_block.segment_group == 0);
 

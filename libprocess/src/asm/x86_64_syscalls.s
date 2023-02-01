@@ -154,6 +154,10 @@ syscall_map_device_memory:
 push rbx
 mov eax, 0x13
 mov rbx, r8
+
+// ! Move into r10 !
+mov r10, rcx
+
 syscall
 mov [rbx], rdx
 pop rbx

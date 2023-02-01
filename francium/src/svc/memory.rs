@@ -5,11 +5,6 @@ use crate::mmu::PagePermission;
 use francium_common::types::PhysAddr;
 use common::os_error::{ResultCode, RESULT_OK};
 
-//pub const PROT_NONE: u32 = 0x0000;
-pub const PROT_EXEC: u32 = 0x0001;
-pub const PROT_WRITE: u32 = 0x0002;
-pub const PROT_READ: u32 = 0x0004;
-
 pub fn svc_map_memory(address: usize, length: usize, permission: u32) -> (ResultCode, usize) {
     event!(
         Level::TRACE,
@@ -35,30 +30,14 @@ pub fn svc_map_memory(address: usize, length: usize, permission: u32) -> (Result
         }
     }
 
-    let mut page_permission: PagePermission = PagePermission::READ_ONLY;
-
-    if permission & PROT_EXEC == PROT_EXEC {
-        page_permission |= PagePermission::EXECUTE;
-    }
-
-    if permission & PROT_WRITE == PROT_WRITE {
-        page_permission |= PagePermission::WRITE;
-    }
-
-    if permission & PROT_READ == PROT_READ {
-        page_permission |= PagePermission::READ_ONLY;
-    }
-
-    //	println!("svc_map_memory: {:x} {:x}", highest_mmap, highest_mmap + length - 1);
-
+    let page_permission: PagePermission = PagePermission::from_bits(permission as u64).unwrap();
     aspace.create(highest_mmap, length, page_permission);
     //println!("{:x?}", aspace.regions);
 
     (RESULT_OK, highest_mmap)
 }
 
-
-pub fn svc_map_device_memory(phys_address: PhysAddr, virt_address: usize, length: usize, permission: u32) -> (ResultCode, usize) {
+pub fn svc_map_device_memory(phys_address: PhysAddr, virt_address: usize, length: usize, permission: u64) -> (ResultCode, usize) {
     event!(
         Level::TRACE,
         svc_name = "map_device_memory",
@@ -84,16 +63,8 @@ pub fn svc_map_device_memory(phys_address: PhysAddr, virt_address: usize, length
         }
     }
 
-    let mut page_permission: PagePermission = PagePermission::READ_ONLY;
-
-    if permission & PROT_WRITE == PROT_WRITE {
-        page_permission |= PagePermission::WRITE;
-    }
-
-    if permission & PROT_READ == PROT_READ {
-        page_permission |= PagePermission::READ_ONLY;
-    }
-
+    println!("permission: {:x?} {:x?} {:x?} {:x?}", phys_address, virt_address, length, permission);
+    let page_permission: PagePermission = PagePermission::from_bits(permission as u64).unwrap();
     aspace.alias(phys_address, highest_mmap, length, page_permission);
 
     (RESULT_OK, highest_mmap)

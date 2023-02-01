@@ -168,7 +168,7 @@ unsafe extern "C" fn syscall_wrapper_futex_wake(addr: usize) -> u32 {
 }
 
 #[no_mangle]
-unsafe extern "C" fn syscall_wrapper_map_device_memory(phys_addr: PhysAddr, virt_addr: usize, length: usize, permission: u32) -> Pair {
+unsafe extern "C" fn syscall_wrapper_map_device_memory(phys_addr: PhysAddr, virt_addr: usize, length: usize, permission: u64) -> Pair {
     let (res, out) = svc::svc_map_device_memory(phys_addr, virt_addr, length, permission);
     Pair {
         a: res.0 as usize,
