@@ -69,7 +69,7 @@ fn syscall_wrapper_map_memory(ctx: &mut ExceptionContext) {
     let (res, addr_out) = svc::svc_map_memory(
         ctx.regs[0] as usize,
         ctx.regs[1] as usize,
-        ctx.regs[2] as u32,
+        ctx.regs[2] as u64,
     );
     ctx.regs[0] = res.0 as usize;
     ctx.regs[1] = addr_out;
@@ -102,7 +102,7 @@ fn syscall_wrapper_futex_wake(ctx: &mut ExceptionContext) {
 
 fn syscall_wrapper_map_device_memory(ctx: &mut ExceptionContext) {
 //phys_addr: PhysAddr, virt_addr: usize, length: usize, permission: u32) -> Pair {
-    let (res, out) = svc::svc_map_device_memory(PhysAddr(ctx.regs[0]), ctx.regs[1], ctx.regs[2], ctx.regs[3] as u32);
+    let (res, out) = svc::svc_map_device_memory(PhysAddr(ctx.regs[0]), ctx.regs[1], ctx.regs[2], ctx.regs[3] as u64);
     ctx.regs[0] = res.0 as usize;
     ctx.regs[1] = out as usize;
 }

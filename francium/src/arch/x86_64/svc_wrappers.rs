@@ -98,7 +98,7 @@ unsafe extern "C" fn syscall_wrapper_get_process_id() -> usize {
 unsafe extern "C" fn syscall_wrapper_map_memory(
     address: usize,
     length: usize,
-    permission: u32,
+    permission: u64,
 ) -> Pair {
     let (res, out) = svc::svc_map_memory(address, length, permission);
     Pair {

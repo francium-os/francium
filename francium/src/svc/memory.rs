@@ -5,7 +5,7 @@ use crate::mmu::PagePermission;
 use francium_common::types::PhysAddr;
 use common::os_error::{ResultCode, RESULT_OK};
 
-pub fn svc_map_memory(address: usize, length: usize, permission: u32) -> (ResultCode, usize) {
+pub fn svc_map_memory(address: usize, length: usize, permission: u64) -> (ResultCode, usize) {
     event!(
         Level::TRACE,
         svc_name = "map_memory",
@@ -30,7 +30,7 @@ pub fn svc_map_memory(address: usize, length: usize, permission: u32) -> (Result
         }
     }
 
-    let page_permission: PagePermission = PagePermission::from_bits(permission as u64).unwrap();
+    let page_permission: PagePermission = PagePermission::from_bits(permission).unwrap();
     aspace.create(highest_mmap, length, page_permission);
     //println!("{:x?}", aspace.regions);
 
@@ -63,8 +63,7 @@ pub fn svc_map_device_memory(phys_address: PhysAddr, virt_address: usize, length
         }
     }
 
-    println!("permission: {:x?} {:x?} {:x?} {:x?}", phys_address, virt_address, length, permission);
-    let page_permission: PagePermission = PagePermission::from_bits(permission as u64).unwrap();
+    let page_permission: PagePermission = PagePermission::from_bits(permission).unwrap();
     aspace.alias(phys_address, highest_mmap, length, page_permission);
 
     (RESULT_OK, highest_mmap)
