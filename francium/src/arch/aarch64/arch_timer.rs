@@ -37,12 +37,8 @@ impl Timer for ArchTimer {
 
     fn get_counter_ns(&self) -> u64 {
         let val = CNTPCT_EL0.get();
+        let ns_per_tick = (1000000000) / CNTFRQ_EL0.get();
 
-        // TODO: This is okay, but it feels a bit wrong.
-        // 2**64 / (1000000000) = 18446744073
-        // > 18446744073 seconds in years
-        // approx. 584.5545 tropicalyear (time
-
-        (val * 1000000000) / CNTFRQ_EL0.get()
+        val * ns_per_tick
     }
 }
