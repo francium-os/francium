@@ -33,6 +33,7 @@ bitflags! {
     }
 }
 
+#[derive(Copy, Clone)]
 pub enum MapType {
     NormalCachable,
     NormalUncachable,

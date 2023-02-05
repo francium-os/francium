@@ -7,3 +7,21 @@ name = "list_devices"
 id = 1
 inputs = []
 output = "Vec<PCIDeviceInfo>"
+
+[[methods]]
+name = "get_device_by_vidpid"
+id = 2
+inputs = [{name="vid", ty="u16"}, {name="pid", ty="u16"}]
+output = "Option<u32>"
+
+[[methods]]
+name = "get_bar"
+id = 3
+inputs = [{name="device", ty = "u32"}, {name="bar_index", ty="u8"}]
+output = "OSResult<(usize, usize)>"
+
+[[methods]]
+name = "enable"
+id = 4
+inputs = [{name="device", ty = "u32"}]
+output = "OSResult<()>"

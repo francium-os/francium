@@ -152,6 +152,23 @@ impl IPCValue for usize {
     }
 }
 
+impl IPCValue for bool {
+    fn read(msg: &mut IPCMessage) -> bool {
+        let val = msg.buffer[msg.read_offset];
+        msg.read_offset += 1;
+        val != 0
+    }
+
+    fn write(msg: &mut IPCMessage, val: &bool) {
+        if *val {
+            msg.buffer[msg.write_offset] = 1;
+        } else {
+            msg.buffer[msg.write_offset] = 0;
+        }
+        msg.write_offset += 1;
+    }
+}
+
 impl IPCValue for ResultCode {
     fn read(msg: &mut IPCMessage) -> ResultCode {
         ResultCode(u32::read(msg))
@@ -241,10 +258,53 @@ impl<T: IPCValue> IPCValue for OSResult<T> {
     }
 }
 
+impl<T: IPCValue> IPCValue for Option<T> {
+    fn read(msg: &mut IPCMessage) -> Option<T> {
+        // read error code
+        let present = bool::read(msg);
+        if present {
+            Some(T::read(msg))
+        } else {
+            None
+        }
+    }
+
+    fn write(msg: &mut IPCMessage, res: &Option<T>) {
+        match res {
+            Some(x) => {
+                bool::write(msg, &true);
+                T::write(msg, &x);
+            }
+            None => bool::write(msg, &false)
+        }
+    }
+}
+
 impl IPCValue for () {
     fn read(_msg: &mut IPCMessage) {}
 
     fn write(_msg: &mut IPCMessage, _: &()) {}
+}
+
+impl<T> IPCValue for (T,) where T: IPCValue {
+    fn read(msg: &mut IPCMessage) -> (T,) {
+        (T::read(msg),)
+    }
+
+    fn write(msg: &mut IPCMessage, val: &(T,)) {
+        T::write(msg, &val.0)
+    }
+}
+
+impl<T,U> IPCValue for (T, U) where T: IPCValue, U: IPCValue {
+    fn read(msg: &mut IPCMessage) -> (T,U) {
+        (T::read(msg), U::read(msg))
+    }
+
+    fn write(msg: &mut IPCMessage, val: &(T,U)) {
+        T::write(msg, &val.0);
+        U::write(msg, &val.1);
+    }
 }
 
 impl<T> IPCValue for Vec<T> where T: IPCValue {

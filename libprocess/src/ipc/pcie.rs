@@ -1,6 +1,7 @@
 use common::Handle;
 use spin::Mutex;
 
+
 #[derive(Copy, Clone, Default, Debug)]
 pub struct PCIDeviceInfo {
     pub bus: u8,
@@ -9,6 +10,8 @@ pub struct PCIDeviceInfo {
     pub device_id: u16
 }
 
+use common::os_error::OSResult;
+//use common::ipc::TranslateMoveHandle;
 use crate::ipc::message::IPCMessage;
 use crate::ipc::message::IPCValue;
 impl IPCValue for PCIDeviceInfo {

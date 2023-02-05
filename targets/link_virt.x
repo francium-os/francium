@@ -4,12 +4,12 @@ SECTIONS
 {
   KERNEL_BASE = 0xfffffff800000000;
 
-  . = KERNEL_BASE;
-  .text : AT(0x40000000)
+  . = KERNEL_BASE + 0x100000;
+  .text : AT(0x40000000 + 0x100000) 
   {
     __text_start = .;
     *(.text.entry)
-    . = KERNEL_BASE + 0x800;
+    . = KERNEL_BASE + 0x800 + 0x100000;
     __vbar = .;
 
     KEEP(*(.text.exceptions))

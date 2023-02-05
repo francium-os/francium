@@ -24,7 +24,7 @@ extern "C" {
     pub fn syscall_map_memory(
         address: usize,
         length: usize,
-        permission: u32,
+        permission: u64,
         address_out: *mut usize,
     ) -> ResultCode;
     pub fn syscall_sleep_ns(ns: u64);
@@ -170,7 +170,7 @@ pub fn get_process_id() -> u64 {
     unsafe { syscall_get_process_id() }
 }
 
-pub fn map_memory(address: usize, length: usize, permission: u32) -> Result<usize, OSError> {
+pub fn map_memory(address: usize, length: usize, permission: u64) -> Result<usize, OSError> {
     unsafe {
         let mut address_out: usize = 0;
         let res = syscall_map_memory(address, length, permission, &mut address_out);

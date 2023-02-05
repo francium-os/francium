@@ -18,6 +18,7 @@ pub enum Module {
     Kernel = 1,
     SM = 2,
     FS = 3,
+    PCIE = 4,
     Unknown = 0xffff,
 }
 
