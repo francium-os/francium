@@ -263,7 +263,7 @@ pub fn scan_via_device_tree(dt_addr: usize) -> Vec<PCIBus> {
     let raw_slice = vec.as_mut_slice();
     let index = DevTreeIndex::new(fdt, raw_slice).unwrap();
 
-    let mut root_node = index.root();
+    let root_node = index.root();
     let mut root_props = root_node.props();
     while let Some(prop) = root_props.next() {
         let name = prop.name().unwrap();

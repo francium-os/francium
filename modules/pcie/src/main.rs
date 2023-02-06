@@ -146,6 +146,8 @@ async fn main() {
     let port = syscalls::create_port("").unwrap();
     sm::register_port(syscalls::make_tag("pcie"), TranslateCopyHandle(port)).unwrap();
 
+    println!("Init!");
+
     let server = ServerImpl::new(
         PCIEServerStruct {
             buses: Mutex::new(pcie_buses),
@@ -154,6 +156,7 @@ async fn main() {
         },
         port,
     );
+    println!("Directly after init: {:x?} {:x?}", server.server.mem_base.load(Ordering::Acquire) ,server.server.io_base.load(Ordering::Acquire));
 
     server.process_forever().await;
 

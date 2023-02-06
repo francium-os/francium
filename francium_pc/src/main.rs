@@ -111,6 +111,7 @@ fn bootloader_main(info: &'static mut bootloader_api::BootInfo) -> ! {
     let test_buf = include_bytes!("../../target/x86_64-unknown-francium/release/test");
     let sm_buf = include_bytes!("../../target/x86_64-unknown-francium/release/sm");
     let pcie_buf = include_bytes!("../../target/x86_64-unknown-francium/release/pcie");
+    let disp_buf = include_bytes!("../../target/x86_64-unknown-francium/release/disp");
 
     let fs_main_thread = init::load_process(fs_buf, "fs");
     scheduler::register_thread(fs_main_thread.clone());
@@ -123,6 +124,9 @@ fn bootloader_main(info: &'static mut bootloader_api::BootInfo) -> ! {
 
     let pcie_main_thread = init::load_process(pcie_buf, "pcie");
     scheduler::register_thread(pcie_main_thread.clone());
+
+    let disp_main_thread = init::load_process(disp_buf, "disp");
+    scheduler::register_thread(disp_main_thread.clone());
 
     platform::scheduler_post_init();
 

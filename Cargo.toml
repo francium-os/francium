@@ -12,6 +12,7 @@ members = [
   "modules/sm",
   "modules/test",
   "modules/pcie",
+  "modules/disp",
   "ipc-gen-buildtime",
   "crates/francium_common",
   "crates/francium_drivers",
@@ -26,6 +27,7 @@ panic = "abort"
 panic = "abort"
 debug = true
 overflow-checks = true
+opt-level = 3
 
 [patch.crates-io]
 libc = { path = "../libc" }

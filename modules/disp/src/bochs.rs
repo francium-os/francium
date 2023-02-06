@@ -1,15 +1,6 @@
 use francium_common::types::PagePermission;
 use process::ipc;
 use process::syscalls;
-//use francium_common::align::align_up;
-
-// TODO: BGA adapter mode setting
-// https://wiki.osdev.org/Bochs_VBE_Extensions
-// https://www.kraxel.org/blog/2018/10/qemu-vga-emulation-and-bochs-display/
-// The qemu stdvga got a MMIO bar. The MMIO bar can be used as alternative way to access the vga registers and also the bochs dispi interface registers.
-
-// so bar0 = framebuffer bar
-// bar2 = mmio io bar
 
 #[derive(Debug)]
 pub struct BochsAdapter {

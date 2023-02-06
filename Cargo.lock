@@ -293,6 +293,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "disp"
+version = "0.1.0"
+dependencies = [
+ "francium_common",
+ "process",
+]
+
+[[package]]
 name = "elf_rs"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"

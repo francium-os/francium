@@ -27,12 +27,12 @@ pub struct ConfigurationSpaceType0 {
     pub header: ConfigurationSpaceHeader,
     // BARs
     pub bars: [u32; 6],
-    cardbus_cis_pointer: u32, // Reserved, reads 0
+    _cardbus_cis_pointer: u32, // Reserved, reads 0
     pub subsystem_vendor_id: u16,
     pub subsystem_id: u16,
     pub expansion_rom_base: u32,
     pub capabilities: u8,
-    reserved: [u8; 7],
+    _reserved: [u8; 7],
     pub interrupt_line: u8,
     pub interrupt_pin: u8,
     pub min_gnt: u8,
