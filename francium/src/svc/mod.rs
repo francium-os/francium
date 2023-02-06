@@ -1,14 +1,14 @@
 mod debug_output;
 mod exit_process;
 mod futex;
+mod get_system_info;
+mod get_system_tick;
 mod handle;
 pub mod ipc;
 mod memory;
 mod process;
 mod svc_break;
 mod thread;
-mod get_system_info;
-mod get_system_tick;
 
 pub use debug_output::svc_debug_output;
 pub use exit_process::svc_exit_process;
@@ -23,8 +23,8 @@ pub use ipc::svc_ipc_receive;
 pub use ipc::svc_ipc_reply;
 pub use ipc::svc_ipc_request;
 
-pub use memory::svc_map_memory;
 pub use memory::svc_map_device_memory;
+pub use memory::svc_map_memory;
 
 pub use process::svc_create_thread;
 pub use process::svc_get_process_id;

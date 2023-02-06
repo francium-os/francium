@@ -28,7 +28,7 @@ macro_rules! uart_println {
 
 /// writes characters to the system log device
 pub struct Writer<'a, T: SerialPort> {
-    pub uart: &'a mut T
+    pub uart: &'a mut T,
 }
 
 impl<'a, T: SerialPort> core::fmt::Write for Writer<'a, T> {

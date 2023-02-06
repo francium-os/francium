@@ -1,5 +1,5 @@
-use core::arch::asm;
 use crate::SerialPort;
+use core::arch::asm;
 
 pub struct COMPort {
     port_base: u16,

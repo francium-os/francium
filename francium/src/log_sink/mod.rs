@@ -1,5 +1,5 @@
-use log::{Record, Level, Metadata};
-use log::{SetLoggerError, LevelFilter};
+use log::{Level, Metadata, Record};
+use log::{LevelFilter, SetLoggerError};
 
 struct SimpleLogger;
 
@@ -20,6 +20,5 @@ impl log::Log for SimpleLogger {
 static LOGGER: SimpleLogger = SimpleLogger;
 
 pub fn init() -> Result<(), SetLoggerError> {
-    log::set_logger(&LOGGER)
-        .map(|()| log::set_max_level(LevelFilter::Debug))
+    log::set_logger(&LOGGER).map(|()| log::set_max_level(LevelFilter::Debug))
 }

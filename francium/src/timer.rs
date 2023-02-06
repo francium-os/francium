@@ -43,7 +43,6 @@ pub fn register_timer(offset: u64, callback: Box<dyn Fn() -> () + Send>) {
     });
 }
 
-
 pub fn get_counter_ns() -> u64 {
     DEFAULT_TIMER.lock().get_counter_ns()
 }

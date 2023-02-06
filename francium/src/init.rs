@@ -1,5 +1,3 @@
-use francium_common::types::PhysAddr;
-use francium_common::align::align_up;
 use crate::arch::cache::clear_cache_for_address;
 use crate::arch::mmu::{get_current_page_table, invalidate_tlb_for_range};
 use crate::constants::*;
@@ -9,6 +7,8 @@ use crate::mmu::{MapType, PagePermission};
 use crate::phys_allocator;
 use crate::platform;
 use crate::process::{Process, Thread};
+use francium_common::align::align_up;
+use francium_common::types::PhysAddr;
 
 use alloc::sync::Arc;
 use elf_rs::*;
@@ -199,7 +199,10 @@ pub fn load_process(elf_buf: &[u8], name: &'static str) -> Arc<Thread> {
                 AT_PHDR,
                 smallest_base + e.elf_header().program_header_offset() as usize,
             ),
-            (AT_PHENT, e.elf_header().program_header_entry_size() as usize),
+            (
+                AT_PHENT,
+                e.elf_header().program_header_entry_size() as usize,
+            ),
             (AT_PHNUM, e.elf_header().program_header_entry_num() as usize),
         ];
 

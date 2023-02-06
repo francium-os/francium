@@ -35,7 +35,9 @@ impl<T: IPCServer + Send + Sync + 'static> ServerImpl<T> {
             let (index, mut ipc_buffer) = tokio::task::spawn_blocking(move || {
                 let i = syscalls::ipc_receive(&handles_copy, &mut ipc_buffer).unwrap();
                 (i, ipc_buffer)
-            }).await.unwrap();
+            })
+            .await
+            .unwrap();
 
             if index == 0 {
                 // server handle is signalled!

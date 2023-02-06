@@ -1,5 +1,5 @@
-use francium_common::types::PhysAddr;
 use core::arch::asm;
+use francium_common::types::PhysAddr;
 
 pub unsafe fn switch_to_page_table(phys_addr: PhysAddr) {
     asm!("mov cr3, {phys}", phys = in (reg) (phys_addr.0));

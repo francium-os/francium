@@ -1,13 +1,12 @@
 use common::Handle;
 use spin::Mutex;
 
-
 #[derive(Copy, Clone, Default, Debug)]
 pub struct PCIDeviceInfo {
     pub bus: u8,
     pub device: u8,
     pub vendor_id: u16,
-    pub device_id: u16
+    pub device_id: u16,
 }
 
 use common::os_error::OSResult;
@@ -20,7 +19,7 @@ impl IPCValue for PCIDeviceInfo {
             bus: u8::read(msg),
             device: u8::read(msg),
             vendor_id: u16::read(msg),
-            device_id: u16::read(msg)
+            device_id: u16::read(msg),
         }
     }
 

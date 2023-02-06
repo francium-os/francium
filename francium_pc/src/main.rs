@@ -4,11 +4,11 @@
 
 extern crate alloc;
 
-use francium_kernel::*;
-use francium_kernel::constants::*;
-use francium_kernel::mmu::PagePermission;
-use francium_kernel::memory::KERNEL_ADDRESS_SPACE;
 use francium_common::types::PhysAddr;
+use francium_kernel::constants::*;
+use francium_kernel::memory::KERNEL_ADDRESS_SPACE;
+use francium_kernel::mmu::PagePermission;
+use francium_kernel::*;
 
 extern "C" {
     fn switch_stacks();
@@ -17,7 +17,9 @@ extern "C" {
 
 const CONFIG: bootloader_api::BootloaderConfig = {
     let mut config = bootloader_api::BootloaderConfig::new_default();
-    config.mappings.physical_memory = Some(bootloader_api::config::Mapping::FixedAddress(0xffff_f000_0000_0000));
+    config.mappings.physical_memory = Some(bootloader_api::config::Mapping::FixedAddress(
+        0xffff_f000_0000_0000,
+    ));
     config
 };
 bootloader_api::entry_point!(bootloader_main_thunk, config = &CONFIG);
@@ -42,9 +44,15 @@ impl AcpiHandler for FranciumACPIHandler {
     unsafe fn map_physical_region<T>(
         &self,
         physical_address: usize,
-        size: usize
+        size: usize,
     ) -> PhysicalMapping<Self, T> {
-        PhysicalMapping::new(physical_address, NonNull::new(mmu::phys_to_virt(PhysAddr(physical_address)) as *mut T).unwrap(), size, size, *self)
+        PhysicalMapping::new(
+            physical_address,
+            NonNull::new(mmu::phys_to_virt(PhysAddr(physical_address)) as *mut T).unwrap(),
+            size,
+            size,
+            *self,
+        )
     }
 
     fn unmap_physical_region<T>(_region: &PhysicalMapping<Self, T>) {}
@@ -90,10 +98,8 @@ fn bootloader_main(info: &'static mut bootloader_api::BootInfo) -> ! {
 
     log_sink::init().unwrap();
 
-    let handler = FranciumACPIHandler{};
-    let tables = unsafe { 
-        AcpiTables::from_rsdp(handler, rsdp_addr as usize).unwrap()
-    };
+    let handler = FranciumACPIHandler {};
+    let tables = unsafe { AcpiTables::from_rsdp(handler, rsdp_addr as usize).unwrap() };
 
     let plat = acpi::platform::PlatformInfo::new_in(&tables, &alloc::alloc::Global).unwrap();
     println!("{:?}", plat.interrupt_model);

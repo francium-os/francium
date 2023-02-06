@@ -1,10 +1,10 @@
 #![no_std]
 #![no_main]
 
-use francium_kernel::*;
 use francium_kernel::constants::*;
-use francium_kernel::mmu::PagePermission;
 use francium_kernel::memory::KERNEL_ADDRESS_SPACE;
+use francium_kernel::mmu::PagePermission;
+use francium_kernel::*;
 
 #[no_mangle]
 pub extern "C" fn rust_main() -> ! {

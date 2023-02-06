@@ -14,8 +14,11 @@ const RPI_GICD_BASE: usize = PERIPHERAL_BASE + 0xff841000;
 const RPI_GICC_BASE: usize = PERIPHERAL_BASE + 0xff842000;
 
 lazy_static! {
-    pub static ref DEFAULT_UART: Mutex<Pl011Uart> =
-        Mutex::new(Pl011Uart::new(PERIPHERAL_BASE + 0xfe201000, 115200, 48000000));
+    pub static ref DEFAULT_UART: Mutex<Pl011Uart> = Mutex::new(Pl011Uart::new(
+        PERIPHERAL_BASE + 0xfe201000,
+        115200,
+        48000000
+    ));
     pub static ref DEFAULT_INTERRUPT: Mutex<GICv2> =
         Mutex::new(GICv2::new(RPI_GICD_BASE, RPI_GICC_BASE));
     pub static ref DEFAULT_TIMER: Mutex<ArchTimer> = Mutex::new(ArchTimer::new());

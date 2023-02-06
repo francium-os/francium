@@ -81,7 +81,8 @@ impl francium_mmu::PageTableSpecific for AArch64Specific {
             MapType::NormalCachable => EntryFlags::ATTR_INDEX_0,
             MapType::NormalUncachable => EntryFlags::ATTR_INDEX_1,
             MapType::Device => EntryFlags::ATTR_INDEX_2,
-        }.bits
+        }
+        .bits
     }
 
     fn get_page_default_flags() -> usize {

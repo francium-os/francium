@@ -37,20 +37,26 @@ pub trait PhysAccess {
 #[derive(Debug)]
 #[repr(align(4096))]
 #[repr(C)]
-pub struct PageTable<T: PageTableSpecific, A: PhysAlloc, P: PhysAccess> where [(); T::ENTRIES_PER_LEVEL]: {
+pub struct PageTable<T: PageTableSpecific, A: PhysAlloc, P: PhysAccess>
+where
+    [(); T::ENTRIES_PER_LEVEL]:,
+{
     entries: [PageTableEntry; T::ENTRIES_PER_LEVEL],
     _t: PhantomData<T>,
     _a: PhantomData<A>,
-    _p: PhantomData<P>
+    _p: PhantomData<P>,
 }
 
-impl<T: PageTableSpecific, A: PhysAlloc, P: PhysAccess> PageTable<T, A, P> where [(); T::ENTRIES_PER_LEVEL]: {
+impl<T: PageTableSpecific, A: PhysAlloc, P: PhysAccess> PageTable<T, A, P>
+where
+    [(); T::ENTRIES_PER_LEVEL]:,
+{
     pub const fn new() -> PageTable<T, A, P> {
         PageTable {
             entries: [0; T::ENTRIES_PER_LEVEL],
             _t: PhantomData,
             _a: PhantomData,
-            _p: PhantomData
+            _p: PhantomData,
         }
     }
 

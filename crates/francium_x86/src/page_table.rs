@@ -63,7 +63,8 @@ impl francium_mmu::PageTableSpecific for X86_64Specific {
             MapType::NormalCachable => EntryFlags::empty(),
             MapType::NormalUncachable => EntryFlags::UNCACHEABLE,
             MapType::Device => EntryFlags::UNCACHEABLE, // ???
-        }.bits
+        }
+        .bits
     }
 
     fn get_page_default_flags() -> usize {

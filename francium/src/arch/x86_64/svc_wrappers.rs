@@ -1,5 +1,5 @@
-use crate::{scheduler, svc};
 use crate::arch::x86_64::info::*;
+use crate::{scheduler, svc};
 use francium_common::types::PhysAddr;
 
 // The System V ABI returns 128 bit values in rax:rdx.
@@ -135,9 +135,7 @@ unsafe extern "C" fn syscall_wrapper_bodge(key: u32, addr: usize) -> usize {
 
             0
         }
-        common::constants::GET_ACPI_BASE => {
-            SYSTEM_INFO_RSDP_ADDR.unwrap() as usize
-        }
+        common::constants::GET_ACPI_BASE => SYSTEM_INFO_RSDP_ADDR.unwrap() as usize,
         _ => {
             panic!("unknown syscall_bodge key!");
         }
@@ -168,7 +166,12 @@ unsafe extern "C" fn syscall_wrapper_futex_wake(addr: usize) -> u32 {
 }
 
 #[no_mangle]
-unsafe extern "C" fn syscall_wrapper_map_device_memory(phys_addr: PhysAddr, virt_addr: usize, length: usize, permission: u64) -> Pair {
+unsafe extern "C" fn syscall_wrapper_map_device_memory(
+    phys_addr: PhysAddr,
+    virt_addr: usize,
+    length: usize,
+    permission: u64,
+) -> Pair {
     let (res, out) = svc::svc_map_device_memory(phys_addr, virt_addr, length, permission);
     Pair {
         a: res.0 as usize,
@@ -177,7 +180,11 @@ unsafe extern "C" fn syscall_wrapper_map_device_memory(phys_addr: PhysAddr, virt
 }
 
 #[no_mangle]
-unsafe extern "C" fn syscall_wrapper_get_system_info(ty: usize, index: usize, out_ptr: *const usize) -> u32 {
+unsafe extern "C" fn syscall_wrapper_get_system_info(
+    ty: usize,
+    index: usize,
+    out_ptr: *const usize,
+) -> u32 {
     let res = svc::svc_get_system_info(ty, index, out_ptr);
     res.0 as u32
 }

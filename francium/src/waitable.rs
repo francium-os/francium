@@ -76,7 +76,9 @@ impl Waiter {
         self.waiters
             .lock()
             .drain(..)
-            .map(|x| {scheduler::wake_thread(&x.0, x.1);})
+            .map(|x| {
+                scheduler::wake_thread(&x.0, x.1);
+            })
             .collect()
     }
 }

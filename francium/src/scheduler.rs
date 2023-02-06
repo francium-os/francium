@@ -25,7 +25,6 @@ pub struct Scheduler {
 
 lazy_static! {
     static ref SCHEDULER: Mutex<Scheduler> = Mutex::new(Scheduler::new());
-
 }
 extern "C" {
     fn switch_thread_asm(
@@ -177,12 +176,15 @@ impl Scheduler {
                 .state
                 .store(ThreadState::Suspended, Ordering::Release);
 
-
             // Safety: thread is runnable
             let current_thread = self.get_current_thread();
             let current_id = current_thread.id;
 
-            trace!("Suspending thread {} ({})", current_id, current_thread.process.lock().name);
+            trace!(
+                "Suspending thread {} ({})",
+                current_id,
+                current_thread.process.lock().name
+            );
 
             let mut cursor = unsafe {
                 self.runnable_threads
@@ -236,7 +238,11 @@ impl Scheduler {
 
     pub fn wake(&mut self, thread: &Arc<Thread>, tag: usize) {
         if thread.state.load(Ordering::Acquire) != ThreadState::Runnable {
-            trace!("Waking thread {:?} ({})", thread.id, thread.process.lock().name);
+            trace!(
+                "Waking thread {:?} ({})",
+                thread.id,
+                thread.process.lock().name
+            );
 
             thread.state.store(ThreadState::Runnable, Ordering::Release);
             // set x0 of the thread context

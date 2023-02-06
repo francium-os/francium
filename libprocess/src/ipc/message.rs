@@ -11,7 +11,7 @@ pub struct IPCMessage<'a> {
     pub write_offset: usize,
     pub current_translate: usize,
     pub translate_entries: [TranslateEntry; MAX_TRANSLATE],
-    pub buffer: &'a mut [u8]
+    pub buffer: &'a mut [u8],
 }
 
 pub trait IPCValue {
@@ -40,7 +40,7 @@ impl IPCMessage<'_> {
             write_offset: 4,
             current_translate: 0,
             translate_entries: [TranslateEntry::None; MAX_TRANSLATE],
-            buffer: buffer
+            buffer: buffer,
         }
     }
 
@@ -88,39 +88,51 @@ impl IPCMessage<'_> {
 
 impl IPCValue for u64 {
     fn read(msg: &mut IPCMessage) -> u64 {
-        let val = u64::from_le_bytes(msg.buffer[msg.read_offset..msg.read_offset+8].try_into().unwrap());
+        let val = u64::from_le_bytes(
+            msg.buffer[msg.read_offset..msg.read_offset + 8]
+                .try_into()
+                .unwrap(),
+        );
         msg.read_offset += 8;
         val
     }
 
     fn write(msg: &mut IPCMessage, val: &u64) {
-        msg.buffer[msg.write_offset..msg.write_offset+8].copy_from_slice(&u64::to_le_bytes(*val));
+        msg.buffer[msg.write_offset..msg.write_offset + 8].copy_from_slice(&u64::to_le_bytes(*val));
         msg.write_offset += 8;
     }
 }
 
 impl IPCValue for u32 {
     fn read(msg: &mut IPCMessage) -> u32 {
-        let val = u32::from_le_bytes(msg.buffer[msg.read_offset..msg.read_offset+4].try_into().unwrap());
+        let val = u32::from_le_bytes(
+            msg.buffer[msg.read_offset..msg.read_offset + 4]
+                .try_into()
+                .unwrap(),
+        );
         msg.read_offset += 4;
         val
     }
 
     fn write(msg: &mut IPCMessage, val: &u32) {
-        msg.buffer[msg.write_offset..msg.write_offset+4].copy_from_slice(&u32::to_le_bytes(*val));
+        msg.buffer[msg.write_offset..msg.write_offset + 4].copy_from_slice(&u32::to_le_bytes(*val));
         msg.write_offset += 4;
     }
 }
 
 impl IPCValue for u16 {
     fn read(msg: &mut IPCMessage) -> u16 {
-        let val = u16::from_le_bytes(msg.buffer[msg.read_offset..msg.read_offset+2].try_into().unwrap());
+        let val = u16::from_le_bytes(
+            msg.buffer[msg.read_offset..msg.read_offset + 2]
+                .try_into()
+                .unwrap(),
+        );
         msg.read_offset += 2;
         val
     }
 
     fn write(msg: &mut IPCMessage, val: &u16) {
-        msg.buffer[msg.write_offset..msg.write_offset+2].copy_from_slice(&u16::to_le_bytes(*val));
+        msg.buffer[msg.write_offset..msg.write_offset + 2].copy_from_slice(&u16::to_le_bytes(*val));
         msg.write_offset += 2;
     }
 }
@@ -141,13 +153,18 @@ impl IPCValue for u8 {
 // TODO: sizeof(usize)=4?
 impl IPCValue for usize {
     fn read(msg: &mut IPCMessage) -> usize {
-        let val = u64::from_le_bytes(msg.buffer[msg.read_offset..msg.read_offset+8].try_into().unwrap());
+        let val = u64::from_le_bytes(
+            msg.buffer[msg.read_offset..msg.read_offset + 8]
+                .try_into()
+                .unwrap(),
+        );
         msg.read_offset += 8;
         val as usize
     }
 
     fn write(msg: &mut IPCMessage, val: &usize) {
-        msg.buffer[msg.write_offset..msg.write_offset+8].copy_from_slice(&u64::to_le_bytes(*val as u64));
+        msg.buffer[msg.write_offset..msg.write_offset + 8]
+            .copy_from_slice(&u64::to_le_bytes(*val as u64));
         msg.write_offset += 8;
     }
 }
@@ -275,7 +292,7 @@ impl<T: IPCValue> IPCValue for Option<T> {
                 bool::write(msg, &true);
                 T::write(msg, &x);
             }
-            None => bool::write(msg, &false)
+            None => bool::write(msg, &false),
         }
     }
 }
@@ -286,7 +303,10 @@ impl IPCValue for () {
     fn write(_msg: &mut IPCMessage, _: &()) {}
 }
 
-impl<T> IPCValue for (T,) where T: IPCValue {
+impl<T> IPCValue for (T,)
+where
+    T: IPCValue,
+{
     fn read(msg: &mut IPCMessage) -> (T,) {
         (T::read(msg),)
     }
@@ -296,18 +316,25 @@ impl<T> IPCValue for (T,) where T: IPCValue {
     }
 }
 
-impl<T,U> IPCValue for (T, U) where T: IPCValue, U: IPCValue {
-    fn read(msg: &mut IPCMessage) -> (T,U) {
+impl<T, U> IPCValue for (T, U)
+where
+    T: IPCValue,
+    U: IPCValue,
+{
+    fn read(msg: &mut IPCMessage) -> (T, U) {
         (T::read(msg), U::read(msg))
     }
 
-    fn write(msg: &mut IPCMessage, val: &(T,U)) {
+    fn write(msg: &mut IPCMessage, val: &(T, U)) {
         T::write(msg, &val.0);
         U::write(msg, &val.1);
     }
 }
 
-impl<T> IPCValue for Vec<T> where T: IPCValue {
+impl<T> IPCValue for Vec<T>
+where
+    T: IPCValue,
+{
     fn read(msg: &mut IPCMessage) -> Vec<T> {
         let length = usize::read(msg);
         println!("read vec! len={:?}", length);

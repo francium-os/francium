@@ -1,8 +1,7 @@
-use process::syscalls;
-use process::ipc;
 use francium_common::types::PagePermission;
+use process::ipc;
+use process::syscalls;
 //use francium_common::align::align_up;
-
 
 // TODO: BGA adapter mode setting
 // https://wiki.osdev.org/Bochs_VBE_Extensions
@@ -18,7 +17,7 @@ pub struct BochsAdapter {
     io_virt: usize,
 
     current_x: usize,
-    current_y: usize
+    current_y: usize,
 }
 
 const VBE_DISPI_INDEX_ID: usize = 0;
@@ -46,27 +45,35 @@ impl BochsAdapter {
         println!("BAR2: {:x?}", bochs_io_bar);
 
         // TODO: Move this to be shared memory. But that requires the concept of shared memory.
-        let fb_virt = syscalls::map_device_memory(framebuffer_bar.0, 0, framebuffer_bar.1, PagePermission::USER_READ_WRITE).unwrap();
-        let io_virt = syscalls::map_device_memory(bochs_io_bar.0, 0, bochs_io_bar.1, PagePermission::USER_READ_WRITE).unwrap();
+        let fb_virt = syscalls::map_device_memory(
+            framebuffer_bar.0,
+            0,
+            framebuffer_bar.1,
+            PagePermission::USER_READ_WRITE,
+        )
+        .unwrap();
+        let io_virt = syscalls::map_device_memory(
+            bochs_io_bar.0,
+            0,
+            bochs_io_bar.1,
+            PagePermission::USER_READ_WRITE,
+        )
+        .unwrap();
 
         Some(BochsAdapter {
             framebuffer_virt: fb_virt,
             io_virt: io_virt,
             current_x: 0,
-            current_y: 0
+            current_y: 0,
         })
-    }   
+    }
 
     fn bochs_io_read(&self, index: usize) -> u16 {
-        unsafe {
-            core::ptr::read_volatile((self.io_virt + 0x500 + index*2) as *const u16)
-        }
+        unsafe { core::ptr::read_volatile((self.io_virt + 0x500 + index * 2) as *const u16) }
     }
 
     fn bochs_io_write(&self, index: usize, val: u16) {
-        unsafe {
-            core::ptr::write_volatile((self.io_virt + 0x500 + index*2) as *mut u16, val)
-        }
+        unsafe { core::ptr::write_volatile((self.io_virt + 0x500 + index * 2) as *mut u16, val) }
     }
 
     pub fn set_mode(&mut self, x: usize, y: usize) {
@@ -88,7 +95,11 @@ impl BochsAdapter {
 
     pub fn fill(&self) {
         unsafe {
-            core::ptr::write_bytes(self.framebuffer_virt as *mut u8, 0xaa, self.current_x * self.current_y * 4);
+            core::ptr::write_bytes(
+                self.framebuffer_virt as *mut u8,
+                0xaa,
+                self.current_x * self.current_y * 4,
+            );
         }
     }
 }

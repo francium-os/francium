@@ -1,5 +1,5 @@
-use crate::phys_allocator;
 use crate::constants::PHYSMAP_BASE;
+use crate::phys_allocator;
 
 use francium_common::types::PhysAddr;
 pub use francium_common::types::{MapType, PagePermission};
@@ -7,17 +7,16 @@ pub use francium_mmu::*;
 
 pub struct FranciumPhysAccess {}
 impl francium_mmu::PhysAccess for FranciumPhysAccess {
-	fn phys_to_virt(phys: PhysAddr) -> usize {
-		phys.0 + PHYSMAP_BASE
-	}
+    fn phys_to_virt(phys: PhysAddr) -> usize {
+        phys.0 + PHYSMAP_BASE
+    }
 }
-
 
 pub struct FranciumPhysAlloc {}
 impl francium_mmu::PhysAlloc for FranciumPhysAlloc {
-	fn alloc() -> Option<PhysAddr> {
-		unsafe { phys_allocator::alloc() }
-	}
+    fn alloc() -> Option<PhysAddr> {
+        unsafe { phys_allocator::alloc() }
+    }
 }
 
 #[cfg(target_arch = "x86_64")]

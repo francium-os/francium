@@ -5,8 +5,8 @@ use crate::drivers::Timer;
 use crate::platform::{DEFAULT_INTERRUPT, DEFAULT_TIMER};
 use crate::timer;
 
-use tock_registers::interfaces::{Readable};
-use aarch64_cpu::{registers::*};
+use aarch64_cpu::registers::*;
+use tock_registers::interfaces::Readable;
 
 fn stringify_ec(ec: u64) -> &'static str {
     match ec {

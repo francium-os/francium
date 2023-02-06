@@ -1,5 +1,5 @@
-use core::arch::asm;
 use crate::arch::x86_64::svc_wrappers::SYSCALL_WRAPPERS;
+use core::arch::asm;
 #[naked]
 unsafe extern "C" fn syscall_handler() {
     asm!("mov r9, rsp
@@ -43,5 +43,5 @@ unsafe extern "C" fn syscall_handler() {
 }
 
 pub fn setup_syscall() {
-	francium_x86::syscall::setup_syscall(syscall_handler as usize);
+    francium_x86::syscall::setup_syscall(syscall_handler as usize);
 }

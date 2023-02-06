@@ -1,9 +1,9 @@
 use tracing::{event, Level};
 
-use crate::scheduler;
 use crate::mmu::PagePermission;
-use francium_common::types::PhysAddr;
+use crate::scheduler;
 use common::os_error::{ResultCode, RESULT_OK};
+use francium_common::types::PhysAddr;
 
 pub fn svc_map_memory(address: usize, length: usize, permission: u64) -> (ResultCode, usize) {
     event!(
@@ -37,7 +37,12 @@ pub fn svc_map_memory(address: usize, length: usize, permission: u64) -> (Result
     (RESULT_OK, highest_mmap)
 }
 
-pub fn svc_map_device_memory(phys_address: PhysAddr, virt_address: usize, length: usize, permission: u64) -> (ResultCode, usize) {
+pub fn svc_map_device_memory(
+    phys_address: PhysAddr,
+    virt_address: usize,
+    length: usize,
+    permission: u64,
+) -> (ResultCode, usize) {
     event!(
         Level::TRACE,
         svc_name = "map_device_memory",

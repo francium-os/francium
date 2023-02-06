@@ -1,24 +1,24 @@
-use process::syscalls;
-use process::ipc_server::ServerImpl;
 use process::ipc::sm;
 use process::ipc::*;
-use std::sync::Mutex;
+use process::ipc_server::ServerImpl;
+use process::syscalls;
 use std::sync::atomic::AtomicU32;
 use std::sync::atomic::Ordering;
+use std::sync::Mutex;
 
 mod ecam;
 mod pcie;
 
-use common::Handle;
 use common::os_error::*;
-use process::ipc_server::IPCServer;
+use common::Handle;
 use process::ipc::pcie::PCIDeviceInfo;
+use process::ipc_server::IPCServer;
 include!(concat!(env!("OUT_DIR"), "/pcie_server_impl.rs"));
 
 struct PCIEServerStruct {
     buses: Mutex<Vec<pcie::PCIBus>>,
     mem_base: AtomicU32,
-    io_base: AtomicU32
+    io_base: AtomicU32,
 }
 
 impl PCIEServerStruct {
@@ -34,7 +34,7 @@ impl PCIEServerStruct {
                         bus: bus.num,
                         device: dev.num,
                         vendor_id: func.inner.header.vendor_id,
-                        device_id: func.inner.header.device_id
+                        device_id: func.inner.header.device_id,
                     });
                 }
             }
@@ -51,7 +51,9 @@ impl PCIEServerStruct {
                 for func in dev.functions.iter() {
                     // etc
                     if func.inner.header.vendor_id == vid && func.inner.header.device_id == pid {
-                        return Some(bus.num as u32 * 256 * 256 + dev.num as u32 * 256 + func.num as u32)
+                        return Some(
+                            bus.num as u32 * 256 * 256 + dev.num as u32 * 256 + func.num as u32,
+                        );
                     }
                 }
             }
@@ -71,8 +73,8 @@ impl PCIEServerStruct {
             for dev in bus.devices.iter_mut() {
                 for func in dev.functions.iter_mut() {
                     if bus.num == bus_id && dev.num == device_id && func.num == function_id {
-                        func.inner.header.command = 1|2;
-                        return Ok(())
+                        func.inner.header.command = 1 | 2;
+                        return Ok(());
                     }
                 }
             }
@@ -121,7 +123,7 @@ impl PCIEServerStruct {
                             old_bar_addr
                         };
 
-                        return Ok((bar_base as usize, bar_size))
+                        return Ok((bar_base as usize, bar_size));
                     }
                 }
             }
@@ -148,7 +150,7 @@ async fn main() {
         PCIEServerStruct {
             buses: Mutex::new(pcie_buses),
             mem_base: AtomicU32::new(0x10000000),
-            io_base: AtomicU32::new(0x3eff0000)
+            io_base: AtomicU32::new(0x3eff0000),
         },
         port,
     );

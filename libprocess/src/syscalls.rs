@@ -1,8 +1,8 @@
-use common::system_info::*;
 use common::os_error::{OSError, ResultCode, RESULT_OK};
+use common::system_info::*;
+use common::PagePermission;
 use common::{Handle, INVALID_HANDLE};
 use core::cmp::min;
-use common::PagePermission;
 
 extern "C" {
     pub fn syscall_debug_output(s: *const u8, len: usize) -> ResultCode;
@@ -38,11 +38,7 @@ extern "C" {
         address_out: *mut usize,
     ) -> ResultCode;
 
-    pub fn syscall_get_system_info(
-        ty: usize,
-        index: usize,
-        info_out: *mut usize
-    ) -> ResultCode;
+    pub fn syscall_get_system_info(ty: usize, index: usize, info_out: *mut usize) -> ResultCode;
 
     pub fn syscall_get_system_tick() -> u64;
 }
@@ -198,10 +194,21 @@ pub fn get_thread_id() -> u64 {
     unsafe { syscall_get_process_id() }
 }
 
-pub fn map_device_memory(phys_addr: usize, virt_addr: usize, length: usize, permission: PagePermission) -> Result<usize, OSError> {
+pub fn map_device_memory(
+    phys_addr: usize,
+    virt_addr: usize,
+    length: usize,
+    permission: PagePermission,
+) -> Result<usize, OSError> {
     unsafe {
         let mut address_out: usize = 0;
-        let res = syscall_map_device_memory(phys_addr, virt_addr, length, permission.bits(), &mut address_out);
+        let res = syscall_map_device_memory(
+            phys_addr,
+            virt_addr,
+            length,
+            permission.bits(),
+            &mut address_out,
+        );
         if res == RESULT_OK {
             Ok(address_out)
         } else {
@@ -228,7 +235,6 @@ pub fn get_system_info(_ty: SystemInfoType, _index: usize) -> Result<SystemInfo,
 pub fn get_system_tick() -> u64 {
     unsafe { syscall_get_system_tick() }
 }
-
 
 use core::arch::global_asm;
 #[cfg(target_arch = "x86_64")]

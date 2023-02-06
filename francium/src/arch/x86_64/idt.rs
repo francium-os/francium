@@ -1,4 +1,4 @@
-use francium_x86::idt::{IDTEntry, use_idt};
+use francium_x86::idt::{use_idt, IDTEntry};
 
 const NULL_IDT: IDTEntry = IDTEntry::null();
 static mut IDT_ENTRIES: [IDTEntry; 48] = [NULL_IDT; 48];

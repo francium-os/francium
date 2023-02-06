@@ -1,7 +1,7 @@
 use crate::drivers::Timer;
 
+use aarch64_cpu::registers::*;
 use tock_registers::interfaces::{Readable, Writeable};
-use aarch64_cpu::{registers::*};
 
 pub struct ArchTimer {}
 
