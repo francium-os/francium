@@ -2,9 +2,11 @@ use process::ipc::sm;
 use process::ipc::*;
 use process::ipc_server::ServerImpl;
 use process::syscalls;
+use std::convert::TryInto;
 use std::sync::atomic::AtomicU32;
 use std::sync::atomic::Ordering;
 use std::sync::Mutex;
+
 
 mod ecam;
 mod pcie;
@@ -141,22 +143,19 @@ async fn main() {
     let pcie_buses = pcie::scan_via_acpi();
 
     #[cfg(target_arch = "aarch64")]
-    let pcie_buses = pcie::scan_via_device_tree(0x40000000); /*  [VIRT_PCIE_ECAM] =          { 0x3f000000, 0x01000000 }, */
+    let (pcie_buses, io_space_addr, pci_32bit_addr, _pci_64bit_addr) = pcie::scan_via_device_tree(0x40000000); /*  [VIRT_PCIE_ECAM] =          { 0x3f000000, 0x01000000 }, */
 
     let port = syscalls::create_port("").unwrap();
     sm::register_port(syscalls::make_tag("pcie"), TranslateCopyHandle(port)).unwrap();
 
-    println!("Init!");
-
     let server = ServerImpl::new(
         PCIEServerStruct {
             buses: Mutex::new(pcie_buses),
-            mem_base: AtomicU32::new(0x10000000),
-            io_base: AtomicU32::new(0x3eff0000),
+            mem_base: AtomicU32::new(pci_32bit_addr.unwrap().try_into().unwrap()),
+            io_base: AtomicU32::new(io_space_addr.unwrap().try_into().unwrap()),
         },
         port,
     );
-    println!("Directly after init: {:x?} {:x?}", server.server.mem_base.load(Ordering::Acquire) ,server.server.io_base.load(Ordering::Acquire));
 
     server.process_forever().await;
 

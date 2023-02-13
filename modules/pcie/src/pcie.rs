@@ -196,6 +196,7 @@ impl PCIBus {
     }
 }
 
+// When using ACPI, we assume firmware has already set up BARs etc.
 pub fn scan_via_acpi() -> Vec<PCIBus> {
     let acpi_table_base = syscalls::bodge(constants::GET_ACPI_BASE, 0);
     println!("Acpi table base: {:?}", acpi_table_base);
@@ -234,8 +235,13 @@ pub fn scan_via_acpi() -> Vec<PCIBus> {
     buses
 }
 
-pub fn scan_via_device_tree(dt_addr: usize) -> Vec<PCIBus> {
+// When using Device Tree, we assume firmware has _not_ setup BARs etc.
+pub fn scan_via_device_tree(dt_addr: usize) -> (Vec<PCIBus>, Option<usize>, Option<usize>, Option<usize>) {
     // Does this suck? yes it does lmao
+
+    let mut io_space_addr: Option<usize> = None;
+    let mut pci_32bit_addr: Option<usize> = None;
+    let mut pci_64bit_addr: Option<usize> = None;
 
     let mut buses = Vec::new();
 
@@ -293,7 +299,6 @@ pub fn scan_via_device_tree(dt_addr: usize) -> Vec<PCIBus> {
             let name = prop.name().unwrap();
 
             if name == "ranges" {
-                println!("Pain!");
                 let num_ranges = prop.length() / (4 * 7);
                 for i in (0..num_ranges * 7).step_by(7) {
                     let pci_hi = prop.u32(i).unwrap();
@@ -303,6 +308,45 @@ pub fn scan_via_device_tree(dt_addr: usize) -> Vec<PCIBus> {
                         prop.u32(i + 4).unwrap() as u64 | (prop.u32(i + 3).unwrap() as u64) << 32;
                     let host_size =
                         prop.u32(i + 6).unwrap() as u64 | (prop.u32(i + 5).unwrap() as u64) << 32;
+
+
+                    /* from https://elinux.org/Device_Tree_Usage#PCI_Address_Translation:
+                       phys.hi cell: npt000ss bbbbbbbb dddddfff rrrrrrrr
+
+                        n: relocatable region flag (doesn't play a role here)
+                        p: prefetchable (cacheable) region flag
+                        t: aliased address flag (doesn't play a role here)
+                        ss: space code
+                        00: configuration space
+                        01: I/O space
+                        10: 32 bit memory space
+                        11: 64 bit memory space
+                        bbbbbbbb: The PCI bus number. PCI may be structured hierarchically. So we may have PCI/PCI bridges which will define sub busses.
+                        ddddd: The device number, typically associated with IDSEL signal connections.
+                        fff: The function number. Used for multifunction PCI devices.
+                        rrrrrrrr: Register number; used for configuration cycles.
+                    */
+                    // Also see https://www.openfirmware.info/data/docs/bus.pci.pdf
+
+                    let is_prefetchable = (pci_hi & 1<<30) != 0;
+                    let pci_space_type = (pci_hi & 3<<24) >> 24;
+
+                    match pci_space_type {
+                        0 /* Configuration space */ => {}, 
+                        1 /* I/O space */ => {
+                            io_space_addr.replace(host_addr as usize);
+                        }, 
+                        2 /* 32-bit memory */ => {
+                            assert!(pci_addr == host_addr);
+                            pci_32bit_addr.replace(host_addr as usize);
+                        },
+                        3 /* 64-bit memory */ => {
+                            assert!(pci_addr == host_addr);
+                            pci_64bit_addr.replace(host_addr as usize);
+                        }
+                        _ => {}
+                    }
+
                     println!(
                         "pci: ({:08x} {:x}) host ({:x}, {:x})",
                         pci_hi, pci_addr, host_addr, host_size
@@ -331,5 +375,5 @@ pub fn scan_via_device_tree(dt_addr: usize) -> Vec<PCIBus> {
         }
     }
 
-    buses
+    (buses, io_space_addr, pci_32bit_addr, pci_64bit_addr)
 }
