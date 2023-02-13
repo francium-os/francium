@@ -5,10 +5,10 @@ CARGO ?= cargo +francium
 ifeq ($(board), virt)
 arch=aarch64
 target=aarch64-unknown-francium
-kernel_target=aarch64-unknown-none
+kernel_target=aarch64-unknown-none-softfloat
 else ifeq ($(board), raspi4)
 target=aarch64-unknown-francium
-kernel_target=aarch64-unknown-none
+kernel_target=aarch64-unknown-none-softfloat
 else ifeq ($(board), pc)
 arch=x86_64
 target=x86_64-unknown-francium
@@ -29,8 +29,9 @@ bootimg_uefi = target/release/uefi.img
 
 ifeq ($(arch), aarch64)
 target=aarch64-unknown-francium
-gdb=aarch64-unknown-francium-gdb
+gdb=RUST_GDB=aarch64-unknown-francium-gdb rust-gdb +francium
 qemu_args=-M virt,gic-version=2 -cpu cortex-a53 -kernel $(francium) -serial stdio -m 2048 -device bochs-display
+
 else ifeq ($(arch), x86_64)
 target=x86_64-unknown-francium
 qemu_args=-M q35 -bios /usr/share/edk2/x64/OVMF.fd -drive format=raw,file=$(bootimg_uefi),if=none,id=boot -device virtio-blk,serial=fee1dead,drive=boot -serial stdio -m 2048 -no-reboot -enable-kvm
