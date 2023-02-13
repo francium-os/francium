@@ -7,4 +7,3 @@ edition = "2021"
 
 [dependencies]
 bootloader = { path = "../../bootloader" }
-francium_pc = { path = "../francium_pc", artifact = "bin", target = "x86_64-unknown-none" }

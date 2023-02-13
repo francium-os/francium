@@ -3,8 +3,6 @@ use std::path::Path;
 fn main() {
     // set by cargo, build scripts should use this directory for output files
     let out_dir = Path::new("target/release/");
-    // set by cargo's artifact dependency feature, see
-    // https://doc.rust-lang.org/nightly/cargo/reference/unstable.html#artifact-dependencies
     let kernel_path_str = "target/x86_64-unknown-none/release/francium_pc";
     let kernel = Path::new(&kernel_path_str);
 

@@ -434,7 +434,6 @@ name = "francium_pc_bootimg"
 version = "0.1.0"
 dependencies = [
  "bootloader",
- "francium_pc",
 ]
 
 [[package]]
