@@ -88,6 +88,11 @@ impl Pl011Uart {
 
 impl SerialPort for Pl011Uart {
     fn write_byte(&mut self, byte: u8) {
+        // TODO: Hack!
+        if(byte == b'\n') {
+            self.write_byte(b'\r')
+        }
+
         unsafe {
             // Wait until TX full is 0 (TX fifo is empty)
             loop {
