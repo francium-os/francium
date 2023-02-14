@@ -85,7 +85,7 @@ initial_level_0_table:
 # +3 is relocatable, |3 isn't
 
 # table, level 1.
-.quad (initial_uc_memory_table - KERNEL_BASE + PHYS_BASE) + (1<<10) + 3
+.quad (initial_linear_memory_table - KERNEL_BASE + PHYS_BASE) + (1<<10) + 3
 .rept 447
 .quad 0
 .endr
@@ -93,7 +93,7 @@ initial_level_0_table:
 .rept 31
 .quad 0
 .endr
-.quad (initial_uc_memory_table - KERNEL_BASE + PHYS_BASE) + (1<<10) + 3
+.quad (initial_linear_memory_table - KERNEL_BASE + PHYS_BASE) + (1<<10) + 3
 .rept 30
 .quad 0
 .endr
@@ -110,12 +110,12 @@ initial_device_memory_table:
 .set i, i+1
 .endr
 
-# Map a 512GB block as identity using attr 1 (normal, noncacheable memory)
+# Map a 512GB block as identity using attr 0 (normal, cacheable memory)
 .balign 4096
-initial_uc_memory_table:
+initial_linear_memory_table:
 .set i,0
 .rept 512
-.quad i * 0x40000000 + (1<<10) + (1 << 2) + 1
+.quad i * 0x40000000 + (1<<10) + (0 << 2) + 1
 .set i, i+1
 .endr
 

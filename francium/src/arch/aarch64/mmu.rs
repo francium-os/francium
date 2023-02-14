@@ -14,7 +14,15 @@ pub fn enable_mmu() {
             + TCR_EL1::TG0::KiB_4
             + TCR_EL1::TG1::KiB_4
             + TCR_EL1::T1SZ.val(16)
-            + TCR_EL1::T0SZ.val(16),
+            + TCR_EL1::T0SZ.val(16)
+
+            + TCR_EL1::IRGN0::WriteBack_ReadAlloc_WriteAlloc_Cacheable
+            + TCR_EL1::ORGN0::WriteBack_ReadAlloc_WriteAlloc_Cacheable
+            + TCR_EL1::SH0::Inner
+
+            + TCR_EL1::IRGN1::WriteBack_ReadAlloc_WriteAlloc_Cacheable
+            + TCR_EL1::ORGN1::WriteBack_ReadAlloc_WriteAlloc_Cacheable
+            + TCR_EL1::SH1::Inner
     );
 
     barrier::isb(barrier::SY);
