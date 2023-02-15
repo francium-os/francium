@@ -7,8 +7,11 @@ use std::sync::atomic::AtomicU32;
 use std::sync::atomic::Ordering;
 use std::sync::Mutex;
 
-
 mod ecam;
+#[cfg(target_arch = "x86_64")]
+mod pcie_acpi;
+#[cfg(target_arch = "aarch64")]
+mod pcie_dt;
 mod pcie;
 
 use common::os_error::*;
@@ -140,14 +143,14 @@ async fn main() {
     println!("Hello from pcie!");
 
     #[cfg(target_arch = "x86_64")]
-    let pcie_buses = pcie::scan_via_acpi();
+    let pcie_buses = pcie_acpi::scan_via_acpi();
     #[cfg(target_arch = "x86_64")]
     let pci_32bit_addr = Some(0);
     #[cfg(target_arch = "x86_64")]
     let io_space_addr = Some(0);
 
     #[cfg(target_arch = "aarch64")]
-    let (pcie_buses, io_space_addr, pci_32bit_addr, _pci_64bit_addr) = pcie::scan_via_device_tree(0x40000000); /*  [VIRT_PCIE_ECAM] =          { 0x3f000000, 0x01000000 }, */
+    let (pcie_buses, io_space_addr, pci_32bit_addr, _pci_64bit_addr) = pcie_dt::scan_via_device_tree(0x40000000);
 
     let port = syscalls::create_port("").unwrap();
     sm::register_port(syscalls::make_tag("pcie"), TranslateCopyHandle(port)).unwrap();
