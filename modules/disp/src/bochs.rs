@@ -30,7 +30,7 @@ impl BochsAdapter {
         let framebuffer_bar = ipc::pcie::get_bar(device_id, 0).ok()?;
         let bochs_io_bar = ipc::pcie::get_bar(device_id, 2).ok()?;
 
-        ipc::pcie::enable(device_id);
+        ipc::pcie::enable(device_id).unwrap();
 
         println!("BAR0: {:x?}", framebuffer_bar);
         println!("BAR2: {:x?}", bochs_io_bar);
