@@ -20,10 +20,13 @@ mov [rdi + 112], r15
 
 // Pop return address off the stack, and save it in the context.
 pop rax
-mov [rdi + 128 + 8], rax
+mov [rdi + 136], rax
 
 // Save SP.
-mov [rdi + 152 + 8], rsp
+mov [rdi + 160], rsp
+
+// Save floating point.
+fxsave [rdi + 192]
 
 // Load our new registers.
 mov rbx, [rsi + 8]
@@ -34,7 +37,10 @@ mov r14, [rsi + 104]
 mov r15, [rsi + 112]
 
 // Restore SP.
-mov rsp, [rsi + 152 + 8]
+mov rsp, [rsi + 160]
+
+// Restore floating point.
+fxrstor [rdi + 192]
 
 push rsi
 push rcx
@@ -51,7 +57,7 @@ pop rsi
 // load tag
 mov rax, [rsi]
 
-mov r10, [rsi + 128 + 8]
+mov r10, [rsi + 136]
 jmp r10
 
 xchg bx, bx

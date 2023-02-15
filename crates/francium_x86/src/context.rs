@@ -30,7 +30,7 @@ pub struct X86Regs {
     pub ss: usize,
 
     // End stack frame //
-    pub fs: usize,
+    pub fs: usize
 }
 
 impl Debug for X86Regs {
@@ -115,11 +115,18 @@ impl X86Regs {
     }
 }
 
+#[repr(C, align(16))]
+#[derive(Debug, Clone)]
+pub struct FXSaveArea {
+    pub fxsave: [u8; 512]
+}
+
 #[repr(C)]
 #[derive(Debug, Clone)]
 pub struct ThreadContext {
     // regs includes kernel sp
     pub regs: X86Regs,
+    pub fxsave: FXSaveArea
 }
 
 #[repr(C)]
@@ -140,6 +147,7 @@ impl ThreadContext {
     pub const fn new() -> ThreadContext {
         ThreadContext {
             regs: X86Regs::new(),
+            fxsave: FXSaveArea { fxsave: [0; 512] }
         }
     }
 }
