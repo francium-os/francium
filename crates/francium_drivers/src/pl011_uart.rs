@@ -89,7 +89,7 @@ impl Pl011Uart {
 impl SerialPort for Pl011Uart {
     fn write_byte(&mut self, byte: u8) {
         // TODO: Hack!
-        if(byte == b'\n') {
+        if byte == b'\n' {
             self.write_byte(b'\r')
         }
 

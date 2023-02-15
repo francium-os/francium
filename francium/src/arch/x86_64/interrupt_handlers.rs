@@ -245,8 +245,6 @@ unsafe extern "C" fn handle_exception(
     interrupt_number: u64,
 ) {
     //println!("Current process: {}", crate::scheduler::get_current_process().lock().name);
-    //println!("register dump:\n{:?}", ctx.regs);
-
     match interrupt_number {
         0x6 => {
             println!("Invalid instruction!");

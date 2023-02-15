@@ -103,4 +103,4 @@ clean-kernel:
 	cd francium && $(CARGO) clean -p francium_kernel && cd ..
 
 clean-user:
-	$(CARGO) clean -p process --target=$(target) && $(CARGO) clean -p fs --release --target=$(target) && $(CARGO) clean -p sm --release --target=$(target) && $(CARGO) clean -p test --release --target=$(target) && $(CARGO) clean -p disp --release --target=$(target)
+	$(CARGO) clean -p process --target=$(target) && $(CARGO) clean -p fs --release --target=$(target) && $(CARGO) clean -p sm --release --target=$(target) && $(CARGO) clean -p test --release --target=$(target) && $(CARGO) clean -p pcie --release --target=$(target) && $(CARGO) clean -p disp --release --target=$(target)
