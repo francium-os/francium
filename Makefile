@@ -42,7 +42,7 @@ endif
 
 CARGO_FLAGS =
 
-.PHONY: qemu gdb bochs $(francium) $(bootimg_bios) $(bootimg_uefi) $(fs) $(sm) $(test) $(pcie) clean clean-user clean-kernel
+.PHONY: qemu gdb bochs $(francium) $(bootimg_bios) $(bootimg_uefi) $(fs) $(sm) $(test) $(pcie) $(disp) clean clean-user clean-kernel
 
 all: $(francium) $(if $(filter $(board),raspi4), kernel8.bin)
 $(francium): $(fs) $(sm) $(test) $(pcie) $(disp)
