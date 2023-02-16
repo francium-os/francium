@@ -2,7 +2,7 @@ use tracing::{event, Level};
 
 use crate::mmu::PagePermission;
 use crate::scheduler;
-use common::os_error::{ResultCode, RESULT_OK};
+use common::os_error::{Module, Reason, ResultCode, RESULT_OK};
 use francium_common::types::PhysAddr;
 
 pub fn svc_map_memory(address: usize, length: usize, permission: u64) -> (ResultCode, usize) {
@@ -72,4 +72,25 @@ pub fn svc_map_device_memory(
     aspace.alias(phys_address, highest_mmap, length, page_permission);
 
     (RESULT_OK, highest_mmap)
+}
+
+
+pub fn svc_query_physical_address(
+    virt_address: usize
+) -> (ResultCode, usize) {
+    event!(
+        Level::TRACE,
+        svc_name = "query_physical_address",
+        virt_address = virt_address
+    );
+
+    let proc = scheduler::get_current_process();
+    let locked = proc.lock();
+    if let Some(phys) = locked.address_space.page_table.virt_to_phys(virt_address) {
+        (RESULT_OK, phys.0)
+    }
+    else 
+    {
+        (ResultCode::new(Module::Kernel, Reason::NotFound), 0)
+    }
 }

@@ -194,8 +194,17 @@ unsafe extern "C" fn syscall_wrapper_get_system_tick() -> u64 {
     svc::svc_get_system_tick()
 }
 
+#[no_mangle]
+unsafe extern "C" fn syscall_wrapper_query_physical_address(addr: usize) -> Pair {
+    let (res, phys) = svc::svc_query_physical_address(addr);
+    Pair {
+        a: res.0 as usize,
+        b: phys
+    }
+}
+
 // Don't modify this. Honest.
-pub static mut SYSCALL_WRAPPERS: [*const usize; 22] = [
+pub static mut SYSCALL_WRAPPERS: [*const usize; 23] = [
     syscall_wrapper_break as *const usize,
     syscall_wrapper_debug_output as *const usize,
     syscall_wrapper_create_port as *const usize,
@@ -218,4 +227,5 @@ pub static mut SYSCALL_WRAPPERS: [*const usize; 22] = [
     syscall_wrapper_map_device_memory as *const usize,
     syscall_wrapper_get_system_info as *const usize,
     syscall_wrapper_get_system_tick as *const usize,
+    syscall_wrapper_query_physical_address as *const usize,
 ];

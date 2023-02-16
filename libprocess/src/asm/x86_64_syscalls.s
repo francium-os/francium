@@ -18,6 +18,7 @@
 .global syscall_futex_wake
 .global syscall_map_device_memory
 .global syscall_get_system_tick
+.global syscall_query_physical_address
 
 .section .text
 
@@ -166,4 +167,13 @@ ret
 syscall_get_system_tick:
 mov eax, 0x15
 syscall
+ret
+
+syscall_query_physical_address:
+push rbx
+mov eax, 0x16
+mov rbx, rsi
+syscall
+mov [rbx], rdx
+pop rbx
 ret

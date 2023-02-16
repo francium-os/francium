@@ -25,6 +25,7 @@ pub use ipc::svc_ipc_request;
 
 pub use memory::svc_map_device_memory;
 pub use memory::svc_map_memory;
+pub use memory::svc_query_physical_address;
 
 pub use process::svc_create_thread;
 pub use process::svc_get_process_id;

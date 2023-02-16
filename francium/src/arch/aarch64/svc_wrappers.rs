@@ -123,8 +123,14 @@ fn syscall_wrapper_get_system_tick(ctx: &mut ExceptionContext) {
     ctx.regs[0] = res as usize;
 }
 
+fn syscall_wrapper_query_physical_address(ctx: &mut ExceptionContext) {
+    let (res, addr) = svc::svc_query_physical_address(ctx.regs[0]);
+    ctx.regs[0] = res.0 as usize;
+    ctx.regs[1] = addr;
+}
+
 type SVCHandler = fn(&mut ExceptionContext);
-pub const SVC_HANDLERS: [SVCHandler; 22] = [
+pub const SVC_HANDLERS: [SVCHandler; 23] = [
     syscall_wrapper_break,
     syscall_wrapper_debug_output,
     syscall_wrapper_create_port,
@@ -147,4 +153,5 @@ pub const SVC_HANDLERS: [SVCHandler; 22] = [
     syscall_wrapper_map_device_memory,
     syscall_wrapper_get_system_info,
     syscall_wrapper_get_system_tick,
+    syscall_wrapper_query_physical_address
 ];

@@ -41,6 +41,7 @@ extern "C" {
     pub fn syscall_get_system_info(ty: usize, index: usize, info_out: *mut usize) -> ResultCode;
 
     pub fn syscall_get_system_tick() -> u64;
+    pub fn syscall_query_physical_address(virt_addr: usize, phys_out: *mut usize) -> ResultCode;
 }
 
 pub fn print(s: &str) {
@@ -166,10 +167,10 @@ pub fn get_process_id() -> u64 {
     unsafe { syscall_get_process_id() }
 }
 
-pub fn map_memory(address: usize, length: usize, permission: u64) -> Result<usize, OSError> {
+pub fn map_memory(address: usize, length: usize, permission: PagePermission) -> Result<usize, OSError> {
     unsafe {
         let mut address_out: usize = 0;
-        let res = syscall_map_memory(address, length, permission, &mut address_out);
+        let res = syscall_map_memory(address, length, permission.bits(), &mut address_out);
         if res == RESULT_OK {
             Ok(address_out)
         } else {
@@ -234,6 +235,18 @@ pub fn get_system_info(_ty: SystemInfoType, _index: usize) -> Result<SystemInfo,
 
 pub fn get_system_tick() -> u64 {
     unsafe { syscall_get_system_tick() }
+}
+
+pub fn query_physical_address(virt: usize) -> Result<usize, OSError> {
+    unsafe {
+        let mut phys_out: usize = 0;
+        let res = syscall_query_physical_address(virt, &mut phys_out);
+        if res == RESULT_OK {
+            Ok(phys_out)
+        } else {
+            Err(OSError::from_result_code(res))
+        }
+    }
 }
 
 use core::arch::global_asm;

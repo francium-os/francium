@@ -17,6 +17,7 @@
 .global syscall_futex_wake
 .global syscall_map_device_memory
 .global syscall_get_system_tick
+.global syscall_query_physical_address
 
 .global get_tpidr_el0_asm
 
@@ -122,6 +123,12 @@ ret
 
 syscall_get_system_tick:
 svc #0x15
+ret
+
+syscall_query_physical_address:
+mov x9, x1
+svc #0x16
+str x1, [x9]
 ret
 
 get_tpidr_el0_asm:
