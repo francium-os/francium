@@ -437,6 +437,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "francium_raspi3"
+version = "0.1.0"
+dependencies = [
+ "francium_common",
+ "francium_kernel",
+]
+
+[[package]]
 name = "francium_raspi4"
 version = "0.1.0"
 dependencies = [

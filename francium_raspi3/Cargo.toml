@@ -1,0 +1,11 @@
+[package]
+name = "francium_raspi3"
+version = "0.1.0"
+edition = "2021"
+resolver = "2"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+"francium_kernel" = { path = "../francium", features = ["platform_raspi3"] }
+"francium_common" = { path = "../crates/francium_common"}

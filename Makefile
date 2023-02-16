@@ -6,7 +6,12 @@ ifeq ($(board), virt)
 arch=aarch64
 target=aarch64-unknown-francium
 kernel_target=aarch64-unknown-none-softfloat
+else ifeq ($(board), raspi3)
+arch=aarch64
+target=aarch64-unknown-francium
+kernel_target=aarch64-unknown-none-softfloat
 else ifeq ($(board), raspi4)
+arch=aarch64
 target=aarch64-unknown-francium
 kernel_target=aarch64-unknown-none-softfloat
 else ifeq ($(board), pc)
@@ -28,12 +33,14 @@ bootimg_bios = target/release/bios.img
 bootimg_uefi = target/release/uefi.img
 
 ifeq ($(arch), aarch64)
-target=aarch64-unknown-francium
 gdb=RUST_GDB=aarch64-unknown-francium-gdb rust-gdb +francium
-qemu_args=-M virt,gic-version=2 -cpu cortex-a53 -kernel $(francium) -serial stdio -m 2048 -device bochs-display
+ifeq ($(board), virt)
+qemu_args=-M $(board),gic-version=2 -cpu cortex-a53 -kernel $(francium) -serial stdio -m 2048 -device bochs-display
+else ifeq ($(board), raspi3)
+qemu_args=-M $(board)b -kernel kernel8_pi3.bin -serial stdio
+endif
 
 else ifeq ($(arch), x86_64)
-target=x86_64-unknown-francium
 qemu_args=-M q35 -bios /usr/share/edk2/x64/OVMF.fd -drive format=raw,file=$(bootimg_uefi),if=none,id=boot -device virtio-blk,serial=fee1dead,drive=boot -serial stdio -m 2048 -no-reboot -enable-kvm
 #qemu_args=-M q35 -bios /usr/share/edk2/x64/OVMF.fd -drive format=raw,file=$(bootimg_uefi),if=none,id=nvme -device nvme,serial=fee1dead,drive=nvme -serial stdio -m 2048 -no-reboot -enable-kvm
 #qemu_args=-M q35 -drive format=raw,file=$(bootimg_bios),if=none,id=nvme -device nvme,serial=fee1dead,drive=nvme -serial stdio -m 2048 -no-reboot -enable-kvm -d int
@@ -51,9 +58,14 @@ $(francium): $(fs) $(sm) $(test) $(pcie) $(disp)
 $(bootimg_bios) $(bootimg_uefi): $(francium)
 	cargo run --package=francium_pc_bootimg --release
 
+
+ifeq ($(board), raspi3)
+kernel8_pi3.bin: $(francium)
+	aarch64-none-elf-objcopy -O binary $(francium) kernel8_pi3.bin
+endif
 ifeq ($(board), raspi4)
-kernel8.bin: $(francium)
-	aarch64-none-elf-objcopy -O binary $(francium) kernel8.bin
+kernel8_pi4.bin: $(francium)
+	aarch64-none-elf-objcopy -O binary $(francium) kernel8_pi4.bin
 endif
 
 $(fs):
@@ -71,7 +83,7 @@ $(pcie):
 $(disp):
 	$(CARGO) build --package=disp --release --target=$(target)
 
-qemu: $(francium) $(if $(filter $(board),pc), $(bootimg_uefi))
+qemu: $(francium) $(if $(filter $(board),pc), $(bootimg_uefi)) $(if $(filter $(board),raspi3), kernel8_pi3.bin)
 	qemu-system-$(arch) $(qemu_args) -s
 
 ifeq ($(board), pc)

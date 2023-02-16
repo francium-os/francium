@@ -4,6 +4,7 @@ members = [
   "francium",
   "francium_pc",
   "francium_virt",
+  "francium_raspi3",
   "francium_raspi4",
   "francium_pc_bootimg",
   "libprocess",
