@@ -11,7 +11,7 @@ use francium_kernel::*;
 pub extern "C" fn rust_main() -> ! {
     platform::platform_specific_init();
 
-    let phys_mem_start = platform::PHYS_MEM_BASE;
+    let phys_mem_start = platform::PHYS_MEM_BASE + 0x80000;
     let phys_mem_end = platform::PHYS_MEM_BASE + platform::PHYS_MEM_SIZE;
 
     init::setup_physical_allocator(phys_mem_start, phys_mem_end);
@@ -39,15 +39,23 @@ pub extern "C" fn rust_main() -> ! {
     let fs_buf = include_bytes!("../../target/aarch64-unknown-francium/release/fs");
     let test_buf = include_bytes!("../../target/aarch64-unknown-francium/release/test");
     let sm_buf = include_bytes!("../../target/aarch64-unknown-francium/release/sm");
+    //let pcie_buf = include_bytes!("../../target/aarch64-unknown-francium/release/pcie");
+    let disp_buf = include_bytes!("../../target/aarch64-unknown-francium/release/disp");
 
     let fs_main_thread = init::load_process(fs_buf, "fs");
     scheduler::register_thread(fs_main_thread.clone());
 
     let test_main_thread = init::load_process(test_buf, "test");
-    scheduler::register_thread(test_main_thread);
+    scheduler::register_thread(test_main_thread.clone());
 
     let sm_main_thread = init::load_process(sm_buf, "sm");
-    scheduler::register_thread(sm_main_thread);
+    scheduler::register_thread(sm_main_thread.clone());
+
+    //let pcie_main_thread = init::load_process(pcie_buf, "pcie");
+    //scheduler::register_thread(pcie_main_thread.clone());
+
+    let disp_main_thread = init::load_process(disp_buf, "disp");
+    scheduler::register_thread(disp_main_thread.clone());
 
     platform::scheduler_post_init();
 

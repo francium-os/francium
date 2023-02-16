@@ -11,7 +11,7 @@ use francium_kernel::*;
 pub extern "C" fn rust_main() -> ! {
     platform::platform_specific_init();
 
-    let phys_mem_start = platform::PHYS_MEM_BASE;
+    let phys_mem_start = platform::PHYS_MEM_BASE + 0x80000;
     let phys_mem_end = platform::PHYS_MEM_BASE + platform::PHYS_MEM_SIZE;
 
     init::setup_physical_allocator(phys_mem_start, phys_mem_end);

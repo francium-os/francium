@@ -1,15 +1,15 @@
-use crate::arch::{aarch64, arch_timer::ArchTimer, gicv2::GICv2};
+use crate::arch::{aarch64, arch_timer::ArchTimer};
 use crate::constants::*;
+use crate::drivers::bcm_interrupt::BCMInterrupt;
 use crate::drivers::pl011_uart::Pl011Uart;
 use crate::drivers::{InterruptController, Timer};
 use francium_common::types::PhysAddr;
 use spin::Mutex;
 
 pub const PHYS_MEM_BASE: usize = 0;
-pub const PHYS_MEM_SIZE: usize = 0x3F000000; // 2gb for now
+pub const PHYS_MEM_SIZE: usize = 0x3F000000 - 0x80000; // 1gbow
 
-const RPI_GICD_BASE: usize = PERIPHERAL_BASE + 0xff841000;
-const RPI_GICC_BASE: usize = PERIPHERAL_BASE + 0xff842000;
+pub const RPI_PERIPHERAL_BASE: usize = PERIPHERAL_BASE + 0x3f000000;
 
 lazy_static! {
     pub static ref DEFAULT_UART: Mutex<Pl011Uart> = Mutex::new(Pl011Uart::new(
@@ -17,8 +17,7 @@ lazy_static! {
         115200,
         48000000
     ));
-    pub static ref DEFAULT_INTERRUPT: Mutex<GICv2> =
-        Mutex::new(GICv2::new(RPI_GICD_BASE, RPI_GICC_BASE));
+    pub static ref DEFAULT_INTERRUPT: Mutex<BCMInterrupt> = Mutex::new(BCMInterrupt::new(RPI_PERIPHERAL_BASE + 0xb000));
     pub static ref DEFAULT_TIMER: Mutex<ArchTimer> = Mutex::new(ArchTimer::new());
 }
 
@@ -82,16 +81,22 @@ pub fn platform_specific_init() {
 }
 
 pub fn scheduler_pre_init() {
-    // enable GIC
-    let timer_irq = 16 + 14; // ARCH_TIMER_NS_EL1_IRQ + 16 because "lol no u"
-    let gic_lock = DEFAULT_INTERRUPT.lock();
-    gic_lock.init();
-    gic_lock.enable_interrupt(timer_irq);
+    // enable interrupts
+    let timer_irq = 16 + 14; // ARCH_TIMER_NS_EL1_IRQ + 16
+    let mut intr_lock = DEFAULT_INTERRUPT.lock();
+    intr_lock.init();
+    intr_lock.enable_interrupt(timer_irq);
 
     // enable arch timer, 100hz
     let mut timer_lock = DEFAULT_TIMER.lock();
     timer_lock.set_period_us(10000);
     timer_lock.reset_timer();
+
+    // TODO: real arm local definitions
+    // enable timer irq - you need to route this manually, apparently.
+    unsafe {
+        ((PERIPHERAL_BASE + 0x4000_0040) as *mut u32).write_volatile(1<<1);
+    }
 }
 
 pub fn scheduler_post_init() {

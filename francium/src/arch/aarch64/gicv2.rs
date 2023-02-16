@@ -30,7 +30,7 @@ const GICD_ICENABLER_SIZE: u32 = 32;
 const GICD_ICPENDR_SIZE: u32 = 32;
 
 impl InterruptController for GICv2 {
-    fn init(&self) {
+    fn init(&mut self) {
         unsafe {
             ((self.gicd_base + GICD_CTLR) as *mut u32).write_volatile(1);
             ((self.gicc_base + GICC_CTLR) as *mut u32).write_volatile(1);
@@ -38,7 +38,7 @@ impl InterruptController for GICv2 {
         }
     }
 
-    fn enable_interrupt(&self, interrupt: u32) {
+    fn enable_interrupt(&mut self, interrupt: u32) {
         unsafe {
             ((self.gicd_base + GICD_ISENABLER) as *mut u32)
                 .add((interrupt / GICD_ISENABLER_SIZE) as usize)
@@ -46,7 +46,7 @@ impl InterruptController for GICv2 {
         }
     }
 
-    fn disable_interrupt(&self, interrupt: u32) {
+    fn disable_interrupt(&mut self, interrupt: u32) {
         unsafe {
             ((self.gicd_base + GICD_ICENABLER) as *mut u32)
                 .add((interrupt / GICD_ISENABLER_SIZE) as usize)
@@ -54,7 +54,7 @@ impl InterruptController for GICv2 {
         }
     }
 
-    fn ack_interrupt(&self, interrupt: u32) {
+    fn ack_interrupt(&mut self, interrupt: u32) {
         unsafe {
             ((self.gicd_base + GICD_ICPENDR) as *mut u32)
                 .add((interrupt / GICD_ICPENDR_SIZE) as usize)

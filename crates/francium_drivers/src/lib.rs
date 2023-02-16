@@ -1,10 +1,10 @@
 #![no_std]
 
 pub trait InterruptController {
-    fn init(&self);
-    fn enable_interrupt(&self, n: u32);
-    fn disable_interrupt(&self, n: u32);
-    fn ack_interrupt(&self, n: u32);
+    fn init(&mut self);
+    fn enable_interrupt(&mut self, n: u32);
+    fn disable_interrupt(&mut self, n: u32);
+    fn ack_interrupt(&mut self, n: u32);
 }
 
 pub trait Timer {
@@ -41,5 +41,7 @@ pub mod pic_interrupt_controller;
 #[cfg(target_arch = "x86_64")]
 pub mod pit_timer;
 pub mod pl011_uart;
+
+pub mod bcm_interrupt;
 
 pub mod print;
