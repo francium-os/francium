@@ -76,12 +76,13 @@ impl AddressSpace {
         start_phys: PhysAddr,
         start_addr: usize,
         size: usize,
+        map_type: MapType,
         perm: PagePermission,
     ) {
         for addr in (start_addr..(start_addr + size)).step_by(0x1000) {
             let page = PhysAddr(start_phys.0 + (addr - start_addr));
             self.page_table
-                .map_4k(page, addr, perm, MapType::NormalCachable);
+                .map_4k(page, addr, perm, map_type);
         }
 
         self.regions.push(Block {

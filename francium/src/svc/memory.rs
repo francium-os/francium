@@ -1,9 +1,11 @@
 use tracing::{event, Level};
 
-use crate::mmu::PagePermission;
+use crate::mmu::{MapType, PagePermission};
 use crate::scheduler;
 use common::os_error::{Module, Reason, ResultCode, RESULT_OK};
 use francium_common::types::PhysAddr;
+
+use num_traits::cast::FromPrimitive;
 
 pub fn svc_map_memory(address: usize, length: usize, permission: u64) -> (ResultCode, usize) {
     event!(
@@ -41,6 +43,7 @@ pub fn svc_map_device_memory(
     phys_address: PhysAddr,
     virt_address: usize,
     length: usize,
+    map_type: usize,
     permission: u64,
 ) -> (ResultCode, usize) {
     event!(
@@ -69,7 +72,7 @@ pub fn svc_map_device_memory(
     }
 
     let page_permission: PagePermission = PagePermission::from_bits(permission).unwrap();
-    aspace.alias(phys_address, highest_mmap, length, page_permission);
+    aspace.alias(phys_address, highest_mmap, length, MapType::from_usize(map_type).unwrap(), page_permission);
 
     (RESULT_OK, highest_mmap)
 }

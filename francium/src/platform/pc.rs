@@ -35,7 +35,7 @@ pub fn platform_specific_init() {}
 pub fn scheduler_pre_init() {
     // enable timer irq
     let timer_irq = 0; // PIC on IRQ 0!
-    let gic_lock = DEFAULT_INTERRUPT.lock();
+    let mut gic_lock = DEFAULT_INTERRUPT.lock();
     gic_lock.init();
     gic_lock.enable_interrupt(timer_irq);
 

@@ -1,4 +1,4 @@
-use francium_common::types::PagePermission;
+use francium_common::types::{MapType, PagePermission};
 use process::ipc;
 use process::syscalls;
 
@@ -40,6 +40,7 @@ impl BochsAdapter {
             framebuffer_bar.0,
             0,
             framebuffer_bar.1,
+            MapType::NormalCachable,
             PagePermission::USER_READ_WRITE,
         )
         .unwrap();
@@ -47,6 +48,7 @@ impl BochsAdapter {
             bochs_io_bar.0,
             0,
             bochs_io_bar.1,
+            MapType::NormalCachable,
             PagePermission::USER_READ_WRITE,
         )
         .unwrap();

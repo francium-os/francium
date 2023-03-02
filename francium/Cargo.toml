@@ -17,6 +17,7 @@ hashbrown = "0.13"
 intrusive-collections = "0.9.4"
 tracing = { version = "0.1.37", default-features = false, features = ["log"] }
 log = { version = "*", default-features = false }
+num-traits = { version = "0.2", default-features = false }
 
 francium_common = { path = "../crates/francium_common" }
 francium_drivers = { path = "../crates/francium_drivers" }

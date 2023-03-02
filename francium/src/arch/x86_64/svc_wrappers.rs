@@ -170,9 +170,10 @@ unsafe extern "C" fn syscall_wrapper_map_device_memory(
     phys_addr: PhysAddr,
     virt_addr: usize,
     length: usize,
+    map_type: usize,
     permission: u64,
 ) -> Pair {
-    let (res, out) = svc::svc_map_device_memory(phys_addr, virt_addr, length, permission);
+    let (res, out) = svc::svc_map_device_memory(phys_addr, virt_addr, length, map_type, permission);
     Pair {
         a: res.0 as usize,
         b: out as usize,

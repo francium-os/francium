@@ -1,6 +1,6 @@
 use common::os_error::{OSError, ResultCode, RESULT_OK};
 use common::system_info::*;
-use common::PagePermission;
+use common::{PagePermission, MapType};
 use common::{Handle, INVALID_HANDLE};
 use core::cmp::min;
 
@@ -34,6 +34,7 @@ extern "C" {
         phys_addr: usize,
         virt_addr: usize,
         length: usize,
+        map_type: usize,
         permission: u64,
         address_out: *mut usize,
     ) -> ResultCode;
@@ -199,6 +200,7 @@ pub fn map_device_memory(
     phys_addr: usize,
     virt_addr: usize,
     length: usize,
+    ty: MapType,
     permission: PagePermission,
 ) -> Result<usize, OSError> {
     unsafe {
@@ -207,6 +209,7 @@ pub fn map_device_memory(
             phys_addr,
             virt_addr,
             length,
+            ty as usize,
             permission.bits(),
             &mut address_out,
         );

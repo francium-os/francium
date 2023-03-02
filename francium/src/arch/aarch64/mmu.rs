@@ -28,7 +28,10 @@ pub fn enable_mmu() {
     barrier::isb(barrier::SY);
 
     SCTLR_EL1.write(
-        SCTLR_EL1::SA0::Enable
+        SCTLR_EL1::UCI::DontTrap
+            + SCTLR_EL1::UCT::DontTrap
+            + SCTLR_EL1::DZE::DontTrap
+            + SCTLR_EL1::SA0::Enable
             + SCTLR_EL1::SA::Enable
             + SCTLR_EL1::M::Enable
             + SCTLR_EL1::C::Cacheable

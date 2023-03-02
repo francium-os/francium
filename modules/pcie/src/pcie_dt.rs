@@ -1,5 +1,6 @@
 use crate::pcie::PCIBus;
 
+use common::MapType;
 use process::syscalls;
 use francium_common::align::align_up;
 use francium_common::types::PagePermission;
@@ -19,7 +20,7 @@ pub fn scan_via_device_tree(dt_addr: usize) -> (Vec<PCIBus>, Option<usize>, Opti
     let mut buses = Vec::new();
 
     let dt_header_virt =
-        syscalls::map_device_memory(dt_addr, 0, 0x1000, PagePermission::USER_READ_WRITE).unwrap();
+        syscalls::map_device_memory(dt_addr, 0, 0x1000, MapType::NormalCachable, PagePermission::USER_READ_WRITE).unwrap();
     let dt_len = unsafe {
         DevTree::read_totalsize(std::slice::from_raw_parts(
             dt_header_virt as *const u8,
@@ -32,6 +33,7 @@ pub fn scan_via_device_tree(dt_addr: usize) -> (Vec<PCIBus>, Option<usize>, Opti
         dt_addr,
         0,
         align_up(dt_len as usize, 0x1000),
+        MapType::NormalCachable,
         PagePermission::USER_READ_WRITE,
     )
     .unwrap();
@@ -134,6 +136,8 @@ pub fn scan_via_device_tree(dt_addr: usize) -> (Vec<PCIBus>, Option<usize>, Opti
                     ecam_addr as usize,
                     0,
                     ecam_size as usize,
+                    // TODO: Should ECAM be Device?
+                    MapType::NormalCachable,
                     PagePermission::USER_READ_WRITE,
                 )
                 .unwrap();

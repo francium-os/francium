@@ -114,7 +114,7 @@ svc #0x12
 ret
 
 syscall_map_device_memory:
-mov x9, x4
+mov x9, x5
 svc #0x13
 str x1, [x9]
 ret

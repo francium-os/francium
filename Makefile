@@ -51,7 +51,7 @@ CARGO_FLAGS =
 
 .PHONY: qemu gdb bochs $(francium) $(bootimg_bios) $(bootimg_uefi) $(fs) $(sm) $(test) $(pcie) $(disp) clean clean-user clean-kernel
 
-all: $(francium) $(if $(filter $(board),raspi4), kernel8.bin)
+all: $(francium) $(if $(filter $(board),raspi4), kernel8_pi4.bin)
 $(francium): $(fs) $(sm) $(test) $(pcie) $(disp)
 	cargo build --package=francium_$(board) --release --target=$(kernel_target)
 

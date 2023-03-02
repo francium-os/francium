@@ -12,9 +12,12 @@
 
 .equ KERNEL_BASE, 0xfffffff800000000
 
-.equ SCTLR_LSMAOE, (1<<29)
+.equ SCTLR_LSMAOE, 1<<29
 .equ SCTLR_NTLSMD, 1<<28
-.equ SCTLR_TSCXT,  1<<20
+.equ SCTLR_UCI, 1<<26
+.equ SCTLR_UCT, 1<<15
+.equ SCTLR_TSCXT, 1<<20
+.equ SCTLR_DZE, 1<<14
 .equ SCTLR_ITD, 1<<7
 
 .equ SCTLR_I, 1 << 12
@@ -62,7 +65,7 @@ msr ttbr1_el1, x0
 ldr x0, = TG1_4KB | (16 << 16) | (16 << 0)
 msr tcr_el1, x0
 
-ldr x0, = SCTLR_LSMAOE | SCTLR_NTLSMD | SCTLR_TSCXT | SCTLR_SPAN | SCTLR_I | SCTLR_C | SCTLR_M
+ldr x0, = SCTLR_LSMAOE | SCTLR_NTLSMD | SCTLR_TSCXT | SCTLR_UCI | SCTLR_UCT | SCTLR_DZE | SCTLR_SPAN | SCTLR_I | SCTLR_C | SCTLR_M
 msr sctlr_el1, x0
 
 dsb sy
