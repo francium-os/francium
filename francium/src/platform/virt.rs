@@ -25,7 +25,7 @@ pub fn platform_specific_init() {
 pub fn scheduler_pre_init() {
     // enable GIC
     let timer_irq = 16 + 14; // ARCH_TIMER_NS_EL1_IRQ + 16 because "lol no u"
-    let gic_lock = DEFAULT_INTERRUPT.lock();
+    let mut gic_lock = DEFAULT_INTERRUPT.lock();
     gic_lock.init();
     gic_lock.enable_interrupt(timer_irq);
 
