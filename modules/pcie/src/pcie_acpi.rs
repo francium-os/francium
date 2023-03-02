@@ -3,7 +3,7 @@ use crate::pcie::PCIBus;
 use process::syscalls;
 //use common::system_info::*;
 use francium_common::align::align_up;
-use francium_common::types::PagePermission;
+use francium_common::types::{MapType, PagePermission};
 use std::ptr::NonNull;
 
 use common::constants;
@@ -23,7 +23,7 @@ impl AcpiHandler for UserACPIHandler {
 
         // TODO: make this not, really awful
         let virt =
-            syscalls::map_device_memory(page_addr, 0, new_size, PagePermission::USER_READ_WRITE)
+            syscalls::map_device_memory(page_addr, 0, new_size, MapType::NormalCachable, PagePermission::USER_READ_WRITE)
                 .unwrap();
         PhysicalMapping::new(
             physical_address,
@@ -60,6 +60,7 @@ pub fn scan_via_acpi() -> Vec<PCIBus> {
             ecam_block.physical_address,
             0,
             ecam_size,
+            MapType::NormalCachable,
             PagePermission::USER_READ_WRITE,
         )
         .unwrap();
