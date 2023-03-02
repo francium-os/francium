@@ -36,7 +36,7 @@ impl PIC {
 }
 
 impl InterruptController for PIC {
-    fn init(&self) {
+    fn init(&mut self) {
         // Remap PICs.
         // Yes, this is stolen directly off OSDev.
         // https://wiki.osdev.org/PIC#Code_Examples
@@ -69,7 +69,7 @@ impl InterruptController for PIC {
         outb(PIC2_DATA, a2);
     }
 
-    fn enable_interrupt(&self, n: u32) {
+    fn enable_interrupt(&mut self, n: u32) {
         if n < 8 {
             outb(PIC1_DATA, inb(PIC1_DATA) & !(1 << n));
         } else {
@@ -77,7 +77,7 @@ impl InterruptController for PIC {
         }
     }
 
-    fn disable_interrupt(&self, n: u32) {
+    fn disable_interrupt(&mut self, n: u32) {
         if n < 8 {
             outb(PIC1_DATA, inb(PIC1_DATA) | 1 << n);
         } else {
@@ -85,7 +85,7 @@ impl InterruptController for PIC {
         }
     }
 
-    fn ack_interrupt(&self, n: u32) {
+    fn ack_interrupt(&mut self, n: u32) {
         pic_send_eoi(n as u8);
     }
 }
