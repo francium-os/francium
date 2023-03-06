@@ -1,4 +1,5 @@
 use crate::block::BlockDevice;
+use process::ipc;
 
 struct BlockNVME {
 
@@ -16,5 +17,7 @@ impl BlockDevice for BlockNVME {
 }
 
 pub fn scan() -> Vec<Box<dyn BlockDevice>> {
+	let nvme_devices = ipc::pcie::get_devices_by_class(1, 8);
+	println!("NVMe devices: {:?}", nvme_devices);
 	Vec::new()
 }

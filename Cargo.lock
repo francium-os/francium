@@ -499,8 +499,10 @@ name = "fs"
 version = "0.1.0"
 dependencies = [
  "async-trait",
+ "francium_common",
  "ipc-gen-buildtime",
  "process",
+ "tock-registers",
  "tokio",
 ]
 

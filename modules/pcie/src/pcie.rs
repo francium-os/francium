@@ -112,7 +112,7 @@ impl PCIDevice {
                     });
                 }
                 /* pci bridge */
-                1 => {}
+                1 => todo!(),
                 _ => todo!(),
             }
 
