@@ -5,6 +5,9 @@ use process::os_error::{Module, OSError, OSResult, Reason};
 use process::syscalls;
 use process::Handle;
 
+mod block;
+mod block_nvme;
+
 include!(concat!(env!("OUT_DIR"), "/fs_server_impl.rs"));
 
 struct FSServerStruct {}
@@ -24,6 +27,8 @@ async fn main() {
     sm::register_port(syscalls::make_tag("fs"), TranslateCopyHandle(port)).unwrap();
 
     let server = Box::new(ServerImpl::new(FSServerStruct {}, port));
+
+    let nvmes = block_nvme::scan();
 
     server.process_forever().await;
 

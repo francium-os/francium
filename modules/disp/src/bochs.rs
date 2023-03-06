@@ -25,7 +25,7 @@ const VBE_DISPI_INDEX_ENABLE: usize = 4;
 impl BochsAdapter {
     pub fn new() -> Option<BochsAdapter> {
         /* something something shared mem */
-        let device_id = ipc::pcie::get_device_by_vidpid(0x1234, 0x1111)?;
+        let device_id = *ipc::pcie::get_devices_by_vidpid(0x1234, 0x1111).get(0)?;
         println!("got device {:?}", device_id);
         let framebuffer_bar = ipc::pcie::get_bar(device_id, 0).ok()?;
         let bochs_io_bar = ipc::pcie::get_bar(device_id, 2).ok()?;

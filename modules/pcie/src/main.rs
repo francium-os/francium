@@ -48,7 +48,9 @@ impl PCIEServerStruct {
         all_devices
     }
 
-    fn get_device_by_vidpid(&self, vid: u16, pid: u16) -> Option<u32> {
+    fn get_devices_by_vidpid(&self, vid: u16, pid: u16) -> Vec<u32> {
+        let mut devices = Vec::new();
+
         let buses_locked = self.buses.lock().unwrap();
         // this sucks but only a little
         for bus in buses_locked.iter() {
@@ -56,7 +58,7 @@ impl PCIEServerStruct {
                 for func in dev.functions.iter() {
                     // etc
                     if func.inner.header.vendor_id == vid && func.inner.header.device_id == pid {
-                        return Some(
+                        devices.push(
                             bus.num as u32 * 256 * 256 + dev.num as u32 * 256 + func.num as u32,
                         );
                     }
@@ -64,7 +66,27 @@ impl PCIEServerStruct {
             }
         }
 
-        None
+        devices
+    }
+
+    fn get_devices_by_class(&self, class: u8, subclass: u8) -> Vec<u32> {
+        let mut devices = Vec::new();
+
+        let buses_locked = self.buses.lock().unwrap();
+
+        for bus in buses_locked.iter() {
+            for dev in bus.devices.iter() {
+                for func in dev.functions.iter() {
+                    if func.inner.header.class == class && func.inner.header.subclass == subclass {
+                        devices.push(
+                            bus.num as u32 * 256 * 256 + dev.num as u32 * 256 + func.num as u32,
+                        );
+                    }
+                }
+            }
+        }
+
+        devices
     }
 
     fn enable(&self, device: u32) -> OSResult<()> {
@@ -129,6 +151,73 @@ impl PCIEServerStruct {
                         };
 
                         return Ok((bar_base as usize, bar_size));
+                    }
+                }
+            }
+        }
+
+        Err(OSError::new(Module::PCIE, Reason::NotFound))
+    }
+
+    fn get_cap(&self, device: u32, cap_index: u8) -> OSResult<Vec<u8>> {
+        // just kidding this sucks a lot
+        let bus_id: u8 = ((device & (0xff << 16)) >> 16) as u8;
+        let device_id: u8 = ((device & (0xff << 8)) >> 8) as u8;
+        let function_id: u8 = (device & 0xff) as u8;
+
+        let mut buses_locked = self.buses.lock().unwrap();
+
+        for bus in buses_locked.iter_mut() {
+            for dev in bus.devices.iter_mut() {
+                for func in dev.functions.iter_mut() {
+                    if bus.num == bus_id && dev.num == device_id && func.num == function_id {
+                        // TODO: magic number!!!!!!
+                        if (func.inner.header.status & (1<<4)) == (1<<4) {
+                            // caps are supported
+                            let cap_offset = func.inner.capabilities;
+                            unsafe {
+                                // TODO: explicit config space rework
+                                let config_space_ptr = func.inner as *const ecam::ConfigurationSpaceType0 as *const u8;
+
+                                let mut cap_ptr = config_space_ptr.add(cap_offset as usize);
+                                let mut curr_cap_index = 0;
+
+                                loop {
+                                    let next_cap_offset = *cap_ptr.add(1);
+
+                                    let cap_type = *cap_ptr;
+                                    let cap_len = match cap_type {
+                                        9 => *cap_ptr.add(2),
+                                        0x11 => 0xc,
+                                        _ => panic!("Unknown cap type 0x{:x}", cap_type)
+                                    };
+
+                                    if cap_index == curr_cap_index {
+                                        /* TODO: uhhh
+                                            virtio spec:
+                                            For device configuration access, the driver MUST use 8-bit wide accesses for 8-bit wide fields, 16-bit wide
+                                            and aligned accesses for 16-bit wide fields and 32-bit wide and aligned accesses for 32-bit and 64-bit wide
+                                            fields. For 64-bit fields, the driver MAY access each of the high and low 32-bit parts of the field independently.
+                                        */
+
+                                        let cap: Vec<u8> = std::slice::from_raw_parts(cap_ptr, cap_len as usize).to_vec();
+                                        return Ok(cap)
+                                    }
+
+                                    if next_cap_offset == 0 {
+                                        break
+                                    }
+
+                                    curr_cap_index += 1;
+                                    cap_ptr = config_space_ptr.add(next_cap_offset as usize);
+                                }
+
+                                // TODO: better return code
+                                return Err(OSError::new(Module::PCIE, Reason::NotFound))
+                            }
+                        } else {
+                            println!("Caps not supported");
+                        }
                     }
                 }
             }

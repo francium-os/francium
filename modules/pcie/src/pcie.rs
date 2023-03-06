@@ -84,9 +84,11 @@ impl PCIDevice {
 
         if function.vendor_id != 0xffff {
             println!(
-                "vid: {:04x}, pid: {:04x} type={:04x}",
+                "vid: {:04x}, pid: {:04x} class = {:02x} subclass = {:02x} type={:04x}",
                 { function.vendor_id },
                 { function.device_id },
+                { function.class },
+                { function.subclass },
                 { function.header_type }
             );
             let header_type = function.header_type & 0x7f;

@@ -9,10 +9,10 @@ inputs = []
 output = "Vec<PCIDeviceInfo>"
 
 [[methods]]
-name = "get_device_by_vidpid"
+name = "get_devices_by_vidpid"
 id = 2
 inputs = [{name="vid", ty="u16"}, {name="pid", ty="u16"}]
-output = "Option<u32>"
+output = "Vec<u32>"
 
 [[methods]]
 name = "get_bar"
@@ -25,3 +25,15 @@ name = "enable"
 id = 4
 inputs = [{name="device", ty = "u32"}]
 output = "OSResult<()>"
+
+[[methods]]
+name = "get_devices_by_class"
+id = 5
+inputs = [{name="class", ty="u8"}, {name="subclass", ty="u8"}]
+output = "Vec<u32>"
+
+[[methods]]
+name = "get_cap"
+id = 6
+inputs = [{name="device", ty = "u32"}, {name="cap_index", ty="u8"}]
+output = "OSResult<Vec<u8>>"
