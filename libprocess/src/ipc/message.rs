@@ -337,7 +337,6 @@ where
 {
     fn read(msg: &mut IPCMessage) -> Vec<T> {
         let length = usize::read(msg);
-        println!("read vec! len={:?}", length);
 
         let mut new_vec = Vec::with_capacity(length);
         for _ in 0..length {
@@ -348,8 +347,6 @@ where
     }
 
     fn write(msg: &mut IPCMessage, value: &Vec<T>) {
-        println!("write vec! len={:?}", value.len());
-
         usize::write(msg, &value.len());
         for item in value {
             T::write(msg, &item)
