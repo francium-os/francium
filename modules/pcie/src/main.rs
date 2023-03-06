@@ -126,31 +126,38 @@ impl PCIEServerStruct {
                         // Okay, how big is the BAR?
 
                         // TODO: Should probably be {read,write}_volatile to ptrs. Probably.
+                        // TODO: Hidden assumption: 
                         let bar_index = bar_index as usize;
                         let old_bar = func.inner.bars[bar_index];
-                        let bar_type = old_bar & 0x1;
-                        let old_bar_addr = old_bar & !0xf;
 
-                        // TODO: 64bit bars...
+                        let bar_type = old_bar & 0x1;
+                        let bar_location = (old_bar & (0x03 << 1)) >> 1;
+
+                        let old_bar_addr: usize = if bar_location == 0b10 {
+                            (old_bar as usize & !0xf) | (func.inner.bars[bar_index + 1] as usize & !0xf) << 32
+                        } else {
+                            old_bar as usize & !0xf
+                        };
+
                         func.inner.bars[bar_index] = 0xffffffff;
                         let bar_largest = func.inner.bars[bar_index] & !0xf;
                         let bar_size: usize = 0xffffffff - bar_largest as usize + 1;
 
                         // Ok, put the BAR back? Or make up our own BAR allocation. Augh.
-                        let bar_base = if old_bar_addr == 0 {
+                        let bar_base: usize = if old_bar_addr == 0 {
                             let bar_base = if bar_type == 0 {
                                 self.mem_base.fetch_add(bar_size as u32, Ordering::Acquire)
                             } else {
                                 self.io_base.fetch_add(bar_size as u32, Ordering::Acquire)
                             };
                             func.inner.bars[bar_index] = bar_base;
-                            bar_base
+                            bar_base as usize
                         } else {
-                            func.inner.bars[bar_index] = old_bar_addr;
+                            func.inner.bars[bar_index] = (old_bar_addr & 0xffffffff) as u32;
                             old_bar_addr
                         };
 
-                        return Ok((bar_base as usize, bar_size));
+                        return Ok((bar_base, bar_size));
                     }
                 }
             }
@@ -193,7 +200,7 @@ impl PCIEServerStruct {
                                     };
 
                                     if cap_index == curr_cap_index {
-                                        /* TODO: uhhh
+                                        /* TODO: uhhh. todo?
                                             virtio spec:
                                             For device configuration access, the driver MUST use 8-bit wide accesses for 8-bit wide fields, 16-bit wide
                                             and aligned accesses for 16-bit wide fields and 32-bit wide and aligned accesses for 32-bit and 64-bit wide
