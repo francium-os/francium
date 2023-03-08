@@ -72,15 +72,18 @@ pub fn svc_map_device_memory(
     }
 
     let page_permission: PagePermission = PagePermission::from_bits(permission).unwrap();
-    aspace.alias(phys_address, highest_mmap, length, MapType::from_usize(map_type).unwrap(), page_permission);
+    aspace.alias(
+        phys_address,
+        highest_mmap,
+        length,
+        MapType::from_usize(map_type).unwrap(),
+        page_permission,
+    );
 
     (RESULT_OK, highest_mmap)
 }
 
-
-pub fn svc_query_physical_address(
-    virt_address: usize
-) -> (ResultCode, usize) {
+pub fn svc_query_physical_address(virt_address: usize) -> (ResultCode, usize) {
     event!(
         Level::TRACE,
         svc_name = "query_physical_address",
@@ -91,9 +94,7 @@ pub fn svc_query_physical_address(
     let locked = proc.lock();
     if let Some(phys) = locked.address_space.page_table.virt_to_phys(virt_address) {
         (RESULT_OK, phys.0)
-    }
-    else 
-    {
+    } else {
         (ResultCode::new(Module::Kernel, Reason::NotFound), 0)
     }
 }

@@ -154,5 +154,5 @@ pub const SVC_HANDLERS: [SVCHandler; 23] = [
     syscall_wrapper_map_device_memory,
     syscall_wrapper_get_system_info,
     syscall_wrapper_get_system_tick,
-    syscall_wrapper_query_physical_address
+    syscall_wrapper_query_physical_address,
 ];

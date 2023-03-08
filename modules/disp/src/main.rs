@@ -21,8 +21,7 @@ fn main() {
             raspi.set_mode(640, 480);
             raspi.fill();
         }
-    }
-    else if platform == "raspi4" {
+    } else if platform == "raspi4" {
         #[cfg(target_arch = "aarch64")]
         {
             let rpi_4_peripheral_base = 0xfe000000;

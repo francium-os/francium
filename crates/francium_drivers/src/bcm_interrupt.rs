@@ -1,13 +1,13 @@
 use crate::InterruptController;
 
 pub struct BCMInterrupt {
-    base_address: usize
+    base_address: usize,
 }
 
 impl BCMInterrupt {
     pub fn new(base_address: usize) -> BCMInterrupt {
         BCMInterrupt {
-            base_address: base_address
+            base_address: base_address,
         }
     }
 
@@ -63,30 +63,37 @@ impl BCMInterrupt {
 }
 
 impl InterruptController for BCMInterrupt {
-    fn init(&mut self) {
-    }
+    fn init(&mut self) {}
 
     fn enable_interrupt(&mut self, n: u32) {
         if n < 32 {
-            unsafe { self.write_enable_1(1<<n); }
+            unsafe {
+                self.write_enable_1(1 << n);
+            }
         } else {
-            unsafe { self.write_enable_2(1<<(n-32)); }
+            unsafe {
+                self.write_enable_2(1 << (n - 32));
+            }
         }
     }
 
     fn disable_interrupt(&mut self, n: u32) {
         if n < 32 {
-            unsafe { self.write_disable_1(1<<n); }
+            unsafe {
+                self.write_disable_1(1 << n);
+            }
         } else {
-            unsafe { self.write_disable_2(1<<(n-32)) }
+            unsafe { self.write_disable_2(1 << (n - 32)) }
         }
     }
 
     fn ack_interrupt(&mut self, n: u32) {
         if n < 32 {
-            unsafe { self.write_pending_1(1<<n); }
+            unsafe {
+                self.write_pending_1(1 << n);
+            }
         } else {
-            unsafe { self.write_pending_2(1<<(n-32)) }
+            unsafe { self.write_pending_2(1 << (n - 32)) }
         }
     }
 }

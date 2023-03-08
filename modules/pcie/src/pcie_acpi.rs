@@ -6,8 +6,8 @@ use francium_common::align::align_up;
 use francium_common::types::{MapType, PagePermission};
 use std::ptr::NonNull;
 
-use common::constants;
 use acpi::{AcpiHandler, AcpiTables, PciConfigRegions, PhysicalMapping};
+use common::constants;
 
 #[derive(Copy, Clone)]
 struct UserACPIHandler {}
@@ -22,9 +22,14 @@ impl AcpiHandler for UserACPIHandler {
         let new_size = align_up(size + page_offset, 0x1000);
 
         // TODO: make this not, really awful
-        let virt =
-            syscalls::map_device_memory(page_addr, 0, new_size, MapType::NormalCachable, PagePermission::USER_READ_WRITE)
-                .unwrap();
+        let virt = syscalls::map_device_memory(
+            page_addr,
+            0,
+            new_size,
+            MapType::NormalCachable,
+            PagePermission::USER_READ_WRITE,
+        )
+        .unwrap();
         PhysicalMapping::new(
             physical_address,
             NonNull::new((virt + page_offset) as *mut T).unwrap(),

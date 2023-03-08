@@ -200,7 +200,7 @@ unsafe extern "C" fn syscall_wrapper_query_physical_address(addr: usize) -> Pair
     let (res, phys) = svc::svc_query_physical_address(addr);
     Pair {
         a: res.0 as usize,
-        b: phys
+        b: phys,
     }
 }
 

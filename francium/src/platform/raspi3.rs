@@ -17,7 +17,8 @@ lazy_static! {
         115200,
         48000000
     ));
-    pub static ref DEFAULT_INTERRUPT: Mutex<BCMInterrupt> = Mutex::new(BCMInterrupt::new(RPI_PERIPHERAL_BASE + 0xb000));
+    pub static ref DEFAULT_INTERRUPT: Mutex<BCMInterrupt> =
+        Mutex::new(BCMInterrupt::new(RPI_PERIPHERAL_BASE + 0xb000));
     pub static ref DEFAULT_TIMER: Mutex<ArchTimer> = Mutex::new(ArchTimer::new());
 }
 
@@ -95,7 +96,7 @@ pub fn scheduler_pre_init() {
     // TODO: real arm local definitions
     // enable timer irq - you need to route this manually, apparently.
     unsafe {
-        ((PERIPHERAL_BASE + 0x4000_0040) as *mut u32).write_volatile(1<<1);
+        ((PERIPHERAL_BASE + 0x4000_0040) as *mut u32).write_volatile(1 << 1);
     }
 }
 

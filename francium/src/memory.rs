@@ -81,8 +81,7 @@ impl AddressSpace {
     ) {
         for addr in (start_addr..(start_addr + size)).step_by(0x1000) {
             let page = PhysAddr(start_phys.0 + (addr - start_addr));
-            self.page_table
-                .map_4k(page, addr, perm, map_type);
+            self.page_table.map_4k(page, addr, perm, map_type);
         }
 
         self.regions.push(Block {

@@ -1,16 +1,18 @@
 use crate::pcie::PCIBus;
 
 use common::MapType;
-use process::syscalls;
 use francium_common::align::align_up;
 use francium_common::types::PagePermission;
+use process::syscalls;
 
 use fdt_rs::base::*;
 use fdt_rs::index::*;
 use fdt_rs::prelude::*;
 
 // When using Device Tree, we assume firmware has _not_ setup BARs etc.
-pub fn scan_via_device_tree(dt_addr: usize) -> (Vec<PCIBus>, Option<usize>, Option<usize>, Option<usize>) {
+pub fn scan_via_device_tree(
+    dt_addr: usize,
+) -> (Vec<PCIBus>, Option<usize>, Option<usize>, Option<usize>) {
     // Does this suck? yes it does lmao
 
     let mut io_space_addr: Option<usize> = None;
@@ -19,8 +21,14 @@ pub fn scan_via_device_tree(dt_addr: usize) -> (Vec<PCIBus>, Option<usize>, Opti
 
     let mut buses = Vec::new();
 
-    let dt_header_virt =
-        syscalls::map_device_memory(dt_addr, 0, 0x1000, MapType::NormalCachable, PagePermission::USER_READ_WRITE).unwrap();
+    let dt_header_virt = syscalls::map_device_memory(
+        dt_addr,
+        0,
+        0x1000,
+        MapType::NormalCachable,
+        PagePermission::USER_READ_WRITE,
+    )
+    .unwrap();
     let dt_len = unsafe {
         DevTree::read_totalsize(std::slice::from_raw_parts(
             dt_header_virt as *const u8,
@@ -84,7 +92,6 @@ pub fn scan_via_device_tree(dt_addr: usize) -> (Vec<PCIBus>, Option<usize>, Opti
                     let host_size =
                         prop.u32(i + 6).unwrap() as u64 | (prop.u32(i + 5).unwrap() as u64) << 32;
 
-
                     /* from https://elinux.org/Device_Tree_Usage#PCI_Address_Translation:
                        phys.hi cell: npt000ss bbbbbbbb dddddfff rrrrrrrr
 
@@ -103,14 +110,14 @@ pub fn scan_via_device_tree(dt_addr: usize) -> (Vec<PCIBus>, Option<usize>, Opti
                     */
                     // Also see https://www.openfirmware.info/data/docs/bus.pci.pdf
 
-                    let _is_prefetchable = (pci_hi & 1<<30) != 0;
-                    let pci_space_type = (pci_hi & 3<<24) >> 24;
+                    let _is_prefetchable = (pci_hi & 1 << 30) != 0;
+                    let pci_space_type = (pci_hi & 3 << 24) >> 24;
 
                     match pci_space_type {
-                        0 /* Configuration space */ => {}, 
+                        0 /* Configuration space */ => {},
                         1 /* I/O space */ => {
                             io_space_addr.replace(host_addr as usize);
-                        }, 
+                        },
                         2 /* 32-bit memory */ => {
                             assert!(pci_addr == host_addr);
                             pci_32bit_addr.replace(host_addr as usize);

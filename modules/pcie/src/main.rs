@@ -8,11 +8,11 @@ use std::sync::atomic::Ordering;
 use std::sync::Mutex;
 
 mod ecam;
+mod pcie;
 #[cfg(target_arch = "x86_64")]
 mod pcie_acpi;
 #[cfg(target_arch = "aarch64")]
 mod pcie_dt;
-mod pcie;
 
 use common::os_error::*;
 use common::Handle;
@@ -126,7 +126,7 @@ impl PCIEServerStruct {
                         // Okay, how big is the BAR?
 
                         // TODO: Should probably be {read,write}_volatile to ptrs. Probably.
-                        // TODO: Hidden assumption: 
+                        // TODO: Hidden assumption:
                         let bar_index = bar_index as usize;
                         let old_bar = func.inner.bars[bar_index];
 
@@ -134,7 +134,8 @@ impl PCIEServerStruct {
                         let bar_location = (old_bar & (0x03 << 1)) >> 1;
 
                         let old_bar_addr: usize = if bar_location == 0b10 {
-                            (old_bar as usize & !0xf) | (func.inner.bars[bar_index + 1] as usize & !0xf) << 32
+                            (old_bar as usize & !0xf)
+                                | (func.inner.bars[bar_index + 1] as usize & !0xf) << 32
                         } else {
                             old_bar as usize & !0xf
                         };
@@ -179,12 +180,13 @@ impl PCIEServerStruct {
                 for func in dev.functions.iter_mut() {
                     if bus.num == bus_id && dev.num == device_id && func.num == function_id {
                         // TODO: magic number!!!!!!
-                        if (func.inner.header.status & (1<<4)) == (1<<4) {
+                        if (func.inner.header.status & (1 << 4)) == (1 << 4) {
                             // caps are supported
                             let cap_offset = func.inner.capabilities;
                             unsafe {
                                 // TODO: explicit config space rework
-                                let config_space_ptr = func.inner as *const ecam::ConfigurationSpaceType0 as *const u8;
+                                let config_space_ptr =
+                                    func.inner as *const ecam::ConfigurationSpaceType0 as *const u8;
 
                                 let mut cap_ptr = config_space_ptr.add(cap_offset as usize);
                                 let mut curr_cap_index = 0;
@@ -196,7 +198,7 @@ impl PCIEServerStruct {
                                     let cap_len = match cap_type {
                                         9 => *cap_ptr.add(2),
                                         0x11 => 0xc,
-                                        _ => panic!("Unknown cap type 0x{:x}", cap_type)
+                                        _ => panic!("Unknown cap type 0x{:x}", cap_type),
                                     };
 
                                     if cap_index == curr_cap_index {
@@ -207,12 +209,14 @@ impl PCIEServerStruct {
                                             fields. For 64-bit fields, the driver MAY access each of the high and low 32-bit parts of the field independently.
                                         */
 
-                                        let cap: Vec<u8> = std::slice::from_raw_parts(cap_ptr, cap_len as usize).to_vec();
-                                        return Ok(cap)
+                                        let cap: Vec<u8> =
+                                            std::slice::from_raw_parts(cap_ptr, cap_len as usize)
+                                                .to_vec();
+                                        return Ok(cap);
                                     }
 
                                     if next_cap_offset == 0 {
-                                        break
+                                        break;
                                     }
 
                                     curr_cap_index += 1;
@@ -220,7 +224,7 @@ impl PCIEServerStruct {
                                 }
 
                                 // TODO: better return code
-                                return Err(OSError::new(Module::PCIE, Reason::NotFound))
+                                return Err(OSError::new(Module::PCIE, Reason::NotFound));
                             }
                         } else {
                             println!("Caps not supported");
@@ -246,7 +250,8 @@ async fn main() {
     let io_space_addr = Some(0);
 
     #[cfg(target_arch = "aarch64")]
-    let (pcie_buses, io_space_addr, pci_32bit_addr, _pci_64bit_addr) = pcie_dt::scan_via_device_tree(0x40000000);
+    let (pcie_buses, io_space_addr, pci_32bit_addr, _pci_64bit_addr) =
+        pcie_dt::scan_via_device_tree(0x40000000);
 
     let port = syscalls::create_port("").unwrap();
     sm::register_port(syscalls::make_tag("pcie"), TranslateCopyHandle(port)).unwrap();

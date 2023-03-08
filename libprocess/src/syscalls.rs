@@ -1,7 +1,7 @@
 use common::os_error::{OSError, ResultCode, RESULT_OK};
 use common::system_info::*;
-use common::{PagePermission, MapType};
 use common::{Handle, INVALID_HANDLE};
+use common::{MapType, PagePermission};
 use core::cmp::min;
 
 extern "C" {
@@ -168,7 +168,11 @@ pub fn get_process_id() -> u64 {
     unsafe { syscall_get_process_id() }
 }
 
-pub fn map_memory(address: usize, length: usize, permission: PagePermission) -> Result<usize, OSError> {
+pub fn map_memory(
+    address: usize,
+    length: usize,
+    permission: PagePermission,
+) -> Result<usize, OSError> {
     unsafe {
         let mut address_out: usize = 0;
         let res = syscall_map_memory(address, length, permission.bits(), &mut address_out);
