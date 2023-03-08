@@ -16,8 +16,8 @@ fn main() {
     } else if platform == "raspi3" {
         #[cfg(target_arch = "aarch64")]
         {
-            let RPI_3_PERIPHERAL_BASE = 0x3f000000;
-            let mut raspi = raspi::MailboxAdapter::new(RPI_3_PERIPHERAL_BASE);
+            let rpi_3_peripheral_base = 0x3f000000;
+            let mut raspi = raspi::MailboxAdapter::new(rpi_3_peripheral_base);
             raspi.set_mode(640, 480);
             raspi.fill();
         }
@@ -25,9 +25,9 @@ fn main() {
     else if platform == "raspi4" {
         #[cfg(target_arch = "aarch64")]
         {
-            let RPI_4_PERIPHERAL_BASE = 0xfe000000;
-            let mut raspi = raspi::MailboxAdapter::new(RPI_4_PERIPHERAL_BASE);
-            //raspi.set_mode(640, 480);
+            let rpi_4_peripheral_base = 0xfe000000;
+            let mut raspi = raspi::MailboxAdapter::new(rpi_4_peripheral_base);
+            raspi.set_mode(640, 480);
             raspi.fill();
         }
     } else {

@@ -11,7 +11,7 @@ impl BCMInterrupt {
         }
     }
 
-    unsafe fn read_pending_1(&mut self) -> u32 {
+    /*unsafe fn read_pending_1(&mut self) -> u32 {
         const PENDING_1: usize = 0x204;
         ((self.base_address + PENDING_1) as *mut u32).read_volatile()
     }
@@ -19,7 +19,7 @@ impl BCMInterrupt {
     unsafe fn read_pending_2(&mut self) -> u32 {
         const PENDING_2: usize = 0x208;
         ((self.base_address + PENDING_2) as *mut u32).read_volatile()
-    }
+    }*/
 
     unsafe fn write_pending_1(&mut self, val: u32) {
         const PENDING_1: usize = 0x204;

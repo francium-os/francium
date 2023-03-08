@@ -2,7 +2,7 @@ use crate::block::BlockDevice;
 use crate::virtio_pci::VirtioPciDevice;
 use process::ipc;
 use process::syscalls;
-use francium_common::types::{MapType, PagePermission};
+use francium_common::types::{PagePermission};
 use crate::virtio_pci::VirtqDesc;
 
 struct BlockVirtio {
@@ -10,12 +10,11 @@ struct BlockVirtio {
 }
 
 impl BlockDevice for BlockVirtio {
-	// todo
-	fn read(&self, offset: usize, buffer: &mut [u8]) -> usize {
+	fn read(&self, _offset: usize, _buffer: &mut [u8]) -> usize {
 		0
 	}
 
-	fn write(&self, offset: usize, buffer: &[u8]) -> usize {
+	fn write(&self, _offset: usize, _buffer: &[u8]) -> usize {
 		0
 	}
 }
@@ -30,18 +29,18 @@ u8 status;
 };
 */
 
-struct VirtioBlkReq {
+/*struct VirtioBlkReq {
 	ty: u32,
 	_reserved: u32,
 	sector: u64,
 	// data
-}
+}*/
 
 pub fn scan() -> Vec<Box<dyn BlockDevice>> {
 	// block device transitional id is 0x1001
 	let transitional_devices = ipc::pcie::get_devices_by_vidpid(0x1af4, 0x1001);
 	// new device id 2, +0x1040
-	let new_devices = ipc::pcie::get_devices_by_vidpid(0x1af4, 0x1042);
+	// let new_devices = ipc::pcie::get_devices_by_vidpid(0x1af4, 0x1042);
 
 	println!("devices: {:?}", transitional_devices);
 
@@ -51,7 +50,7 @@ pub fn scan() -> Vec<Box<dyn BlockDevice>> {
 		let buffer_virt = syscalls::map_memory(0, 4096, PagePermission::USER_READ_WRITE).unwrap();
 		let buffer_phys = syscalls::query_physical_address(buffer_virt).unwrap();
 
-		let mut q = virtio_dev.queues.get_mut(0).unwrap();
+		let q = virtio_dev.queues.get_mut(0).unwrap();
 
 		let request_buffer = q.push_desc_chain(&[
 			VirtqDesc::new(buffer_phys as u64, 16, 0),

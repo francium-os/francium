@@ -1,4 +1,4 @@
-use tock_registers::registers::{ReadOnly, ReadWrite, WriteOnly};
+use tock_registers::registers::{ReadOnly, ReadWrite};
 use tock_registers::{register_structs, register_bitfields};
 use tock_registers::interfaces::Readable;
 use tock_registers::interfaces::Writeable;
@@ -11,7 +11,7 @@ use francium_common::types::{MapType, PagePermission};
 pub struct VirtioPciDevice {
 	common: &'static mut VirtioPciCommonCfg,
 	notify: *mut u8,
-	isr_status: *mut u8,
+	_isr_status: *mut u8,
 	notify_off_multiplier: usize,
 	pub queues: Vec<Virtq>
 }
@@ -19,12 +19,12 @@ pub struct VirtioPciDevice {
 // This looks a bit weird because we didn't make VirtqUsed/VirtqAvail DSTs.
 //#[derive(Debug)]
 pub struct Virtq {
-	size: usize,
+	_size: usize,
 	index: u16,
 
 	desc: &'static mut [VirtqDesc],
 	used: &'static mut VirtqUsed,
-	used_ring: &'static mut [VirtqUsedElem],
+	_used_ring: &'static mut [VirtqUsedElem],
 	avail: &'static mut VirtqAvail,
 	avail_ring: &'static mut [u16],
 
@@ -56,12 +56,12 @@ impl Virtq {
 
 		let q = unsafe {
 			Virtq {
-				size: queue_size,
+				_size: queue_size,
 				index: queue_index,
 
 				desc: std::slice::from_raw_parts_mut(desc_virt as *mut u8 as *mut VirtqDesc, queue_size),
 				used: (used_virt as *mut u8 as *mut VirtqUsed).as_mut().unwrap(),
-				used_ring: std::slice::from_raw_parts_mut((used_virt as *mut u8).add(std::mem::size_of::<VirtqUsed>()) as *mut VirtqUsedElem, queue_size),
+				_used_ring: std::slice::from_raw_parts_mut((used_virt as *mut u8).add(std::mem::size_of::<VirtqUsed>()) as *mut VirtqUsedElem, queue_size),
 				avail: (avail_virt as *mut u8 as *mut VirtqAvail).as_mut().unwrap(),
 				avail_ring: std::slice::from_raw_parts_mut((avail_virt as *mut u8).add(std::mem::size_of::<VirtqAvail>()) as *mut u16, queue_size),
 				
@@ -81,14 +81,6 @@ impl Virtq {
 		q.avail.idx = 0;
 
 		q
-	}
-
-	pub fn push_desc(&mut self, desc: VirtqDesc) -> usize {
-		let i = self.desc_index;
-		self.desc_index += 1;
-
-		self.desc[i] = desc;
-		i
 	}
 
 	pub fn push_desc_chain(&mut self, desc_chain: &[VirtqDesc]) -> u16 {
@@ -213,7 +205,7 @@ impl VirtioPciDevice {
 		let mut device = VirtioPciDevice {
 			common: unsafe { (common_virt as *mut VirtioPciCommonCfg).as_mut().unwrap() },
 			notify: notify_virt as *mut u8,
-			isr_status: isr_status_virt as *mut u8,
+			_isr_status: isr_status_virt as *mut u8,
 			notify_off_multiplier: notify_off_multiplier.unwrap() as usize,
 			queues: Vec::new()
 		};
@@ -223,7 +215,7 @@ impl VirtioPciDevice {
 	}
 
 	fn init(&mut self) {
-		const VIRTIO_F_VERSION_1: usize = 1<<32;
+		const VIRTIO_F_VERSION_1: u64 = 1<<32;
 
 		/*
 		The driver MUST follow this sequence to initialize a device:
@@ -253,7 +245,7 @@ impl VirtioPciDevice {
 
 		// Set VIRTIO_F_VERSION_1.
 		self.common.driver_feature_select.set(1);
-		self.common.driver_feature_select.set(1);
+		self.common.driver_feature.set((VIRTIO_F_VERSION_1 << 32) as u32);
 
 		self.common.device_status.modify(DeviceStatus::FEATURES_OK::SET);
 
@@ -451,7 +443,7 @@ impl VirtqDesc {
 	/* This marks a buffer as device write-only (otherwise device read-only). */
 	pub const F_WRITE: u16 = 2;
 	/* This means the buffer contains a list of buffer descriptors. */
-	pub const F_INDIRECT: u16 = 4;
+	//pub const F_INDIRECT: u16 = 4;
 
 	pub fn new(addr: u64, len: u32, flags: u16) -> VirtqDesc {
 		VirtqDesc {
@@ -463,7 +455,7 @@ impl VirtqDesc {
 	}
 }
 
-const VIRTQ_AVAIL_F_NO_INTERRUPT: u16 = 1;
+// const VIRTQ_AVAIL_F_NO_INTERRUPT: u16 = 1;
 #[repr(C)]
 struct VirtqAvail {
 	flags: u16,
@@ -472,7 +464,7 @@ struct VirtqAvail {
 	//used_event: u16 /* Only if VIRTIO_F_EVENT_IDX */
 }
 
-const VIRTQ_USED_F_NO_NOTIFY: u16 = 1;
+// const VIRTQ_USED_F_NO_NOTIFY: u16 = 1;
 #[repr(C)]
 struct VirtqUsed {
 	flags: u16,

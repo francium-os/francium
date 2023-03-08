@@ -1,37 +1,19 @@
 use francium_common::types::{PagePermission, MapType};
-use process::ipc;
 use process::syscalls;
 use std::convert::TryInto;
-use francium_common::align::align_up;
-
-// size
-// req, resp
-// sequence of tags
-// zero
-// padding
-
-/*
-RPI_PropertyAddTag( TAG_ALLOCATE_BUFFER );
-RPI_PropertyAddTag( TAG_SET_PHYSICAL_SIZE, 1280, 1024 );
-RPI_PropertyAddTag( TAG_SET_VIRTUAL_SIZE, 1280, 2048 );
-RPI_PropertyAddTag( TAG_SET_DEPTH, 32 );
-RPI_PropertyAddTag( TAG_GET_PITCH );
-RPI_PropertyAddTag( TAG_GET_PHYSICAL_SIZE );
-RPI_PropertyAddTag( TAG_GET_DEPTH );
-*/
 
 #[derive(Debug)]
 #[repr(u32)]
 enum MailboxRequest {
 	AllocateBuffer(u32) = 0x00040001,
 
-	GetPhysicalSize = 0x00040003,
+//	GetPhysicalSize = 0x00040003,
 	SetPhysicalSize(u32, u32) = 0x00048003,
 
 	SetVirtualSize(u32, u32) = 0x00048004,
-	GetDepth = 0x00040005,
+//	GetDepth = 0x00040005,
 	SetDepth(u32) = 0x00048005,
-	GetPitch = 0x00040008
+//	GetPitch = 0x00040008
 }
 
 impl MailboxRequest {
@@ -45,20 +27,20 @@ impl MailboxRequest {
 
 #[derive(Debug)]
 enum MailboxReply {
-	AllocateBuffer(u32, u32),
+/*	AllocateBuffer(u32, u32),
 	SetPhysicalSize(u32, u32),
 	SetVirtualSize(u32, u32),
 	SetDepth(u32),
 	GetPitch(u32),
 	GetPhysicalSize(u32, u32),
-	GetDepth(u32)
+	GetDepth(u32)*/
 }
 
 struct Mailbox {
 	base_address: usize
 }
 
-const VIDEOCORE_MBOX: usize = 0x0000B880;
+//const VIDEOCORE_MBOX: usize = 0x0000B880;
 const MBOX_CH0_READ:      usize = /*VIDEOCORE_MBOX +*/ 0x0;
 //const MBOX_CH0_POLL:      usize = /*VIDEOCORE_MBOX +*/ 0x10;
 //const MBOX_CH0_SENDER:    usize = /*VIDEOCORE_MBOX +*/ 0x14;
@@ -68,7 +50,7 @@ const MBOX_CH1_WRITE:     usize = /*VIDEOCORE_MBOX +*/ 0x20;
 
 const MBOX_CH1_STATUS:    usize = /*VIDEOCORE_MBOX +*/ 0x38;
 
-const MBOX_RESPONSE:  u32   = 0x80000000;
+//const MBOX_RESPONSE:  u32   = 0x80000000;
 const MBOX_FULL:      u32   = 0x80000000;
 const MBOX_EMPTY:     u32   = 0x40000000;
 
@@ -123,10 +105,10 @@ impl Mailbox {
 		    self.write_ch1_address(r);
 
 		    // This _Should _be uncontested. Just in case.
-		    for i in 0 .. 5  {
+		    for _ in 0 .. 5  {
 		    	let mut got_reply = false;
 		    	// Wait for a reply. This can take a bit longer. Wait up to 1 second.
-		    	for j in 0..20 {
+		    	for _ in 0..20 {
 		        	if (self.read_ch0_status() & MBOX_EMPTY) != MBOX_EMPTY {
 		        		got_reply = true;
 		        		break;
@@ -151,7 +133,6 @@ impl Mailbox {
 		        // just because - happens if pi3 is tried on pi4
 		        if a == 0 {
 		        	panic!("Got zero - this shouldn't happen!");
-		        	break
 		        }
 
 		        println!("Helo");
@@ -217,8 +198,7 @@ impl MailboxMessage<'_> {
 				MailboxRequest::SetPhysicalSize(one, two) | MailboxRequest::SetVirtualSize(one, two) => {
 					self.write_u32(*one);
 					self.write_u32(*two);
-				},
-				_ => {}
+				}
 			}
 
 			let tag_data_length = self.offset as u32 - buffer_size_offset as u32 - 8;
@@ -257,10 +237,6 @@ pub unsafe fn clear_cache_for_address(addr: usize) {
     std::arch::asm!("isb sy; dsb sy");
 }
 
-pub unsafe fn invalidate_cache_for_address(addr: usize) {
-    //std::arch::asm!("dc ivac, {addr}", addr = in (reg) (addr));
-}
-
 impl MailboxAdapter {
 	pub fn new(peripheral_base: usize) -> MailboxAdapter {
 		let mailbox_buffer_virt = syscalls::map_memory(0, 0x1000, PagePermission::USER_READ_WRITE).unwrap();
@@ -291,19 +267,14 @@ impl MailboxAdapter {
 			panic!("Firmware is angy");
 		}
 
-		/* Invalidate cache */
-		//for i in (0..4096).step_by(64) {
-		//	unsafe { invalidate_cache_for_address((msg.buffer.as_ptr() as usize) + i); }
-		//}
-
 		msg.recv()
 	}
 
 	pub fn set_mode(&mut self, x: usize, y: usize) {
         let replies = self.send_mailbox_messages(&[
         	MailboxRequest::AllocateBuffer(16),
-        	MailboxRequest::SetPhysicalSize(640, 480),
-        	MailboxRequest::SetVirtualSize(640, 480),
+        	MailboxRequest::SetPhysicalSize(x as u32, y as u32),
+        	MailboxRequest::SetVirtualSize(x as u32, y as u32),
         	MailboxRequest::SetDepth(24),
         ]);
         println!("{:?}", replies);

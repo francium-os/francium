@@ -8,7 +8,6 @@ use process::Handle;
 mod virtio_pci;
 
 mod block;
-mod block_nvme;
 mod block_virtio;
 
 include!(concat!(env!("OUT_DIR"), "/fs_server_impl.rs"));
@@ -31,7 +30,7 @@ async fn main() {
 
     let server = Box::new(ServerImpl::new(FSServerStruct {}, port));
 
-    let nvmes = block_virtio::scan();
+    let _blocks = block_virtio::scan();
 
     server.process_forever().await;
 
