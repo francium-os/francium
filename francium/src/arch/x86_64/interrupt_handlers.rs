@@ -314,6 +314,7 @@ unsafe extern "C" fn handle_exception(
             let irq_number = interrupt_number - 32;
 
             if irq_number == 7 {
+                println!("Spurious IRQ?");
                 // todo spurious irq handling
             } else if irq_number == 0 {
                 {
@@ -326,13 +327,28 @@ unsafe extern "C" fn handle_exception(
                 }
 
                 crate::timer::tick();
+            } else {
+                // pog
+                {
+                    DEFAULT_INTERRUPT.lock().ack_interrupt(irq_number as u32);
+                }
+
+                println!("Unknown IRQ {}", irq_number);
             }
         }
         40..=47 => {
             // IRQ8-15
             let irq_number = interrupt_number - 32;
+            println!("Unknown IRQ {}", irq_number);
             if irq_number == 15 {
                 // todo spurious irq handling
+            } else {
+                // pog
+                {
+                    DEFAULT_INTERRUPT.lock().ack_interrupt(irq_number as u32);
+                }
+
+                println!("Unknown IRQ {}", irq_number);
             }
         }
         _ => {

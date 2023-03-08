@@ -20,13 +20,15 @@ pub struct VirtioPciDevice {
 //#[derive(Debug)]
 pub struct Virtq {
 	size: usize,
+	index: u16,
+
 	desc: &'static mut [VirtqDesc],
 	used: &'static mut VirtqUsed,
 	used_ring: &'static mut [VirtqUsedElem],
 	avail: &'static mut VirtqAvail,
 	avail_ring: &'static mut [u16],
 
-	notify_off: u16,
+	notify_ptr: *mut u16,
 
 	desc_phys: usize,
 	used_phys: usize,
@@ -37,7 +39,7 @@ pub struct Virtq {
 }
 
 impl Virtq {
-	fn new(queue_size: usize, notify_off: u16) -> Virtq {
+	fn new(queue_index: u16, queue_size: usize, notify_ptr: *mut u16) -> Virtq {
 		assert!(queue_size <= (4096 / 16));
 
 		// Thankfully, QEMU?'s default virtq size is 256.
@@ -52,16 +54,18 @@ impl Virtq {
 		let used_phys = syscalls::query_physical_address(used_virt).unwrap();
 		let avail_phys = syscalls::query_physical_address(avail_virt).unwrap();
 
-		unsafe {
+		let q = unsafe {
 			Virtq {
 				size: queue_size,
+				index: queue_index,
+
 				desc: std::slice::from_raw_parts_mut(desc_virt as *mut u8 as *mut VirtqDesc, queue_size),
 				used: (used_virt as *mut u8 as *mut VirtqUsed).as_mut().unwrap(),
 				used_ring: std::slice::from_raw_parts_mut((used_virt as *mut u8).add(std::mem::size_of::<VirtqUsed>()) as *mut VirtqUsedElem, queue_size),
 				avail: (avail_virt as *mut u8 as *mut VirtqAvail).as_mut().unwrap(),
 				avail_ring: std::slice::from_raw_parts_mut((avail_virt as *mut u8).add(std::mem::size_of::<VirtqAvail>()) as *mut u16, queue_size),
 				
-				notify_off: notify_off,
+				notify_ptr: notify_ptr,
 
 				desc_phys: desc_phys,
 				used_phys: used_phys,
@@ -69,7 +73,14 @@ impl Virtq {
 				desc_index: 0,
 				avail_index: 0
 			}
-		}
+		};
+
+		q.used.flags = 0;
+		q.avail.flags = 0;
+		q.used.idx = 0;
+		q.avail.idx = 0;
+
+		q
 	}
 
 	pub fn push_desc(&mut self, desc: VirtqDesc) -> usize {
@@ -109,6 +120,12 @@ impl Virtq {
 		self.avail_index += 1;
 		self.avail.idx = self.avail_index as u16;
 	}*/
+
+	pub fn notify(&self) {
+		unsafe {
+			self.notify_ptr.write_volatile(self.index as u16)
+		}
+	}
 }
 
 impl VirtioPciDevice {
@@ -118,6 +135,8 @@ impl VirtioPciDevice {
 		let mut isr_status_info: Option<(u8,u32,u32)> = None;
 		let mut notify_info: Option<(u8,u32,u32)> = None;
 		let mut device_specific_info: Option<(u8,u32,u32)> = None;
+
+		ipc::pcie::enable(device_id).unwrap();
 
 		let mut i = 0;
 		while let Ok(cap_data) = ipc::pcie::get_cap(device_id, i) {
@@ -156,6 +175,10 @@ impl VirtioPciDevice {
 						_ => panic!("Invalid VirtIO type!")
 					}
 				}
+			} else if cap_data[0] == 0x11 {
+				println!("MSI-X status: {:x?}", u16::from_le_bytes(cap_data[2..4].try_into().unwrap()));
+			} else if cap_data[0] == 5 {
+				println!("MSI status: {:x?}", u16::from_le_bytes(cap_data[2..4].try_into().unwrap()));
 			}
 			i += 1;
 		}
@@ -259,8 +282,12 @@ impl VirtioPciDevice {
 			// • Available Ring - for the Driver Area
 			// • Used Ring - for the Device Area
 
-			let queue_notify = self.common.queue_notify_off.get();
-			let q = Virtq::new(queue_size as usize, queue_notify);
+			let queue_notify_off: usize = self.common.queue_notify_off.get() as usize;
+			let queue_notify_ptr = unsafe {
+				self.notify.add(queue_notify_off * self.notify_off_multiplier) as *mut u16
+			};
+
+			let q = Virtq::new(i as u16, queue_size as usize, queue_notify_ptr);
 
 			self.common.queue_desc.set(q.desc_phys as u64);
 			self.common.queue_driver.set(q.avail_phys as u64);
@@ -271,14 +298,6 @@ impl VirtioPciDevice {
 			self.queues.push(q);
 
 			i += 1;
-		}
-	}
-
-	pub fn notify(&mut self, queue_index: u16) {
-		let offset: usize = self.queues.get(queue_index as usize).unwrap().notify_off as usize;
-
-		unsafe {
-			(self.notify.add(offset * self.notify_off_multiplier) as *mut u16).write_volatile(queue_index)
 		}
 	}
 }

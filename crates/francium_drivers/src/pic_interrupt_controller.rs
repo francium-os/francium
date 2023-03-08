@@ -22,7 +22,7 @@ const ICW4_8086: u8 = 0x01; /* 8086/88 (MCS-80/85) mode */
 //const ICW4_SFNM: u8 = 0x10; /* Special fully nested (not) */
 fn pic_send_eoi(interrupt: u8) {
     if interrupt >= 8 {
-        outb(PIC1_COMMAND, PIC_CMD_EOI);
+        outb(PIC2_COMMAND, PIC_CMD_EOI);
     }
     outb(PIC1_COMMAND, PIC_CMD_EOI);
 }

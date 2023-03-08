@@ -35,9 +35,13 @@ pub fn platform_specific_init() {}
 pub fn scheduler_pre_init() {
     // enable timer irq
     let timer_irq = 0; // PIC on IRQ 0!
-    let mut gic_lock = DEFAULT_INTERRUPT.lock();
-    gic_lock.init();
-    gic_lock.enable_interrupt(timer_irq);
+    let mut pic_lock = DEFAULT_INTERRUPT.lock();
+    pic_lock.init();
+    pic_lock.enable_interrupt(timer_irq);
+
+    // funi
+    pic_lock.enable_interrupt(2);
+    pic_lock.enable_interrupt(11);
 
     // enable arch timer, 100hz
     let mut timer_lock = DEFAULT_TIMER.lock();

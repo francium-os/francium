@@ -57,7 +57,7 @@ pub fn scan() -> Vec<Box<dyn BlockDevice>> {
 			VirtqDesc::new(buffer_phys as u64, 16, 0),
 			VirtqDesc::new(buffer_phys as u64 + 16, 513, VirtqDesc::F_WRITE)
 		]);
-
+		
 		unsafe {
 			(buffer_virt as *mut u32).write_volatile(0);
 			(buffer_virt as *mut u32).add(1).write_volatile(0);
@@ -67,15 +67,18 @@ pub fn scan() -> Vec<Box<dyn BlockDevice>> {
 
 		// Add!
 		q.push_avail(request_buffer);
-		//q.pop_used()
+		q.notify();
+
+		// Wait for IRQ...
+
 		println!("{:x?}", unsafe { &std::slice::from_raw_parts(buffer_virt as *mut u8, 512 + 16)[16..16+512]});
-		syscalls::sleep_ns(1000000000);
 
 		unsafe { (buffer_virt as *mut u32).add(2).write_volatile(1); }
 		println!("Two!");
 		q.push_avail(request_buffer);
+		q.notify();
 
-		virtio_dev.notify(0);
+		//println!("status: {}", unsafe { q.isr_status.read_volatile() });
 		syscalls::sleep_ns(1000000000);
 		println!("{:x?}", unsafe { &std::slice::from_raw_parts(buffer_virt as *mut u8, 512 + 16)[16..16+512]});
 	}

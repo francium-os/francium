@@ -100,7 +100,7 @@ impl PCIEServerStruct {
             for dev in bus.devices.iter_mut() {
                 for func in dev.functions.iter_mut() {
                     if bus.num == bus_id && dev.num == device_id && func.num == function_id {
-                        func.inner.header.command = 1 | 2;
+                        func.inner.header.command = 1 | 2 | 4;
                         return Ok(());
                     }
                 }
