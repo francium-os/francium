@@ -7,6 +7,7 @@ use tock_registers::{register_bitfields, register_structs};
 use francium_common::types::{MapType, PagePermission};
 use process::ipc;
 use process::syscalls;
+use process::Handle;
 
 pub struct VirtioPciDevice {
     common: &'static mut VirtioPciCommonCfg,
@@ -14,6 +15,7 @@ pub struct VirtioPciDevice {
     _isr_status: *mut u8,
     notify_off_multiplier: usize,
     pub queues: Vec<Virtq>,
+    interrupt_event: Handle,
 }
 
 // This looks a bit weird because we didn't make VirtqUsed/VirtqAvail DSTs.
@@ -225,12 +227,15 @@ impl VirtioPciDevice {
         let isr_status_virt = bar_virt + isr_status_info.1 as usize;
         //let device_specific_virt = bar_virt + device_specific_info.1;
 
+        let interrupt = ipc::pcie::get_interrupt_event(device_id).unwrap().0;
+
         let mut device = VirtioPciDevice {
             common: unsafe { (common_virt as *mut VirtioPciCommonCfg).as_mut().unwrap() },
             notify: notify_virt as *mut u8,
             _isr_status: isr_status_virt as *mut u8,
             notify_off_multiplier: notify_off_multiplier.unwrap() as usize,
             queues: Vec::new(),
+            interrupt_event: interrupt,
         };
 
         device.init();

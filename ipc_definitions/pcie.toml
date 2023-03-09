@@ -37,3 +37,15 @@ name = "get_cap"
 id = 6
 inputs = [{name="device", ty = "u32"}, {name="cap_index", ty="u8"}]
 output = "OSResult<Vec<u8>>"
+
+[[methods]]
+name = "get_interrupt_event"
+id = 7
+inputs = [{name="device", ty = "u32"}]
+output = "OSResult<TranslateMoveHandle>"
+
+[[methods]]
+name = "unbind_interrupt_event"
+id = 8
+inputs = [{name="device", ty = "u32"}, {name = "handle", ty = "TranslateCopyHandle"} ]
+output = "OSResult<()>"

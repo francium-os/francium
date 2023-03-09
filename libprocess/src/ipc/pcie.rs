@@ -1,3 +1,4 @@
+use common::ipc::*;
 use common::Handle;
 use spin::Mutex;
 

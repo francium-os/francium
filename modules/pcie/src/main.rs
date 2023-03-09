@@ -236,6 +236,57 @@ impl PCIEServerStruct {
 
         Err(OSError::new(Module::PCIE, Reason::NotFound))
     }
+
+    fn get_interrupt_event(&self, device: u32) -> OSResult<TranslateMoveHandle> {
+        // just kidding this sucks a lot
+        let bus_id: u8 = ((device & (0xff << 16)) >> 16) as u8;
+        let device_id: u8 = ((device & (0xff << 8)) >> 8) as u8;
+        let function_id: u8 = (device & 0xff) as u8;
+
+        let mut buses_locked = self.buses.lock().unwrap();
+
+        for bus in buses_locked.iter_mut() {
+            for dev in bus.devices.iter_mut() {
+                for func in dev.functions.iter_mut() {
+                    if bus.num == bus_id && dev.num == device_id && func.num == function_id {
+                        let event_handle = syscalls::create_event().unwrap();
+                        syscalls::bind_interrupt(event_handle, func.inner.interrupt_line as usize)
+                            .unwrap();
+                        return Ok(TranslateMoveHandle(event_handle));
+                    }
+                }
+            }
+        }
+        Err(OSError::new(Module::PCIE, Reason::NotFound))
+    }
+
+    fn unbind_interrupt_event(
+        &self,
+        device: u32,
+        event_handle: TranslateCopyHandle,
+    ) -> OSResult<()> {
+        // just kidding this sucks a lot
+        let bus_id: u8 = ((device & (0xff << 16)) >> 16) as u8;
+        let device_id: u8 = ((device & (0xff << 8)) >> 8) as u8;
+        let function_id: u8 = (device & 0xff) as u8;
+
+        let mut buses_locked = self.buses.lock().unwrap();
+
+        for bus in buses_locked.iter_mut() {
+            for dev in bus.devices.iter_mut() {
+                for func in dev.functions.iter_mut() {
+                    if bus.num == bus_id && dev.num == device_id && func.num == function_id {
+                        syscalls::unbind_interrupt(
+                            event_handle.0,
+                            func.inner.interrupt_line as usize,
+                        )
+                        .unwrap();
+                    }
+                }
+            }
+        }
+        Err(OSError::new(Module::PCIE, Reason::NotFound))
+    }
 }
 
 #[tokio::main]
