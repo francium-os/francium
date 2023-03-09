@@ -18,6 +18,9 @@
 .global syscall_map_device_memory
 .global syscall_get_system_tick
 .global syscall_query_physical_address
+.global syscall_create_event
+.global syscall_bind_interrupt
+.global syscall_unbind_interrupt
 
 .global get_tpidr_el0_asm
 
@@ -129,6 +132,18 @@ syscall_query_physical_address:
 mov x9, x1
 svc #0x16
 str x1, [x9]
+ret
+
+syscall_create_event:
+svc #0x17
+ret
+
+syscall_bind_interrupt:
+svc #0x18
+ret
+
+syscall_unbind_interrupt:
+svc #0x19
 ret
 
 get_tpidr_el0_asm:

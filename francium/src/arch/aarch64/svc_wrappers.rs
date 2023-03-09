@@ -130,8 +130,24 @@ fn syscall_wrapper_query_physical_address(ctx: &mut ExceptionContext) {
     ctx.regs[1] = addr;
 }
 
+fn syscall_wrapper_create_event(ctx: &mut ExceptionContext) {
+    let (res, handle_out) = svc::svc_create_event();
+    ctx.regs[0] = res.0 as usize;
+    ctx.regs[1] = handle_out as usize;
+}
+
+fn syscall_wrapper_bind_interrupt(ctx: &mut ExceptionContext) {
+    let res = svc::svc_bind_interrupt(ctx.regs[0] as u32, ctx.regs[1]);
+    ctx.regs[0] = res.0 as usize;
+}
+
+fn syscall_wrapper_unbind_interrupt(ctx: &mut ExceptionContext) {
+    let res = svc::svc_unbind_interrupt(ctx.regs[0] as u32, ctx.regs[1]);
+    ctx.regs[0] = res.0 as usize;
+}
+
 type SVCHandler = fn(&mut ExceptionContext);
-pub const SVC_HANDLERS: [SVCHandler; 23] = [
+pub const SVC_HANDLERS: [SVCHandler; 26] = [
     syscall_wrapper_break,
     syscall_wrapper_debug_output,
     syscall_wrapper_create_port,
@@ -155,4 +171,7 @@ pub const SVC_HANDLERS: [SVCHandler; 23] = [
     syscall_wrapper_get_system_info,
     syscall_wrapper_get_system_tick,
     syscall_wrapper_query_physical_address,
+    syscall_wrapper_create_event,
+    syscall_wrapper_bind_interrupt,
+    syscall_wrapper_unbind_interrupt,
 ];

@@ -39,9 +39,8 @@ pub fn scheduler_pre_init() {
     pic_lock.init();
     pic_lock.enable_interrupt(timer_irq);
 
-    // funi
+    // Enable IRQ2 so cascading works later.
     pic_lock.enable_interrupt(2);
-    pic_lock.enable_interrupt(11);
 
     // enable arch timer, 100hz
     let mut timer_lock = DEFAULT_TIMER.lock();

@@ -5,6 +5,7 @@ use spin::Mutex;
 use crate::memory::AddressSpace;
 use crate::process::Process;
 use crate::scheduler;
+use crate::svc::event::Event;
 use crate::svc::ipc::{ClientSession, Port, ServerSession};
 
 #[derive(Debug, Clone)]
@@ -14,6 +15,7 @@ pub enum HandleObject {
     Port(Arc<Port>),
     ServerSession(Arc<ServerSession>),
     ClientSession(Arc<ClientSession>),
+    Event(Arc<Event>),
     Invalid,
 }
 

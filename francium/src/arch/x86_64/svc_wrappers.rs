@@ -204,8 +204,29 @@ unsafe extern "C" fn syscall_wrapper_query_physical_address(addr: usize) -> Pair
     }
 }
 
+#[no_mangle]
+unsafe extern "C" fn syscall_wrapper_create_event() -> Pair {
+    let (res, event_handle) = svc::svc_create_event();
+    Pair {
+        a: res.0 as usize,
+        b: event_handle as usize,
+    }
+}
+
+#[no_mangle]
+unsafe extern "C" fn syscall_wrapper_bind_interrupt(h: u32, index: usize) -> u32 {
+    let res = svc::svc_bind_interrupt(h, index);
+    res.0 as u32
+}
+
+#[no_mangle]
+unsafe extern "C" fn syscall_wrapper_unbind_interrupt(h: u32, index: usize) -> u32 {
+    let res = svc::svc_unbind_interrupt(h, index);
+    res.0 as u32
+}
+
 // Don't modify this. Honest.
-pub static mut SYSCALL_WRAPPERS: [*const usize; 23] = [
+pub static mut SYSCALL_WRAPPERS: [*const usize; 26] = [
     syscall_wrapper_break as *const usize,
     syscall_wrapper_debug_output as *const usize,
     syscall_wrapper_create_port as *const usize,
@@ -229,4 +250,7 @@ pub static mut SYSCALL_WRAPPERS: [*const usize; 23] = [
     syscall_wrapper_get_system_info as *const usize,
     syscall_wrapper_get_system_tick as *const usize,
     syscall_wrapper_query_physical_address as *const usize,
+    syscall_wrapper_create_event as *const usize,
+    syscall_wrapper_bind_interrupt as *const usize,
+    syscall_wrapper_unbind_interrupt as *const usize,
 ];

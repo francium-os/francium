@@ -19,6 +19,9 @@
 .global syscall_map_device_memory
 .global syscall_get_system_tick
 .global syscall_query_physical_address
+.global syscall_create_event
+.global syscall_bind_interrupt
+.global syscall_unbind_interrupt
 
 .section .text
 
@@ -176,4 +179,23 @@ mov rbx, rsi
 syscall
 mov [rbx], rdx
 pop rbx
+ret
+
+syscall_create_event:
+push rbx
+mov eax, 0x17
+mov rbx, rdi
+syscall
+mov [rbx], edx
+pop rbx
+ret
+
+syscall_bind_interrupt:
+mov eax, 0x18
+syscall
+ret
+
+syscall_unbind_interrupt:
+mov eax, 0x19
+syscall
 ret

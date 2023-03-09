@@ -43,6 +43,10 @@ extern "C" {
 
     pub fn syscall_get_system_tick() -> u64;
     pub fn syscall_query_physical_address(virt_addr: usize, phys_out: *mut usize) -> ResultCode;
+
+    pub fn syscall_create_event(handle_out: *mut Handle) -> ResultCode;
+    pub fn syscall_bind_interrupt(handle: Handle, index: usize) -> ResultCode;
+    pub fn syscall_unbind_interrupt(handle: Handle, index: usize) -> ResultCode;
 }
 
 pub fn print(s: &str) {
@@ -250,6 +254,42 @@ pub fn query_physical_address(virt: usize) -> Result<usize, OSError> {
         let res = syscall_query_physical_address(virt, &mut phys_out);
         if res == RESULT_OK {
             Ok(phys_out)
+        } else {
+            Err(OSError::from_result_code(res))
+        }
+    }
+}
+
+pub fn create_event() -> Result<Handle, OSError> {
+    unsafe {
+        let mut handle_out: Handle = INVALID_HANDLE;
+        let res = syscall_create_event(&mut handle_out);
+        if res == RESULT_OK {
+            Ok(handle_out)
+        } else {
+            Err(OSError::from_result_code(res))
+        }
+    }
+}
+
+pub fn bind_interrupt(handle: Handle, index: usize) -> Result<(), OSError> {
+    unsafe {
+        let mut handle_out: Handle = INVALID_HANDLE;
+        let res = syscall_bind_interrupt(handle, index);
+        if res == RESULT_OK {
+            Ok(())
+        } else {
+            Err(OSError::from_result_code(res))
+        }
+    }
+}
+
+pub fn unbind_interrupt(handle: Handle, index: usize) -> Result<(), OSError> {
+    unsafe {
+        let mut handle_out: Handle = INVALID_HANDLE;
+        let res = syscall_unbind_interrupt(handle, index);
+        if res == RESULT_OK {
+            Ok(())
         } else {
             Err(OSError::from_result_code(res))
         }
