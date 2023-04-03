@@ -2,10 +2,11 @@ use crate::drivers::InterruptController;
 use crate::handle::HandleObject;
 use crate::platform::DEFAULT_INTERRUPT;
 use crate::scheduler;
-use crate::waitable::Waiter;
+use crate::waitable::{Waitable, Waiter};
 use alloc::sync::Arc;
 use common::os_error::{Module, Reason, ResultCode, RESULT_OK};
 use spin::Mutex;
+use log::debug;
 
 #[derive(Debug)]
 pub struct Event {
@@ -18,8 +19,11 @@ impl Event {
     }
 }
 
-// that's it
-// ez
+impl Waitable for Event {
+    fn get_waiter(&self) -> &Waiter {
+        &self.w
+    }
+}
 
 pub fn svc_create_event() -> (ResultCode, u32) {
     let ev = Event::new();
@@ -35,10 +39,11 @@ pub fn svc_create_event() -> (ResultCode, u32) {
 }
 
 const NO_EVENT: Option<Arc<Event>> = None;
-static EVENT_TABLE: Mutex<[Option<Arc<Event>>; 128]> = Mutex::new([NO_EVENT; 128]);
+pub static INTERRUPT_EVENT_TABLE: Mutex<[Option<Arc<Event>>; 128]> = Mutex::new([NO_EVENT; 128]);
 
 pub fn dispatch_interrupt_event(index: usize) {
-    if let Some(ev) = &EVENT_TABLE.lock()[index] {
+    if let Some(ev) = &INTERRUPT_EVENT_TABLE.lock()[index] {
+        debug!("Signalling interrupt event for {}", index);
         ev.w.signal_one();
     }
 }
@@ -48,7 +53,7 @@ pub fn svc_bind_interrupt(h: u32, index: usize) -> ResultCode {
     let process = proc_locked.lock();
 
     if let HandleObject::Event(ev) = process.handle_table.get_object(h) {
-        let mut lock = EVENT_TABLE.lock();
+        let mut lock = INTERRUPT_EVENT_TABLE.lock();
         if let None = lock[index] {
             lock[index] = Some(ev);
             DEFAULT_INTERRUPT.lock().enable_interrupt(index as u32);
@@ -67,7 +72,7 @@ pub fn svc_unbind_interrupt(h: u32, index: usize) -> ResultCode {
     let process = proc_locked.lock();
 
     if let HandleObject::Event(ev) = process.handle_table.get_object(h) {
-        let mut lock = EVENT_TABLE.lock();
+        let mut lock = INTERRUPT_EVENT_TABLE.lock();
         if let Some(x) = &lock[index] {
             lock[index] = None;
             DEFAULT_INTERRUPT.lock().disable_interrupt(index as u32);

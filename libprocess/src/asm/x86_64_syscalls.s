@@ -199,3 +199,8 @@ syscall_unbind_interrupt:
 mov eax, 0x19
 syscall
 ret
+
+syscall_wait_one:
+mov eax, 0x1a
+syscall
+ret

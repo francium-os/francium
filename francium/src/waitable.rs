@@ -160,6 +160,14 @@ pub fn wait_handles(handles: &[u32]) -> usize {
                 }
             }
 
+            HandleObject::Event(event) => {
+                if event.post_wait(index) {
+                    any_pending = true;
+                    tag = index;
+                    break;
+                }
+            }
+
             _ => {}
         }
     }
@@ -181,6 +189,10 @@ pub fn wait_handles(handles: &[u32]) -> usize {
 
             HandleObject::ClientSession(client_session) => {
                 client_session.remove_wait();
+            }
+
+            HandleObject::Event(event) => {
+                event.remove_wait();
             }
 
             _ => {}

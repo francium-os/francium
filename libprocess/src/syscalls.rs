@@ -47,6 +47,7 @@ extern "C" {
     pub fn syscall_create_event(handle_out: *mut Handle) -> ResultCode;
     pub fn syscall_bind_interrupt(handle: Handle, index: usize) -> ResultCode;
     pub fn syscall_unbind_interrupt(handle: Handle, index: usize) -> ResultCode;
+    pub fn syscall_wait_one(handle: Handle) -> ResultCode;
 }
 
 pub fn print(s: &str) {
@@ -274,7 +275,6 @@ pub fn create_event() -> Result<Handle, OSError> {
 
 pub fn bind_interrupt(handle: Handle, index: usize) -> Result<(), OSError> {
     unsafe {
-        let mut handle_out: Handle = INVALID_HANDLE;
         let res = syscall_bind_interrupt(handle, index);
         if res == RESULT_OK {
             Ok(())
@@ -286,8 +286,18 @@ pub fn bind_interrupt(handle: Handle, index: usize) -> Result<(), OSError> {
 
 pub fn unbind_interrupt(handle: Handle, index: usize) -> Result<(), OSError> {
     unsafe {
-        let mut handle_out: Handle = INVALID_HANDLE;
         let res = syscall_unbind_interrupt(handle, index);
+        if res == RESULT_OK {
+            Ok(())
+        } else {
+            Err(OSError::from_result_code(res))
+        }
+    }
+}
+
+pub fn wait_one(handle: Handle) -> Result<(), OSError> {
+    unsafe {
+        let res = syscall_wait_one(handle);
         if res == RESULT_OK {
             Ok(())
         } else {

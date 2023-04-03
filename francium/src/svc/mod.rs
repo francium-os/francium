@@ -10,6 +10,7 @@ mod memory;
 mod process;
 mod svc_break;
 mod thread;
+mod wait;
 
 pub use debug_output::svc_debug_output;
 pub use exit_process::svc_exit_process;
@@ -44,3 +45,5 @@ pub use get_system_tick::svc_get_system_tick;
 pub use event::svc_bind_interrupt;
 pub use event::svc_create_event;
 pub use event::svc_unbind_interrupt;
+
+pub use wait::svc_wait_one;

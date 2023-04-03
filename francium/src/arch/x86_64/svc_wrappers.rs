@@ -225,8 +225,14 @@ unsafe extern "C" fn syscall_wrapper_unbind_interrupt(h: u32, index: usize) -> u
     res.0 as u32
 }
 
+#[no_mangle]
+unsafe extern "C" fn syscall_wrapper_wait_one(h: u32) -> u32 {
+    let res = svc::svc_wait_one(h);
+    res.0 as u32
+}
+
 // Don't modify this. Honest.
-pub static mut SYSCALL_WRAPPERS: [*const usize; 26] = [
+pub static mut SYSCALL_WRAPPERS: [*const usize; 27] = [
     syscall_wrapper_break as *const usize,
     syscall_wrapper_debug_output as *const usize,
     syscall_wrapper_create_port as *const usize,
@@ -253,4 +259,5 @@ pub static mut SYSCALL_WRAPPERS: [*const usize; 26] = [
     syscall_wrapper_create_event as *const usize,
     syscall_wrapper_bind_interrupt as *const usize,
     syscall_wrapper_unbind_interrupt as *const usize,
+    syscall_wrapper_wait_one as *const usize,
 ];
