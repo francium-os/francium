@@ -217,7 +217,7 @@ dependencies = [
 
 [[package]]
 name = "bootloader"
-version = "0.11.0"
+version = "0.11.3"
 dependencies = [
  "anyhow",
  "async-process",
@@ -234,14 +234,14 @@ dependencies = [
 
 [[package]]
 name = "bootloader-boot-config"
-version = "0.11.0"
+version = "0.11.3"
 dependencies = [
  "serde",
 ]
 
 [[package]]
 name = "bootloader_api"
-version = "0.11.0"
+version = "0.11.3"
 
 [[package]]
 name = "build_const"
