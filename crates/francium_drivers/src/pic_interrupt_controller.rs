@@ -90,7 +90,7 @@ impl InterruptController for PIC {
     }
 
     const NUM_PENDING: u32 = 1;
-    fn read_pending(&self, n: u32) -> u32 {
+    fn read_pending(&self, _n: u32) -> u32 {
         0
     }
 }

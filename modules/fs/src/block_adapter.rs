@@ -65,7 +65,7 @@ impl std::io::Seek for BlockAdapter<'_> {
                 self.offset_bytes = off;
                 Ok(self.offset_bytes)
             },
-            SeekFrom::End(off) => {
+            SeekFrom::End(_off) => {
                 panic!();
             },
             SeekFrom::Current(off) => {

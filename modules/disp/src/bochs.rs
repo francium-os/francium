@@ -26,14 +26,10 @@ impl BochsAdapter {
     pub fn new() -> Option<BochsAdapter> {
         /* something something shared mem */
         let device_id = *ipc::pcie::get_devices_by_vidpid(0x1234, 0x1111).get(0)?;
-        println!("got device {:?}", device_id);
         let framebuffer_bar = ipc::pcie::get_bar(device_id, 0).ok()?;
         let bochs_io_bar = ipc::pcie::get_bar(device_id, 2).ok()?;
 
         ipc::pcie::enable(device_id).unwrap();
-
-        println!("BAR0: {:x?}", framebuffer_bar);
-        println!("BAR2: {:x?}", bochs_io_bar);
 
         // TODO: Move this to be shared memory. But that requires the concept of shared memory.
         let fb_virt = syscalls::map_device_memory(

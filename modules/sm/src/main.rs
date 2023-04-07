@@ -26,15 +26,11 @@ struct SMServerStruct {
 
 impl SMServerStruct {
     async fn get_service_handle(&self, tag: u64) -> OSResult<TranslateMoveHandle> {
-        println!("Got tag: {:x}", tag);
-
         let server_port = { self.server_ports.lock().unwrap().get(&tag).map(|x| *x) };
 
         let server_port = match server_port {
             Some(x) => x,
             None => {
-                println!("waiting for port {:x}", tag);
-
                 let mut waiter = {
                     let mut server_waiters_locked = self.server_waiters.lock().unwrap();
 
@@ -57,12 +53,10 @@ impl SMServerStruct {
     }
 
     async fn register_port(&self, tag: u64, port_handle: TranslateCopyHandle) -> OSResult<()> {
-        println!("registering port {:x}", tag);
         self.server_ports.lock().unwrap().insert(tag, port_handle.0);
 
         let new_tag = self.server_waiters.lock().unwrap().remove(&tag);
         if let Some((send, _recv)) = new_tag {
-            println!("signalling port {:x}", tag);
             send.broadcast(port_handle.0).await.unwrap();
         }
 

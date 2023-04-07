@@ -1,5 +1,5 @@
 use crate::block::BlockDevice;
-use crate::virtio_pci::{VirtioPciDevice, VirtqDesc, Virtq, VirtioNotifier};
+use crate::virtio_pci::{VirtioPciDevice, VirtqDesc};
 use francium_common::types::PagePermission;
 use process::ipc;
 use process::syscalls;
@@ -7,7 +7,7 @@ use process::syscalls;
 struct BlockVirtio {
     virtio_dev: VirtioPciDevice,
 
-    request_phys: usize,
+    _request_phys: usize,
     request_virt: usize,
 
     request_buffer_offset: u16
@@ -19,7 +19,6 @@ impl BlockVirtio {
         let request_phys = syscalls::query_physical_address(request_virt).unwrap();
 
         let q = virtio_dev.queues.get_mut(0).unwrap();
-        let notifier = &virtio_dev.legacy_notifier;
 
         let request_buffer = q.push_desc_chain(&[
             VirtqDesc::new(request_phys as u64, 16, 0),
@@ -34,7 +33,7 @@ impl BlockVirtio {
 
         BlockVirtio {
             virtio_dev: virtio_dev,
-            request_phys: request_phys,
+            _request_phys: request_phys,
             request_virt: request_virt,
             request_buffer_offset: request_buffer
         }
@@ -99,8 +98,6 @@ pub fn scan() -> Vec<Box<dyn BlockDevice>> {
     let transitional_devices = ipc::pcie::get_devices_by_vidpid(0x1af4, 0x1001);
     // new device id 2, +0x1040
     // let new_devices = ipc::pcie::get_devices_by_vidpid(0x1af4, 0x1042);
-
-    println!("devices: {:?}", transitional_devices);
 
     let mut blocks = Vec::new();
 

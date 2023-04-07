@@ -134,7 +134,6 @@ fn connect_to_port_impl(port: &Arc<Port>) -> u32 {
     *server_session.client.lock() = Arc::downgrade(&client_session);
 
     // create the session, and wait for it to be accepted by the server
-    println!("connect to port {:x}", Arc::<Port>::as_ptr(port) as usize);
 
     port.queue.lock().push(server_session.clone());
     port.signal_one();
@@ -157,8 +156,6 @@ pub fn svc_connect_to_port_handle(h: u32) -> (ResultCode, u32) {
         svc_name = "connect_to_port_handle",
         handle = h
     );
-
-    println!("connect to port handle {:?}", h);
 
     if let HandleObject::Port(port) = handle::get_handle(h) {
         (RESULT_OK, connect_to_port_impl(&port))
@@ -368,7 +365,6 @@ pub fn svc_ipc_accept(port_handle: u32) -> (ResultCode, u32) {
     );
 
     if let HandleObject::Port(port) = handle::get_handle(port_handle) {
-        println!("accept: port {:x}", Arc::<Port>::as_ptr(&port) as usize);
         let server_session = port.queue.lock().pop().unwrap();
 
         // wake the client

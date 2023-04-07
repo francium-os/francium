@@ -6,7 +6,6 @@ use crate::waitable::{Waitable, Waiter};
 use alloc::sync::Arc;
 use common::os_error::{Module, Reason, ResultCode, RESULT_OK};
 use spin::Mutex;
-use log::debug;
 use core::sync::atomic::AtomicU32;
 use core::sync::atomic::Ordering;
 
@@ -77,9 +76,9 @@ pub fn svc_unbind_interrupt(h: u32, index: usize) -> ResultCode {
     let proc_locked = scheduler::get_current_process();
     let process = proc_locked.lock();
 
-    if let HandleObject::Event(ev) = process.handle_table.get_object(h) {
+    if let HandleObject::Event(_ev) = process.handle_table.get_object(h) {
         let mut lock = INTERRUPT_EVENT_TABLE.lock();
-        if let Some(x) = &lock[index] {
+        if let Some(_x) = &lock[index] {
             lock[index] = None;
             DEFAULT_INTERRUPT.lock().disable_interrupt(index as u32);
         } else {

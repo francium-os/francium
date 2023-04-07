@@ -24,7 +24,7 @@ const GICC_EOIR: usize = 0x0010;
 
 const GICD_ISENABLER_SIZE: u32 = 32;
 const GICD_ICENABLER_SIZE: u32 = 32;
-const GICD_ICPENDR_SIZE: u32 = 32;
+//const GICD_ICPENDR_SIZE: u32 = 32;
 const GICD_ICFGR_SIZE: u32 = 16;
 
 impl GICv2 {

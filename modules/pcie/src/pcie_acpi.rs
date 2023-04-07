@@ -47,7 +47,6 @@ impl AcpiHandler for UserACPIHandler {
 // When using ACPI, we assume firmware has already set up BARs etc.
 pub fn scan_via_acpi() -> Vec<PCIBus> {
     let acpi_table_base = syscalls::bodge(constants::GET_ACPI_BASE, 0);
-    println!("Acpi table base: {:?}", acpi_table_base);
 
     let handler = UserACPIHandler {};
     let tables = unsafe { AcpiTables::from_rsdp(handler, acpi_table_base).unwrap() };

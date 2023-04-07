@@ -4,13 +4,6 @@ pub struct PCIInterruptMap {
 }
 
 impl PCIInterruptMap {
-    pub fn new() -> PCIInterruptMap {
-        PCIInterruptMap {
-            map: Vec::new(),
-            mask: 0
-        }
-    }
-
     pub fn get_interrupt_id(&self, device_num: u8, interrupt_line: u8) -> u32 {
         self.map[(device_num & self.mask) as usize][(interrupt_line - 1) as usize]
     }

@@ -18,6 +18,7 @@ pub struct VirtioPciDevice {
     common: &'static mut VirtioPciCommonCfg,
     notify: *mut u8,
     notify_off_multiplier: usize,
+    _device_specific: *mut u8,
     pub queues: Vec<Virtq>,
     pub legacy_notifier: VirtioNotifier
 }
@@ -165,7 +166,7 @@ impl VirtioPciDevice {
                         offset: u32::from_le_bytes(cap_data[8..12].try_into().unwrap()),
                         length: u32::from_le_bytes(cap_data[12..16].try_into().unwrap()),
                     };
-                    println!("pci_cap: {:?}", pci_cap);
+                    //println!("pci_cap: {:?}", pci_cap);
 
                     match pci_cap.cfg_type {
                         1 => {
@@ -193,35 +194,28 @@ impl VirtioPciDevice {
                     }
                 }
             } else if cap_data[0] == 0x11 {
-                println!(
+                /*println!(
                     "MSI-X status: {:x?}",
                     u16::from_le_bytes(cap_data[2..4].try_into().unwrap())
-                );
+                );*/
             } else if cap_data[0] == 5 {
-                println!(
+                /*println!(
                     "MSI status: {:x?}",
                     u16::from_le_bytes(cap_data[2..4].try_into().unwrap())
-                );
+                );*/
             }
             i += 1;
         }
 
-        println!(
-            "{:?} {:?} {:?} {:?}",
-            common_info, notify_info, isr_status_info, device_specific_info
-        );
-
         let common_info = common_info.unwrap();
         let notify_info = notify_info.unwrap();
         let isr_status_info = isr_status_info.unwrap();
-        //let device_specific_info = device_specific_info.unwrap();
+        let device_specific_info = device_specific_info.unwrap();
 
         // Assert: all devices share a BAR. At least QEMU does this.
         assert!(common_info.0 == notify_info.0 && notify_info.0 == isr_status_info.0);
         let bar_index = common_info.0;
         let (bar_offset, bar_size) = ipc::pcie::get_bar(device_id, bar_index as u8).unwrap();
-
-        println!("Got BAR: {:x} {:x}", bar_offset, bar_size);
 
         let bar_virt = syscalls::map_device_memory(
             bar_offset,
@@ -236,7 +230,7 @@ impl VirtioPciDevice {
         let common_virt = bar_virt + common_info.1 as usize;
         let notify_virt = bar_virt + notify_info.1 as usize;
         let isr_status_virt = bar_virt + isr_status_info.1 as usize;
-        //let device_specific_virt = bar_virt + device_specific_info.1;
+        let device_specific_virt = bar_virt + device_specific_info.1 as usize;
 
         let interrupt = ipc::pcie::get_interrupt_event(device_id).unwrap().0;
 
@@ -244,6 +238,7 @@ impl VirtioPciDevice {
             common: unsafe { (common_virt as *mut VirtioPciCommonCfg).as_mut().unwrap() },
             notify: notify_virt as *mut u8,
             notify_off_multiplier: notify_off_multiplier.unwrap() as usize,
+            _device_specific: device_specific_virt as *mut u8,
             queues: Vec::new(),
             legacy_notifier: VirtioNotifier {
                 isr_status: isr_status_virt as *mut u8,
@@ -282,8 +277,6 @@ impl VirtioPciDevice {
         // Read feature bits to confirm this is a v1 device.
         self.common.device_feature_select.set(1);
         let features_hi = self.common.device_feature.get();
-
-        println!("{:x}", features_hi);
 
         if !((features_hi & 1) == 1) {
             panic!("Legacy only device!");

@@ -83,21 +83,21 @@ impl PCIDevice {
         let function = get_function_header(block, bus_num, device_num, function_num);
 
         if function.vendor_id != 0xffff {
-            println!(
+            /*println!(
                 "vid: {:04x}, pid: {:04x} class = {:02x} subclass = {:02x} type={:04x}",
                 { function.vendor_id },
                 { function.device_id },
                 { function.class },
                 { function.subclass },
                 { function.header_type }
-            );
+            );*/
             let header_type = function.header_type & 0x7f;
             match header_type {
                 /* device */
                 0 => {
                     let function_type0 =
                         get_function_type0(block, bus_num, device_num, function_num);
-                    for bar in function_type0.bars {
+                    /*for bar in function_type0.bars {
                         println!(
                             "{:08x}: Bar type: {}, location: 0b{:02b}, prefetchable: {}",
                             bar,
@@ -105,7 +105,7 @@ impl PCIDevice {
                             (bar & (3 << 1)) >> 1,
                             (bar & (1 << 3)) >> 3
                         );
-                    }
+                    }*/
                     self.functions.push(PCIFunction {
                         num: function_num,
                         inner: function_type0,
