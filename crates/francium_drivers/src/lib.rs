@@ -5,6 +5,20 @@ pub trait InterruptController {
     fn enable_interrupt(&mut self, n: u32);
     fn disable_interrupt(&mut self, n: u32);
     fn ack_interrupt(&mut self, n: u32);
+
+    const NUM_PENDING: u32;
+    fn read_pending(&self, i: u32) -> u32;
+    fn next_pending(&self) -> Option<u32> {
+        for i in 0..Self::NUM_PENDING {
+            let bits = self.read_pending(i);
+            let zeros = bits.leading_zeros();
+            if zeros != 32 {
+                return Some(32 - (zeros + 1) + i * 32)
+            }
+        }
+
+        None
+    }
 }
 
 pub trait Timer {

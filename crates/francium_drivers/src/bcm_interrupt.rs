@@ -11,15 +11,15 @@ impl BCMInterrupt {
         }
     }
 
-    /*unsafe fn read_pending_1(&mut self) -> u32 {
+    unsafe fn read_pending_1(&self) -> u32 {
         const PENDING_1: usize = 0x204;
         ((self.base_address + PENDING_1) as *mut u32).read_volatile()
     }
 
-    unsafe fn read_pending_2(&mut self) -> u32 {
+    unsafe fn read_pending_2(&self) -> u32 {
         const PENDING_2: usize = 0x208;
         ((self.base_address + PENDING_2) as *mut u32).read_volatile()
-    }*/
+    }
 
     unsafe fn write_pending_1(&mut self, val: u32) {
         const PENDING_1: usize = 0x204;
@@ -31,7 +31,7 @@ impl BCMInterrupt {
         ((self.base_address + PENDING_2) as *mut u32).write_volatile(val)
     }
 
-    unsafe fn _read_fiq_control(&mut self) -> u32 {
+    unsafe fn _read_fiq_control(&self) -> u32 {
         const FIQ_CONTROL: usize = 0x20c;
         ((self.base_address + FIQ_CONTROL) as *mut u32).read_volatile()
     }
@@ -94,6 +94,17 @@ impl InterruptController for BCMInterrupt {
             }
         } else {
             unsafe { self.write_pending_2(1 << (n - 32)) }
+        }
+    }
+
+    const NUM_PENDING: u32 = 2;
+    fn read_pending(&self, i: u32) -> u32 {
+        if i == 0 {
+            unsafe { self.read_pending_1() }
+        } else if i == 1 {
+            unsafe { self.read_pending_2() }
+        } else {
+            0
         }
     }
 }

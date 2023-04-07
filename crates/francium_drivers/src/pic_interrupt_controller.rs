@@ -88,4 +88,9 @@ impl InterruptController for PIC {
     fn ack_interrupt(&mut self, n: u32) {
         pic_send_eoi(n as u8);
     }
+
+    const NUM_PENDING: u32 = 1;
+    fn read_pending(&self, n: u32) -> u32 {
+        0
+    }
 }

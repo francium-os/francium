@@ -7,15 +7,20 @@ use alloc::sync::Arc;
 use common::os_error::{Module, Reason, ResultCode, RESULT_OK};
 use spin::Mutex;
 use log::debug;
+use core::sync::atomic::AtomicU32;
+use core::sync::atomic::Ordering;
 
 #[derive(Debug)]
 pub struct Event {
+    pub interrupt: AtomicU32,
     w: Waiter,
 }
 
 impl Event {
     fn new() -> Event {
-        Event { w: Waiter::new() }
+        Event {
+            interrupt: AtomicU32::new(0), w: Waiter::new()
+        }
     }
 }
 
@@ -43,7 +48,7 @@ pub static INTERRUPT_EVENT_TABLE: Mutex<[Option<Arc<Event>>; 128]> = Mutex::new(
 
 pub fn dispatch_interrupt_event(index: usize) {
     if let Some(ev) = &INTERRUPT_EVENT_TABLE.lock()[index] {
-        debug!("Signalling interrupt event for {}", index);
+        //debug!("Signalling interrupt event for {}", index);
         ev.w.signal_one();
     }
 }
@@ -55,6 +60,7 @@ pub fn svc_bind_interrupt(h: u32, index: usize) -> ResultCode {
     if let HandleObject::Event(ev) = process.handle_table.get_object(h) {
         let mut lock = INTERRUPT_EVENT_TABLE.lock();
         if let None = lock[index] {
+            ev.interrupt.store(index as u32, Ordering::Release);
             lock[index] = Some(ev);
             DEFAULT_INTERRUPT.lock().enable_interrupt(index as u32);
 

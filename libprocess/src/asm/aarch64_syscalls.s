@@ -135,7 +135,9 @@ str x1, [x9]
 ret
 
 syscall_create_event:
+mov x9, x0
 svc #0x17
+str w1, [x9]
 ret
 
 syscall_bind_interrupt:

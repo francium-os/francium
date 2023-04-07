@@ -213,14 +213,24 @@ pub extern "C" fn rust_lower_el_aarch64_irq(_ctx: &mut ExceptionContext) {
     // for now, just ack timer
 
     {
-        let mut timer_lock = DEFAULT_TIMER.lock();
-        timer_lock.tick();
-        timer_lock.reset_timer();
-    }
+        let mut locked = DEFAULT_INTERRUPT.lock();
+        while let Some(interrupt) = locked.next_pending() {
+            // handle!
+            match interrupt {
+                30 => {
+                    let mut timer_lock = DEFAULT_TIMER.lock();
+                    timer_lock.tick();
+                    timer_lock.reset_timer();
+                }
+                _ => {
+                    // Handle? Somehow?
+                    locked.disable_interrupt(interrupt);
+                    crate::svc::event::dispatch_interrupt_event(interrupt as usize);
+                }
+            }
 
-    let timer_irq = 16 + 14;
-    {
-        DEFAULT_INTERRUPT.lock().ack_interrupt(timer_irq);
+            locked.ack_interrupt(interrupt);
+        }
     }
 
     timer::tick();
