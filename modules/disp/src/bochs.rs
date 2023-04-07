@@ -11,7 +11,7 @@ pub struct BochsAdapter {
     current_y: usize,
 }
 
-const VBE_DISPI_INDEX_ID: usize = 0;
+//const VBE_DISPI_INDEX_ID: usize = 0;
 const VBE_DISPI_INDEX_XRES: usize = 1;
 const VBE_DISPI_INDEX_YRES: usize = 2;
 const VBE_DISPI_INDEX_BPP: usize = 3;
@@ -69,8 +69,6 @@ impl BochsAdapter {
         // lets go
         self.current_x = x;
         self.current_y = y;
-
-        println!("id: {:x}", self.bochs_io_read(VBE_DISPI_INDEX_ID));
 
         self.bochs_io_write(VBE_DISPI_INDEX_ENABLE, 0);
 

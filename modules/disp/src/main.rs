@@ -5,7 +5,7 @@ mod bochs;
 mod raspi;
 
 fn main() {
-    println!("Hello from ab!");
+    println!("Hello from disp!");
 
     let platform = "qemu";
 
