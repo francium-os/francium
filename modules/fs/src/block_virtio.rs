@@ -1,19 +1,79 @@
 use crate::block::BlockDevice;
-use crate::virtio_pci::VirtioPciDevice;
-use crate::virtio_pci::VirtqDesc;
+use crate::virtio_pci::{VirtioPciDevice, VirtqDesc, Virtq, VirtioNotifier};
 use francium_common::types::PagePermission;
 use process::ipc;
 use process::syscalls;
 
-struct BlockVirtio {}
+struct BlockVirtio {
+    virtio_dev: VirtioPciDevice,
+
+    request_phys: usize,
+    request_virt: usize,
+
+    request_buffer_offset: u16
+}
+
+impl BlockVirtio {
+    fn new(mut virtio_dev: VirtioPciDevice) -> BlockVirtio {
+        let request_virt = syscalls::map_memory(0, 4096, PagePermission::USER_READ_WRITE).unwrap();
+        let request_phys = syscalls::query_physical_address(request_virt).unwrap();
+
+        let q = virtio_dev.queues.get_mut(0).unwrap();
+        let notifier = &virtio_dev.legacy_notifier;
+
+        let request_buffer = q.push_desc_chain(&[
+            VirtqDesc::new(request_phys as u64, 16, 0),
+            VirtqDesc::new(request_phys as u64 + 16, 513, VirtqDesc::F_WRITE),
+        ]);
+
+        /*
+        unsafe {
+            (request_virt as *mut u32).add(2).write_volatile(1);
+        }
+        */
+
+        BlockVirtio {
+            virtio_dev: virtio_dev,
+            request_phys: request_phys,
+            request_virt: request_virt,
+            request_buffer_offset: request_buffer
+        }
+    }
+}
 
 impl BlockDevice for BlockVirtio {
-    fn read(&self, _offset: usize, _buffer: &mut [u8]) -> usize {
-        0
+    fn read_sector(&mut self, offset: u64, buffer: &mut [u8]) -> u64 {
+        let q = self.virtio_dev.queues.get_mut(0).unwrap();
+        let notifier = &self.virtio_dev.legacy_notifier;
+
+        //println!("Read: {:x}", offset);
+
+        unsafe {
+            (self.request_virt as *mut u32).write_volatile(0); // Type
+            (self.request_virt as *mut u32).add(1).write_volatile(0); // Reserved
+            (self.request_virt as *mut u32).add(2).write_volatile(offset as u32); // Sector offset (u64)
+            (self.request_virt as *mut u32).add(3).write_volatile(0);
+        }
+
+        q.push_avail(self.request_buffer_offset);
+        q.notify();
+
+        notifier.wait_for_isr();
+
+        // TODO: actually look at the used ring to make sure the request completed...
+        unsafe {
+            std::ptr::copy_nonoverlapping((self.request_virt as *mut u8).add(16), buffer.as_mut_ptr(), 512);
+        }
+       
+        /*println!("{:x?}", unsafe {
+            &std::slice::from_raw_parts(self.request_virt as *mut u8, 512 + 16)[16..16 + 512]
+        });*/
+
+        1
     }
 
-    fn write(&self, _offset: usize, _buffer: &[u8]) -> usize {
-        0
+    fn write_sector(&mut self, _offset: u64, _buffer: &[u8]) -> u64 {
+        todo!();
     }
 }
 
@@ -42,53 +102,15 @@ pub fn scan() -> Vec<Box<dyn BlockDevice>> {
 
     println!("devices: {:?}", transitional_devices);
 
+    let mut blocks = Vec::new();
+
     for dev in transitional_devices {
-        let mut virtio_dev = VirtioPciDevice::new(dev);
+        let virtio_dev = VirtioPciDevice::new(dev);
+        let block = BlockVirtio::new(virtio_dev);
+        let boxed: Box<dyn BlockDevice> = Box::new(block);
 
-        let buffer_virt = syscalls::map_memory(0, 4096, PagePermission::USER_READ_WRITE).unwrap();
-        let buffer_phys = syscalls::query_physical_address(buffer_virt).unwrap();
-
-        let q = virtio_dev.queues.get_mut(0).unwrap();
-
-        let request_buffer = q.push_desc_chain(&[
-            VirtqDesc::new(buffer_phys as u64, 16, 0),
-            VirtqDesc::new(buffer_phys as u64 + 16, 513, VirtqDesc::F_WRITE),
-        ]);
-
-        unsafe {
-            (buffer_virt as *mut u32).write_volatile(0);
-            (buffer_virt as *mut u32).add(1).write_volatile(0);
-            (buffer_virt as *mut u32).add(2).write_volatile(0);
-            (buffer_virt as *mut u32).add(3).write_volatile(0);
-        }
-
-        // Add!
-        q.push_avail(request_buffer);
-        q.notify();
-
-        // Wait for IRQ...
-
-        println!("{:x?}", unsafe {
-            &std::slice::from_raw_parts(buffer_virt as *mut u8, 512 + 16)[16..16 + 512]
-        });
-
-        unsafe {
-            (buffer_virt as *mut u32).add(2).write_volatile(1);
-        }
-        println!("Two!");
-        q.push_avail(request_buffer);
-        q.notify();
-
-        //println!("status: {}", unsafe { q.isr_status.read_volatile() });
-        syscalls::sleep_ns(1000000000);
-        println!("{:x?}", unsafe {
-            &std::slice::from_raw_parts(buffer_virt as *mut u8, 512 + 16)[16..16 + 512]
-        });
+        blocks.push(boxed)
     }
 
-    /*for dev in new_devices {
-        let virtio_dev = VirtioPciDevice::new(dev);
-    }*/
-
-    Vec::new()
+    blocks
 }

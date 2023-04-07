@@ -9,19 +9,23 @@ use process::ipc;
 use process::syscalls;
 use process::Handle;
 
+pub struct VirtioNotifier {
+    isr_status: *mut u8,
+    interrupt_event: Handle
+}
+
 pub struct VirtioPciDevice {
     common: &'static mut VirtioPciCommonCfg,
     notify: *mut u8,
-    _isr_status: *mut u8,
     notify_off_multiplier: usize,
     pub queues: Vec<Virtq>,
-    interrupt_event: Handle,
+    pub legacy_notifier: VirtioNotifier
 }
 
 // This looks a bit weird because we didn't make VirtqUsed/VirtqAvail DSTs.
 //#[derive(Debug)]
 pub struct Virtq {
-    _size: usize,
+    size: usize,
     index: u16,
 
     desc: &'static mut [VirtqDesc],
@@ -58,7 +62,7 @@ impl Virtq {
 
         let q = unsafe {
             Virtq {
-                _size: queue_size,
+                size: queue_size,
                 index: queue_index,
 
                 desc: std::slice::from_raw_parts_mut(
@@ -116,6 +120,11 @@ impl Virtq {
     pub fn push_avail(&mut self, idx: u16) {
         self.avail_ring[self.avail_index] = idx;
         self.avail_index += 1;
+
+        if self.avail_index == self.size {
+            self.avail_index = 0;
+        }
+
         self.avail.idx = self.avail_index as u16;
     }
 
@@ -212,12 +221,14 @@ impl VirtioPciDevice {
         let bar_index = common_info.0;
         let (bar_offset, bar_size) = ipc::pcie::get_bar(device_id, bar_index as u8).unwrap();
 
+        println!("Got BAR: {:x} {:x}", bar_offset, bar_size);
+
         let bar_virt = syscalls::map_device_memory(
             bar_offset,
             0,
             bar_size,
             // Should it be cachable? Probably not.
-            MapType::NormalUncachable,
+            MapType::Device,
             PagePermission::USER_READ_WRITE,
         )
         .unwrap();
@@ -232,10 +243,12 @@ impl VirtioPciDevice {
         let mut device = VirtioPciDevice {
             common: unsafe { (common_virt as *mut VirtioPciCommonCfg).as_mut().unwrap() },
             notify: notify_virt as *mut u8,
-            _isr_status: isr_status_virt as *mut u8,
             notify_off_multiplier: notify_off_multiplier.unwrap() as usize,
             queues: Vec::new(),
-            interrupt_event: interrupt,
+            legacy_notifier: VirtioNotifier {
+                isr_status: isr_status_virt as *mut u8,
+                interrupt_event: interrupt,
+            }
         };
 
         device.init();
@@ -269,6 +282,9 @@ impl VirtioPciDevice {
         // Read feature bits to confirm this is a v1 device.
         self.common.device_feature_select.set(1);
         let features_hi = self.common.device_feature.get();
+
+        println!("{:x}", features_hi);
+
         if !((features_hi & 1) == 1) {
             panic!("Legacy only device!");
         }
@@ -328,6 +344,13 @@ impl VirtioPciDevice {
 
             i += 1;
         }
+    }
+}
+
+impl VirtioNotifier {
+    pub fn wait_for_isr(&self) -> u8 {
+        syscalls::wait_one(self.interrupt_event).unwrap();
+        unsafe { self.isr_status.read_volatile() }
     }
 }
 

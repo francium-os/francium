@@ -1,4 +1,4 @@
 pub trait BlockDevice {
-    fn read(&self, offset: usize, buffer: &mut [u8]) -> usize;
-    fn write(&self, offset: usize, buffer: &[u8]) -> usize;
+    fn read_sector(&mut self, offset: u64, buffer: &mut [u8]) -> u64;
+    fn write_sector(&mut self, offset: u64, buffer: &[u8]) -> u64;
 }

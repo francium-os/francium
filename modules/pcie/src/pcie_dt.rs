@@ -9,15 +9,53 @@ use fdt_rs::base::*;
 use fdt_rs::index::*;
 use fdt_rs::prelude::*;
 
+use crate::interrupt_map::PCIInterruptMap;
+
+fn interrupt_map_from_dt(prop: DevTreeIndexProp, mask_value: u8) -> PCIInterruptMap {
+    let mut map = PCIInterruptMap {
+        map: Vec::new(),
+        mask: mask_value
+    };
+
+    assert!(prop.length() % 40 == 0);
+    /* Format: address-cells, interrupt-cells, interrupt controller phandle, interrupt specifier */
+
+    for i in 0..prop.length() / 160 {
+        let mut interrupts: [u32; 4] = [0; 4];
+
+        for j in 0..4 {
+            let off = i*40 + j*10;
+
+            let pci_addr_specifier = [prop.u32(off).unwrap(), prop.u32(off + 1).unwrap(), prop.u32(off + 2).unwrap()];
+            let pci_interrupt_id = prop.u32(off + 3).unwrap();
+            //let phandle = prop.u32(i * 10 + 4).unwrap();
+            // GIC interrupt
+            let gic_id = prop.u32(off + 8).unwrap();
+            // level
+
+            let pci_device = pci_addr_specifier[0] >> 11;
+            assert!(pci_interrupt_id == (j+1) as u32);
+            assert!(pci_device == i as u32);
+            interrupts[j] = gic_id;
+        }
+        map.map.push(interrupts)
+    }
+    map
+}
+
 // When using Device Tree, we assume firmware has _not_ setup BARs etc.
 pub fn scan_via_device_tree(
     dt_addr: usize,
-) -> (Vec<PCIBus>, Option<usize>, Option<usize>, Option<usize>) {
+) -> (Vec<PCIBus>, Option<usize>, Option<usize>, Option<usize>, Option<PCIInterruptMap>) {
     // Does this suck? yes it does lmao
 
     let mut io_space_addr: Option<usize> = None;
     let mut pci_32bit_addr: Option<usize> = None;
     let mut pci_64bit_addr: Option<usize> = None;
+    let mut interrupt_map: Option<PCIInterruptMap> = None;
+
+    /* internal only */
+    let mut interrupt_map_mask: Option<u8> = None;
 
     let mut buses = Vec::new();
 
@@ -155,9 +193,15 @@ pub fn scan_via_device_tree(
                         buses.push(pci_bus);
                     }
                 }
+            } else if name == "interrupt-map" {
+                if let Some(x) = interrupt_map_mask {
+                    interrupt_map = Some(interrupt_map_from_dt(prop, x));
+                }
+            } else if name == "interrupt-map-mask" {
+                interrupt_map_mask = Some(((prop.u32(0).unwrap() >> 11) & 0x1f) as u8);
             }
         }
     }
 
-    (buses, io_space_addr, pci_32bit_addr, pci_64bit_addr)
+    (buses, io_space_addr, pci_32bit_addr, pci_64bit_addr, interrupt_map)
 }

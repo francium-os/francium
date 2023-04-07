@@ -3,8 +3,6 @@ use process::ipc::*;
 use process::ipc_server::ServerImpl;
 use process::syscalls;
 use std::convert::TryInto;
-use std::sync::atomic::AtomicU32;
-use std::sync::atomic::Ordering;
 use std::sync::Mutex;
 
 mod ecam;
@@ -13,17 +11,22 @@ mod pcie;
 mod pcie_acpi;
 #[cfg(target_arch = "aarch64")]
 mod pcie_dt;
+mod interrupt_map;
 
 use common::os_error::*;
 use common::Handle;
 use process::ipc::pcie::PCIDeviceInfo;
 use process::ipc_server::IPCServer;
+
+use crate::interrupt_map::PCIInterruptMap;
+
 include!(concat!(env!("OUT_DIR"), "/pcie_server_impl.rs"));
 
 struct PCIEServerStruct {
     buses: Mutex<Vec<pcie::PCIBus>>,
-    mem_base: AtomicU32,
-    io_base: AtomicU32,
+    mem_base: Mutex<usize>,
+    io_base: Mutex<usize>,
+    interrupt_map: Option<PCIInterruptMap>
 }
 
 impl PCIEServerStruct {
@@ -126,7 +129,8 @@ impl PCIEServerStruct {
                         // Okay, how big is the BAR?
 
                         // TODO: Should probably be {read,write}_volatile to ptrs. Probably.
-                        // TODO: Hidden assumption:
+                        // TODO: Handle 64bit BAR properly.
+
                         let bar_index = bar_index as usize;
                         let old_bar = func.inner.bars[bar_index];
 
@@ -146,12 +150,20 @@ impl PCIEServerStruct {
 
                         // Ok, put the BAR back? Or make up our own BAR allocation. Augh.
                         let bar_base: usize = if old_bar_addr == 0 {
+                            // BARs need to be aligned to their size...
                             let bar_base = if bar_type == 0 {
-                                self.mem_base.fetch_add(bar_size as u32, Ordering::Acquire)
+                                let mut locked = self.mem_base.lock().unwrap();
+                                let aligned_up = (*locked + bar_size - 1) & !(bar_size - 1);
+                                *locked = aligned_up + bar_size;
+                                aligned_up
                             } else {
-                                self.io_base.fetch_add(bar_size as u32, Ordering::Acquire)
+                                let mut locked = self.io_base.lock().unwrap();
+                                let aligned_up = (*locked + bar_size - 1) & !(bar_size - 1);
+                                *locked = aligned_up + bar_size;
+                                aligned_up
                             };
-                            func.inner.bars[bar_index] = bar_base;
+                            // TODO: "set bar"
+                            func.inner.bars[bar_index] = bar_base as u32;
                             bar_base as usize
                         } else {
                             func.inner.bars[bar_index] = (old_bar_addr & 0xffffffff) as u32;
@@ -250,7 +262,14 @@ impl PCIEServerStruct {
                 for func in dev.functions.iter_mut() {
                     if bus.num == bus_id && dev.num == device_id && func.num == function_id {
                         let event_handle = syscalls::create_event().unwrap();
-                        syscalls::bind_interrupt(event_handle, func.inner.interrupt_line as usize)
+
+                        let interrupt_id = if func.inner.interrupt_line != 0 {
+                            func.inner.interrupt_line
+                        } else {
+                            32 + self.interrupt_map.as_ref().unwrap().get_interrupt_id(device_id, func.inner.interrupt_pin) as u8
+                        };
+
+                        syscalls::bind_interrupt(event_handle, interrupt_id as usize)
                             .unwrap();
                         return Ok(TranslateMoveHandle(event_handle));
                     }
@@ -299,9 +318,11 @@ async fn main() {
     let pci_32bit_addr = Some(0);
     #[cfg(target_arch = "x86_64")]
     let io_space_addr = Some(0);
+    #[cfg(target_arch = "x86_64")]
+    let interrupts = None;
 
     #[cfg(target_arch = "aarch64")]
-    let (pcie_buses, io_space_addr, pci_32bit_addr, _pci_64bit_addr) =
+    let (pcie_buses, io_space_addr, pci_32bit_addr, _pci_64bit_addr, interrupts) =
         pcie_dt::scan_via_device_tree(0x40000000);
 
     let port = syscalls::create_port("").unwrap();
@@ -310,8 +331,9 @@ async fn main() {
     let server = ServerImpl::new(
         PCIEServerStruct {
             buses: Mutex::new(pcie_buses),
-            mem_base: AtomicU32::new(pci_32bit_addr.unwrap().try_into().unwrap()),
-            io_base: AtomicU32::new(io_space_addr.unwrap().try_into().unwrap()),
+            mem_base: Mutex::new(pci_32bit_addr.unwrap().try_into().unwrap()),
+            io_base: Mutex::new(io_space_addr.unwrap().try_into().unwrap()),
+            interrupt_map: interrupts
         },
         port,
     );

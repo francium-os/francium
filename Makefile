@@ -35,7 +35,7 @@ bootimg_uefi = target/release/uefi.img
 ifeq ($(arch), aarch64)
 gdb=RUST_GDB=aarch64-unknown-francium-gdb rust-gdb +francium
 ifeq ($(board), virt)
-qemu_args=-M $(board),gic-version=2 -cpu cortex-a53 -kernel $(francium) -serial stdio -m 2048 -device bochs-display
+qemu_args=-M $(board),gic-version=2 -cpu cortex-a53 -kernel $(francium) -serial stdio -m 2048 -device bochs-display -drive format=raw,file=$(bootimg_uefi),if=none,id=boot -device virtio-blk,serial=fee1dead,drive=boot
 else ifeq ($(board), raspi3)
 qemu_args=-M $(board)b -kernel kernel8_pi3.bin -serial stdio
 endif
