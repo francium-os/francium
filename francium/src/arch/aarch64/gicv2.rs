@@ -64,7 +64,6 @@ impl InterruptController for GICv2 {
     }
 
     fn enable_interrupt(&mut self, interrupt: u32) {
-        println!("Enable interrupt: {}", interrupt);
         unsafe {
             ((self.gicd_base + GICD_ISENABLER) as *mut u32)
                 .add((interrupt / GICD_ISENABLER_SIZE) as usize)
