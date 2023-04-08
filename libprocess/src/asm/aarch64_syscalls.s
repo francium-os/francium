@@ -122,7 +122,9 @@ svc #0x13
 str x1, [x9]
 ret
 
-// syscall_get_system_info
+syscall_get_system_info:
+svc #0x14
+ret
 
 syscall_get_system_tick:
 svc #0x15

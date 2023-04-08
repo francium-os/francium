@@ -1,6 +1,7 @@
 use crate::arch::x86_64::info::*;
 use crate::{scheduler, svc};
 use francium_common::types::PhysAddr;
+use common::system_info::{SystemInfo, SystemInfoType};
 
 // The System V ABI returns 128 bit values in rax:rdx.
 // God help me if I need three return values.
@@ -182,9 +183,9 @@ unsafe extern "C" fn syscall_wrapper_map_device_memory(
 
 #[no_mangle]
 unsafe extern "C" fn syscall_wrapper_get_system_info(
-    ty: usize,
+    ty: SystemInfoType,
     index: usize,
-    out_ptr: *const usize,
+    out_ptr: *mut SystemInfo,
 ) -> u32 {
     let res = svc::svc_get_system_info(ty, index, out_ptr);
     res.0 as u32

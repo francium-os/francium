@@ -387,6 +387,7 @@ dependencies = [
 name = "disp"
 version = "0.1.0"
 dependencies = [
+ "common",
  "francium_common",
  "process",
 ]

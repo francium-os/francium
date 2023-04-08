@@ -167,6 +167,11 @@ mov [rbx], rdx
 pop rbx
 ret
 
+syscall_get_system_info:
+mov eax, 0x14
+syscall
+ret
+
 syscall_get_system_tick:
 mov eax, 0x15
 syscall

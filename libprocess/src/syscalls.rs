@@ -39,7 +39,7 @@ extern "C" {
         address_out: *mut usize,
     ) -> ResultCode;
 
-    pub fn syscall_get_system_info(ty: usize, index: usize, info_out: *mut usize) -> ResultCode;
+    pub fn syscall_get_system_info(ty: usize, index: usize, info_out: *mut SystemInfo) -> ResultCode;
 
     pub fn syscall_get_system_tick() -> u64;
     pub fn syscall_query_physical_address(virt_addr: usize, phys_out: *mut usize) -> ResultCode;
@@ -230,19 +230,16 @@ pub fn map_device_memory(
     }
 }
 
-pub fn get_system_info(_ty: SystemInfoType, _index: usize) -> Result<SystemInfo, OSError> {
-    unimplemented!();
-    /*unsafe {
-        let mut address_out: usize = 0;
-
-        let output: SystemInfo;
+pub fn get_system_info(ty: SystemInfoType, index: usize) -> Result<SystemInfo, OSError> {
+    unsafe {
+        let mut output: SystemInfo = SystemInfo::None;
         let res = syscall_get_system_info(ty as usize, index, &mut output);
         if res == RESULT_OK {
             Ok(output)
         } else {
             Err(OSError::from_result_code(res))
         }
-    }*/
+    }
 }
 
 pub fn get_system_tick() -> u64 {
