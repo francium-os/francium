@@ -11,7 +11,7 @@ use process::Handle;
 
 pub struct VirtioNotifier {
     isr_status: *mut u8,
-    interrupt_event: Handle
+    interrupt_event: Handle,
 }
 
 pub struct VirtioPciDevice {
@@ -20,7 +20,7 @@ pub struct VirtioPciDevice {
     notify_off_multiplier: usize,
     _device_specific: *mut u8,
     pub queues: Vec<Virtq>,
-    pub legacy_notifier: VirtioNotifier
+    pub legacy_notifier: VirtioNotifier,
 }
 
 // This looks a bit weird because we didn't make VirtqUsed/VirtqAvail DSTs.
@@ -243,7 +243,7 @@ impl VirtioPciDevice {
             legacy_notifier: VirtioNotifier {
                 isr_status: isr_status_virt as *mut u8,
                 interrupt_event: interrupt,
-            }
+            },
         };
 
         device.init();

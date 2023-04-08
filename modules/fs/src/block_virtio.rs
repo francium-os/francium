@@ -10,7 +10,7 @@ struct BlockVirtio {
     _request_phys: usize,
     request_virt: usize,
 
-    request_buffer_offset: u16
+    request_buffer_offset: u16,
 }
 
 impl BlockVirtio {
@@ -35,7 +35,7 @@ impl BlockVirtio {
             virtio_dev: virtio_dev,
             _request_phys: request_phys,
             request_virt: request_virt,
-            request_buffer_offset: request_buffer
+            request_buffer_offset: request_buffer,
         }
     }
 }
@@ -50,7 +50,9 @@ impl BlockDevice for BlockVirtio {
         unsafe {
             (self.request_virt as *mut u32).write_volatile(0); // Type
             (self.request_virt as *mut u32).add(1).write_volatile(0); // Reserved
-            (self.request_virt as *mut u32).add(2).write_volatile(offset as u32); // Sector offset (u64)
+            (self.request_virt as *mut u32)
+                .add(2)
+                .write_volatile(offset as u32); // Sector offset (u64)
             (self.request_virt as *mut u32).add(3).write_volatile(0);
         }
 
@@ -61,9 +63,13 @@ impl BlockDevice for BlockVirtio {
 
         // TODO: actually look at the used ring to make sure the request completed...
         unsafe {
-            std::ptr::copy_nonoverlapping((self.request_virt as *mut u8).add(16), buffer.as_mut_ptr(), 512);
+            std::ptr::copy_nonoverlapping(
+                (self.request_virt as *mut u8).add(16),
+                buffer.as_mut_ptr(),
+                512,
+            );
         }
-       
+
         /*println!("{:x?}", unsafe {
             &std::slice::from_raw_parts(self.request_virt as *mut u8, 512 + 16)[16..16 + 512]
         });*/

@@ -1,5 +1,5 @@
-use std::io::SeekFrom;
 use crate::block::BlockDevice;
+use std::io::SeekFrom;
 
 pub struct BlockAdapter<'a> {
     upper: &'a mut dyn BlockDevice,
@@ -7,7 +7,7 @@ pub struct BlockAdapter<'a> {
     offset_bytes: u64,
 
     current_cache_sector: u64,
-    cache: [u8; 1024]
+    cache: [u8; 1024],
 }
 
 impl BlockAdapter<'_> {
@@ -17,14 +17,20 @@ impl BlockAdapter<'_> {
             base_sector: base,
             offset_bytes: 0,
             current_cache_sector: u64::MAX,
-            cache: [0; 1024]
+            cache: [0; 1024],
         }
     }
 
     fn fill_cache(&mut self) {
         if self.offset_bytes / 512 != self.current_cache_sector {
-            self.upper.read_sector(self.base_sector + self.offset_bytes / 512, &mut self.cache[0.. 512]);
-            self.upper.read_sector(self.base_sector + self.offset_bytes / 512 + 1, &mut self.cache[512 .. 1024]);
+            self.upper.read_sector(
+                self.base_sector + self.offset_bytes / 512,
+                &mut self.cache[0..512],
+            );
+            self.upper.read_sector(
+                self.base_sector + self.offset_bytes / 512 + 1,
+                &mut self.cache[512..1024],
+            );
 
             self.current_cache_sector = self.offset_bytes / 512;
 
@@ -43,7 +49,7 @@ impl std::io::Read for BlockAdapter<'_> {
         //println!("Read! off= 0x{:x} len= 0x{:x}", self.offset_bytes, buf.len());
         self.fill_cache();
 
-        buf.copy_from_slice(&self.cache[cache_offset .. cache_offset + buf.len()]);
+        buf.copy_from_slice(&self.cache[cache_offset..cache_offset + buf.len()]);
         self.offset_bytes += buf.len() as u64;
 
         //println!("{:#x?}", buf);
@@ -53,8 +59,12 @@ impl std::io::Read for BlockAdapter<'_> {
 }
 
 impl std::io::Write for BlockAdapter<'_> {
-    fn write(&mut self, _: &[u8]) -> Result<usize, std::io::Error> { todo!() }
-    fn flush(&mut self) -> Result<(), std::io::Error> { Ok(()) }
+    fn write(&mut self, _: &[u8]) -> Result<usize, std::io::Error> {
+        todo!()
+    }
+    fn flush(&mut self) -> Result<(), std::io::Error> {
+        Ok(())
+    }
 }
 
 impl std::io::Seek for BlockAdapter<'_> {
@@ -64,10 +74,10 @@ impl std::io::Seek for BlockAdapter<'_> {
             SeekFrom::Start(off) => {
                 self.offset_bytes = off;
                 Ok(self.offset_bytes)
-            },
+            }
             SeekFrom::End(_off) => {
                 panic!();
-            },
+            }
             SeekFrom::Current(off) => {
                 // TODO: Don't have any disks larger than 2**63, I guess
                 self.offset_bytes = (self.offset_bytes as i64 + off) as u64;

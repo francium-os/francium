@@ -1,6 +1,6 @@
 pub struct PCIInterruptMap {
     pub map: Vec<[u32; 4]>,
-    pub mask: u8
+    pub mask: u8,
 }
 
 impl PCIInterruptMap {

@@ -5,9 +5,9 @@ use crate::scheduler;
 use crate::waitable::{Waitable, Waiter};
 use alloc::sync::Arc;
 use common::os_error::{Module, Reason, ResultCode, RESULT_OK};
-use spin::Mutex;
 use core::sync::atomic::AtomicU32;
 use core::sync::atomic::Ordering;
+use spin::Mutex;
 
 #[derive(Debug)]
 pub struct Event {
@@ -18,7 +18,8 @@ pub struct Event {
 impl Event {
     fn new() -> Event {
         Event {
-            interrupt: AtomicU32::new(0), w: Waiter::new()
+            interrupt: AtomicU32::new(0),
+            w: Waiter::new(),
         }
     }
 }

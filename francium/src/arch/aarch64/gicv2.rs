@@ -5,7 +5,6 @@ pub struct GICv2 {
     gicc_base: usize,
 }
 
-
 // XXX please god rewrite this using registers
 
 // Distributor registers
@@ -42,8 +41,10 @@ impl GICv2 {
 
         unsafe {
             let ptr = ((self.gicd_base + GICD_ICFGR) as *mut u32)
-            .add((interrupt / GICD_ICFGR_SIZE) as usize);
-            ptr.write_volatile(ptr.read_volatile() | (bit << ((interrupt % GICD_ISENABLER_SIZE) * 2)));
+                .add((interrupt / GICD_ICFGR_SIZE) as usize);
+            ptr.write_volatile(
+                ptr.read_volatile() | (bit << ((interrupt % GICD_ISENABLER_SIZE) * 2)),
+            );
         }
     }
 }
@@ -82,8 +83,8 @@ impl InterruptController for GICv2 {
     fn ack_interrupt(&mut self, interrupt: u32) {
         unsafe {
             /*((self.gicd_base + GICD_ICPENDR) as *mut u32)
-                .add((interrupt / GICD_ICPENDR_SIZE) as usize)
-                .write_volatile(1 << (interrupt % GICD_ICPENDR_SIZE));*/
+            .add((interrupt / GICD_ICPENDR_SIZE) as usize)
+            .write_volatile(1 << (interrupt % GICD_ICPENDR_SIZE));*/
 
             ((self.gicc_base + GICC_EOIR) as *mut u32).write_volatile(interrupt)
         }
@@ -101,9 +102,8 @@ impl InterruptController for GICv2 {
     }
 
     fn next_pending(&self) -> Option<u32> {
-        let interrupt_num = unsafe { 
-            ((self.gicc_base + GICC_IAR) as *mut u32).read_volatile() & 0x3ff
-        };
+        let interrupt_num =
+            unsafe { ((self.gicc_base + GICC_IAR) as *mut u32).read_volatile() & 0x3ff };
 
         if interrupt_num == 1023 {
             None

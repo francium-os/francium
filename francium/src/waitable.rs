@@ -3,9 +3,9 @@ use crate::process::Thread;
 use crate::scheduler;
 use alloc::sync::Arc;
 use core::sync::atomic::{AtomicBool, Ordering};
+use francium_drivers::InterruptController;
 use smallvec::SmallVec;
 use spin::Mutex;
-use francium_drivers::InterruptController;
 
 #[derive(Debug)]
 pub struct Waiter {
@@ -165,7 +165,9 @@ pub fn wait_handles(handles: &[u32]) -> usize {
                 // going into an event wait
                 let interrupt_id = event.interrupt.load(Ordering::Acquire);
                 if interrupt_id != 0 {
-                    crate::platform::DEFAULT_INTERRUPT.lock().enable_interrupt(interrupt_id);
+                    crate::platform::DEFAULT_INTERRUPT
+                        .lock()
+                        .enable_interrupt(interrupt_id);
                 }
 
                 if event.post_wait(index) {

@@ -6,12 +6,12 @@ use std::convert::TryInto;
 use std::sync::Mutex;
 
 mod ecam;
+mod interrupt_map;
 mod pcie;
 #[cfg(target_arch = "x86_64")]
 mod pcie_acpi;
 #[cfg(target_arch = "aarch64")]
 mod pcie_dt;
-mod interrupt_map;
 
 use common::os_error::*;
 use common::Handle;
@@ -26,7 +26,7 @@ struct PCIEServerStruct {
     buses: Mutex<Vec<pcie::PCIBus>>,
     mem_base: Mutex<usize>,
     io_base: Mutex<usize>,
-    interrupt_map: Option<PCIInterruptMap>
+    interrupt_map: Option<PCIInterruptMap>,
 }
 
 impl PCIEServerStruct {
@@ -266,11 +266,15 @@ impl PCIEServerStruct {
                         let interrupt_id = if func.inner.interrupt_line != 0 {
                             func.inner.interrupt_line
                         } else {
-                            32 + self.interrupt_map.as_ref().unwrap().get_interrupt_id(device_id, func.inner.interrupt_pin) as u8
+                            32 + self
+                                .interrupt_map
+                                .as_ref()
+                                .unwrap()
+                                .get_interrupt_id(device_id, func.inner.interrupt_pin)
+                                as u8
                         };
 
-                        syscalls::bind_interrupt(event_handle, interrupt_id as usize)
-                            .unwrap();
+                        syscalls::bind_interrupt(event_handle, interrupt_id as usize).unwrap();
                         return Ok(TranslateMoveHandle(event_handle));
                     }
                 }
@@ -333,7 +337,7 @@ async fn main() {
             buses: Mutex::new(pcie_buses),
             mem_base: Mutex::new(pci_32bit_addr.unwrap().try_into().unwrap()),
             io_base: Mutex::new(io_space_addr.unwrap().try_into().unwrap()),
-            interrupt_map: interrupts
+            interrupt_map: interrupts,
         },
         port,
     );

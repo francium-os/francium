@@ -316,7 +316,8 @@ unsafe extern "C" fn handle_exception(
             if irq_number == 7 {
                 println!("Spurious IRQ?");
                 // todo spurious irq handling
-            } else if irq_number == 0 { // handle Timer specially
+            } else if irq_number == 0 {
+                // handle Timer specially
                 {
                     DEFAULT_INTERRUPT.lock().ack_interrupt(0);
                 }

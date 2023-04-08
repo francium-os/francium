@@ -14,7 +14,7 @@ use crate::interrupt_map::PCIInterruptMap;
 fn interrupt_map_from_dt(prop: DevTreeIndexProp, mask_value: u8) -> PCIInterruptMap {
     let mut map = PCIInterruptMap {
         map: Vec::new(),
-        mask: mask_value
+        mask: mask_value,
     };
 
     assert!(prop.length() % 40 == 0);
@@ -24,9 +24,13 @@ fn interrupt_map_from_dt(prop: DevTreeIndexProp, mask_value: u8) -> PCIInterrupt
         let mut interrupts: [u32; 4] = [0; 4];
 
         for j in 0..4 {
-            let off = i*40 + j*10;
+            let off = i * 40 + j * 10;
 
-            let pci_addr_specifier = [prop.u32(off).unwrap(), prop.u32(off + 1).unwrap(), prop.u32(off + 2).unwrap()];
+            let pci_addr_specifier = [
+                prop.u32(off).unwrap(),
+                prop.u32(off + 1).unwrap(),
+                prop.u32(off + 2).unwrap(),
+            ];
             let pci_interrupt_id = prop.u32(off + 3).unwrap();
             //let phandle = prop.u32(i * 10 + 4).unwrap();
             // GIC interrupt
@@ -34,7 +38,7 @@ fn interrupt_map_from_dt(prop: DevTreeIndexProp, mask_value: u8) -> PCIInterrupt
             // level
 
             let pci_device = pci_addr_specifier[0] >> 11;
-            assert!(pci_interrupt_id == (j+1) as u32);
+            assert!(pci_interrupt_id == (j + 1) as u32);
             assert!(pci_device == i as u32);
             interrupts[j] = gic_id;
         }
@@ -46,7 +50,13 @@ fn interrupt_map_from_dt(prop: DevTreeIndexProp, mask_value: u8) -> PCIInterrupt
 // When using Device Tree, we assume firmware has _not_ setup BARs etc.
 pub fn scan_via_device_tree(
     dt_addr: usize,
-) -> (Vec<PCIBus>, Option<usize>, Option<usize>, Option<usize>, Option<PCIInterruptMap>) {
+) -> (
+    Vec<PCIBus>,
+    Option<usize>,
+    Option<usize>,
+    Option<usize>,
+    Option<PCIInterruptMap>,
+) {
     // Does this suck? yes it does lmao
 
     let mut io_space_addr: Option<usize> = None;
@@ -203,5 +213,11 @@ pub fn scan_via_device_tree(
         }
     }
 
-    (buses, io_space_addr, pci_32bit_addr, pci_64bit_addr, interrupt_map)
+    (
+        buses,
+        io_space_addr,
+        pci_32bit_addr,
+        pci_64bit_addr,
+        interrupt_map,
+    )
 }

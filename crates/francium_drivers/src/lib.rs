@@ -13,7 +13,7 @@ pub trait InterruptController {
             let bits = self.read_pending(i);
             let zeros = bits.leading_zeros();
             if zeros != 32 {
-                return Some(32 - (zeros + 1) + i * 32)
+                return Some(32 - (zeros + 1) + i * 32);
             }
         }
 

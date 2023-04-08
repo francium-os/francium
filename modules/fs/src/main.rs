@@ -1,16 +1,16 @@
+use block_adapter::BlockAdapter;
 use process::ipc::sm;
 use process::ipc::*;
 use process::ipc_server::{IPCServer, ServerImpl};
 use process::os_error::{Module, OSError, OSResult, Reason};
 use process::syscalls;
 use process::Handle;
-use block_adapter::BlockAdapter;
 
 mod virtio_pci;
 
 mod block;
-mod block_virtio;
 mod block_adapter;
+mod block_virtio;
 
 include!(concat!(env!("OUT_DIR"), "/fs_server_impl.rs"));
 

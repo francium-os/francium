@@ -179,5 +179,5 @@ pub const SVC_HANDLERS: [SVCHandler; 27] = [
     syscall_wrapper_create_event,
     syscall_wrapper_bind_interrupt,
     syscall_wrapper_unbind_interrupt,
-    syscall_wrapper_wait_one
+    syscall_wrapper_wait_one,
 ];
