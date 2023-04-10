@@ -867,6 +867,7 @@ dependencies = [
 [[package]]
 name = "libc"
 version = "0.2.139"
+source = "git+https://github.com/francium-os/rust-libc.git?branch=francium-mlibc#2f24b470e5fdb8b751a627f0635ece5928fdc7d1"
 
 [[package]]
 name = "link-cplusplus"

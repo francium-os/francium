@@ -31,4 +31,4 @@ overflow-checks = true
 opt-level = 3
 
 [patch.crates-io]
-libc = { path = "../libc" }
+libc = { git = "https://github.com/francium-os/rust-libc.git", branch = "francium-mlibc" }
