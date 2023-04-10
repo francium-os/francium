@@ -139,7 +139,7 @@ impl PCIEServerStruct {
 
                         let old_bar_addr: usize = if bar_location == 0b10 {
                             (old_bar as usize & !0xf)
-                                | (func.inner.bars[bar_index + 1] as usize & !0xf) << 32
+                                | (func.inner.bars[bar_index + 1] as usize) << 32
                         } else {
                             old_bar as usize & !0xf
                         };
