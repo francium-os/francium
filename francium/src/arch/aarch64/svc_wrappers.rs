@@ -1,8 +1,8 @@
 use crate::arch::context::ExceptionContext;
 use crate::svc;
-use francium_common::types::PhysAddr;
 use common::system_info::{SystemInfo, SystemInfoType};
 use core::convert::TryFrom;
+use francium_common::types::PhysAddr;
 
 fn syscall_wrapper_break(_ctx: &mut ExceptionContext) {
     svc::svc_break();
@@ -117,7 +117,11 @@ fn syscall_wrapper_map_device_memory(ctx: &mut ExceptionContext) {
 
 fn syscall_wrapper_get_system_info(ctx: &mut ExceptionContext) {
     /* ty: usize, index: usize, out_ptr: *mut usize */
-    let res = svc::svc_get_system_info(SystemInfoType::try_from(ctx.regs[0]).unwrap(), ctx.regs[1], ctx.regs[2] as *mut SystemInfo);
+    let res = svc::svc_get_system_info(
+        SystemInfoType::try_from(ctx.regs[0]).unwrap(),
+        ctx.regs[1],
+        ctx.regs[2] as *mut SystemInfo,
+    );
     ctx.regs[0] = res.0 as usize;
 }
 

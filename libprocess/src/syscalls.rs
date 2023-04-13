@@ -39,7 +39,11 @@ extern "C" {
         address_out: *mut usize,
     ) -> ResultCode;
 
-    pub fn syscall_get_system_info(ty: usize, index: usize, info_out: *mut SystemInfo) -> ResultCode;
+    pub fn syscall_get_system_info(
+        ty: usize,
+        index: usize,
+        info_out: *mut SystemInfo,
+    ) -> ResultCode;
 
     pub fn syscall_get_system_tick() -> u64;
     pub fn syscall_query_physical_address(virt_addr: usize, phys_out: *mut usize) -> ResultCode;

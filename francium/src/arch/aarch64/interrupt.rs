@@ -1,8 +1,8 @@
 use super::context::ExceptionContext;
 use crate::arch::aarch64::svc_wrappers;
-use crate::drivers::{InterruptController, InterruptDistributor};
 use crate::drivers::Timer;
-use crate::platform::{INTERRUPT_CONTROLLER, INTERRUPT_DISTRIBUTOR, DEFAULT_TIMER};
+use crate::drivers::{InterruptController, InterruptDistributor};
+use crate::platform::{DEFAULT_TIMER, INTERRUPT_CONTROLLER, INTERRUPT_DISTRIBUTOR};
 use crate::timer;
 
 use aarch64_cpu::registers::*;
@@ -218,11 +218,12 @@ pub extern "C" fn rust_lower_el_aarch64_irq(_ctx: &mut ExceptionContext) {
             // handle!
             match interrupt {
                 // Arch specific might have different way of identfying interrupts.
-                1 => { // Pi3 timer
+                1 => {
+                    // Pi3 timer
                     let mut timer_lock = DEFAULT_TIMER.lock();
                     timer_lock.tick();
                     timer_lock.reset_timer();
-                },
+                }
                 30 => {
                     let mut timer_lock = DEFAULT_TIMER.lock();
                     timer_lock.tick();

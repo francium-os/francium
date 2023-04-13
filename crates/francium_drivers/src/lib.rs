@@ -57,13 +57,13 @@ pub trait SerialPort {
 }
 
 #[cfg(target_arch = "x86_64")]
-pub mod pc_uart;
-#[cfg(target_arch = "x86_64")]
-pub mod pic_interrupt_controller;
+pub mod pc_io_apic;
 #[cfg(target_arch = "x86_64")]
 pub mod pc_local_apic;
 #[cfg(target_arch = "x86_64")]
-pub mod pc_io_apic;
+pub mod pc_uart;
+#[cfg(target_arch = "x86_64")]
+pub mod pic_interrupt_controller;
 
 #[cfg(target_arch = "x86_64")]
 pub mod pit_timer;

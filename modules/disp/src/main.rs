@@ -1,5 +1,5 @@
-use process::syscalls;
 use common::system_info::*;
+use process::syscalls;
 
 mod bochs;
 #[cfg(target_arch = "aarch64")]
@@ -8,7 +8,13 @@ mod raspi;
 fn main() {
     println!("Hello from disp!");
 
-    let platform = if let SystemInfo::Platform(plat) = syscalls::get_system_info(SystemInfoType::Platform, 0).unwrap() { plat } else { panic!("GetSystemInfo failed"); };
+    let platform = if let SystemInfo::Platform(plat) =
+        syscalls::get_system_info(SystemInfoType::Platform, 0).unwrap()
+    {
+        plat
+    } else {
+        panic!("GetSystemInfo failed");
+    };
 
     if platform == Platform::Virt || platform == Platform::Pc {
         let mut bochs = bochs::BochsAdapter::new().unwrap();

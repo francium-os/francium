@@ -19,10 +19,9 @@ lazy_static! {
         115200,
         48000000
     ));
-
     pub static ref INTERRUPT_CONTROLLER: Mutex<GICv2Cpu> = Mutex::new(GICv2Cpu::new(RPI_GICC_BASE));
-    pub static ref INTERRUPT_DISTRIBUTOR: Mutex<GICv2Dist> = Mutex::new(GICv2Dist::new(RPI_GICD_BASE));
-
+    pub static ref INTERRUPT_DISTRIBUTOR: Mutex<GICv2Dist> =
+        Mutex::new(GICv2Dist::new(RPI_GICD_BASE));
     pub static ref DEFAULT_TIMER: Mutex<ArchTimer> = Mutex::new(ArchTimer::new());
 }
 

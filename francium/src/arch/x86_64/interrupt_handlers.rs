@@ -1,8 +1,8 @@
 use crate::arch::context::ExceptionContext;
 use crate::drivers::InterruptController;
 use crate::drivers::Timer;
-use crate::platform::INTERRUPT_CONTROLLER;
 use crate::platform::DEFAULT_TIMER;
+use crate::platform::INTERRUPT_CONTROLLER;
 use core::arch::{asm, global_asm};
 
 macro_rules! interrupt_noerror {

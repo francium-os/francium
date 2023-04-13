@@ -1,4 +1,4 @@
-use num_enum::{TryFromPrimitive, IntoPrimitive};
+use num_enum::{IntoPrimitive, TryFromPrimitive};
 
 #[repr(C)]
 #[derive(Debug)]
@@ -30,12 +30,12 @@ pub enum Platform {
     Virt,
     Pc,
     Raspi3,
-    Raspi4
+    Raspi4,
 }
 
 #[repr(C)]
 pub enum SystemInfo {
     None,
     MemoryRegion(MemoryRegion),
-    Platform(Platform)
+    Platform(Platform),
 }

@@ -1,4 +1,4 @@
-use crate::arch::{arch_timer::ArchTimer};
+use crate::arch::arch_timer::ArchTimer;
 use crate::constants::*;
 use crate::drivers::bcm_interrupt::*;
 use crate::drivers::pl011_uart::Pl011Uart;

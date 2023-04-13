@@ -71,4 +71,3 @@ pub unsafe fn read_apic_base() -> usize {
 pub unsafe fn write_apic_base(apic_base: usize) {
     write_msr(IA32_APIC_BASE, apic_base)
 }
-

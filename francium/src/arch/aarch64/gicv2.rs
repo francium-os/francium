@@ -32,7 +32,7 @@ const GICD_ICFGR_SIZE: u32 = 16;
 impl GICv2Dist {
     pub fn new(gicd_base: usize) -> GICv2Dist {
         GICv2Dist {
-            gicd_base: gicd_base
+            gicd_base: gicd_base,
         }
     }
 
@@ -98,9 +98,7 @@ impl InterruptController for GICv2Cpu {
     }
 
     fn ack_interrupt(&mut self, interrupt: u32) {
-        unsafe {
-            ((self.gicc_base + GICC_EOIR) as *mut u32).write_volatile(interrupt)
-        }
+        unsafe { ((self.gicc_base + GICC_EOIR) as *mut u32).write_volatile(interrupt) }
     }
 
     // TODO: Correct value?

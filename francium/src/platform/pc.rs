@@ -1,13 +1,13 @@
 use crate::arch::msr;
-use crate::drivers::pc_uart::COMPort;
-use crate::drivers::pc_local_apic::LocalApic;
 use crate::drivers::pc_io_apic::IoApic;
+use crate::drivers::pc_local_apic::LocalApic;
+use crate::drivers::pc_uart::COMPort;
 use crate::drivers::pit_timer::PIT;
-use crate::drivers::{InterruptController, InterruptDistributor};
 use crate::drivers::Timer;
+use crate::drivers::{InterruptController, InterruptDistributor};
 use core::arch::asm;
-use spin::Mutex;
 use francium_common::types::PhysAddr;
+use spin::Mutex;
 
 pub const PHYS_MEM_BASE: usize = 0;
 pub const PHYS_MEM_SIZE: usize = 0x80000000; // 2gb?? for now
@@ -52,7 +52,7 @@ impl AcpiHandler for FranciumACPIHandler {
 lazy_static! {
     pub static ref DEFAULT_UART: Mutex<COMPort> = Mutex::new(COMPort::new(0x3f8));
     pub static ref DEFAULT_TIMER: Mutex<PIT> = Mutex::new(PIT::new());
-    
+
     //pub static ref INTERRUPT_CONTROLLER: Mutex<PIC> = Mutex::new(PIC::new());
     //pub static ref INTERRUPT_DISTRIBUTOR: Mutex<PICDist> = Mutex::new(PICDist::new());
 

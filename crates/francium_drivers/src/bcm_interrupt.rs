@@ -110,7 +110,6 @@ impl InterruptController for BCMGlobalInterrupt {
     }
 }
 
-
 impl InterruptDistributor for BCMGlobalInterrupt {
     fn init(&mut self) {}
 
@@ -138,7 +137,7 @@ impl InterruptDistributor for BCMGlobalInterrupt {
 }
 
 pub struct BCMLocalInterrupt {
-    base_address: usize
+    base_address: usize,
 }
 
 impl BCMLocalInterrupt {
@@ -173,20 +172,19 @@ impl InterruptDistributor for BCMLocalInterrupt {
 
     fn enable_interrupt(&mut self, n: u32) {
         unsafe {
-            debug!("Enable! {}",n);
+            debug!("Enable! {}", n);
             let val = ((self.base_address + 0x40) as *mut u32).read_volatile();
-            ((self.base_address + 0x40) as *mut u32).write_volatile(val | (1<<n));
+            ((self.base_address + 0x40) as *mut u32).write_volatile(val | (1 << n));
         }
     }
 
     fn disable_interrupt(&mut self, n: u32) {
         unsafe {
             let val = ((self.base_address + 0x40) as *mut u32).read_volatile();
-            ((self.base_address + 0x40) as *mut u32).write_volatile(val & !(1<<n));
+            ((self.base_address + 0x40) as *mut u32).write_volatile(val & !(1 << n));
         }
     }
 }
-
 
 impl InterruptController for BCMLocalInterrupt {
     fn init(&mut self) {}
@@ -197,8 +195,6 @@ impl InterruptController for BCMLocalInterrupt {
 
     const NUM_PENDING: u32 = 1;
     fn read_pending(&self, _i: u32) -> u32 {
-        unsafe {
-            ((self.base_address + 0x60) as *mut u32).read_volatile()
-        }
+        unsafe { ((self.base_address + 0x60) as *mut u32).read_volatile() }
     }
 }

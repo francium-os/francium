@@ -105,7 +105,6 @@ impl InterruptDistributor for PICDist {
             outb(PIC2_DATA, inb(PIC2_DATA) | 1 << (n - 8));
         }
     }
-
 }
 
 pub fn disable_pic() {

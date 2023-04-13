@@ -1,8 +1,8 @@
 use crate::arch::{arch_timer::ArchTimer, gicv2::*};
 use crate::constants;
 use crate::drivers::pl011_uart::Pl011Uart;
-use crate::drivers::{InterruptController, InterruptDistributor};
 use crate::drivers::Timer;
+use crate::drivers::{InterruptController, InterruptDistributor};
 use spin::Mutex;
 
 const VIRT_GICD_BASE: usize = constants::PERIPHERAL_BASE + 0x08000000;
@@ -29,7 +29,7 @@ pub fn scheduler_pre_init() {
     let mut gicd_lock = INTERRUPT_DISTRIBUTOR.lock();
     gicd_lock.init();
     gicd_lock.enable_interrupt(timer_irq);
-    
+
     let mut gicc_lock = INTERRUPT_CONTROLLER.lock();
     gicc_lock.init();
 
