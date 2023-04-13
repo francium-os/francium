@@ -1,12 +1,13 @@
 use crate::arch::msr;
 use crate::drivers::pc_uart::COMPort;
 use crate::drivers::pc_local_apic::LocalApic;
-use crate::drivers::pic_interrupt_controller::{PIC, PICDist};
+use crate::drivers::pc_io_apic::IoApic;
 use crate::drivers::pit_timer::PIT;
 use crate::drivers::{InterruptController, InterruptDistributor};
 use crate::drivers::Timer;
 use core::arch::asm;
 use spin::Mutex;
+use francium_common::types::PhysAddr;
 
 pub const PHYS_MEM_BASE: usize = 0;
 pub const PHYS_MEM_SIZE: usize = 0x80000000; // 2gb?? for now
@@ -25,31 +26,75 @@ unsafe fn turn_on_floating_point() {
     );
 }
 
+use acpi::{AcpiHandler, AcpiTables, PhysicalMapping};
+use core::ptr::NonNull;
+
+#[derive(Copy, Clone)]
+struct FranciumACPIHandler {}
+impl AcpiHandler for FranciumACPIHandler {
+    unsafe fn map_physical_region<T>(
+        &self,
+        physical_address: usize,
+        size: usize,
+    ) -> PhysicalMapping<Self, T> {
+        PhysicalMapping::new(
+            physical_address,
+            NonNull::new(crate::mmu::phys_to_virt(PhysAddr(physical_address)) as *mut T).unwrap(),
+            size,
+            size,
+            *self,
+        )
+    }
+
+    fn unmap_physical_region<T>(_region: &PhysicalMapping<Self, T>) {}
+}
+
 lazy_static! {
     pub static ref DEFAULT_UART: Mutex<COMPort> = Mutex::new(COMPort::new(0x3f8));
     pub static ref DEFAULT_TIMER: Mutex<PIT> = Mutex::new(PIT::new());
     
-    pub static ref INTERRUPT_CONTROLLER: Mutex<PIC> = Mutex::new(PIC::new());
-    pub static ref INTERRUPT_DISTRIBUTOR: Mutex<PICDist> = Mutex::new(PICDist::new());
+    //pub static ref INTERRUPT_CONTROLLER: Mutex<PIC> = Mutex::new(PIC::new());
+    //pub static ref INTERRUPT_DISTRIBUTOR: Mutex<PICDist> = Mutex::new(PICDist::new());
 
-    //pub static ref INTERRUPT_CONTROLLER: Mutex<LocalApic> = Mutex::new(LocalApic::new(crate::constants::PERIPHERAL_BASE + 0xFEE00000));
-    //pub static ref INTERRUPT_DISTRIBUTOR: Mutex<IoApic> = Mutex::new(IoApic::new());
+    pub static ref INTERRUPT_CONTROLLER: Mutex<LocalApic> = {
+        if let acpi::platform::interrupt::InterruptModel::Apic(apic_model) = &PLATFORM_INFO.interrupt_model {
+            Mutex::new(LocalApic::new(crate::constants::PERIPHERAL_BASE + apic_model.local_apic_address as usize))
+        } else {
+            panic!("No apic?");
+        }
+    };
+
+    pub static ref INTERRUPT_DISTRIBUTOR: Mutex<IoApic> = {
+        if let acpi::platform::interrupt::InterruptModel::Apic(apic_model) = &PLATFORM_INFO.interrupt_model {
+            assert!(apic_model.io_apics.len() == 1);
+            Mutex::new(IoApic::new(crate::constants::PERIPHERAL_BASE + apic_model.io_apics[0].address as usize))
+        } else {
+            panic!("No apic?");
+        }
+    };
+
+    pub static ref PLATFORM_INFO: acpi::PlatformInfo<'static, alloc::alloc::Global> = {
+        let rsdp_addr = unsafe {
+            crate::arch::x86_64::info::SYSTEM_INFO_RSDP_ADDR.unwrap()
+        };
+
+        let handler = FranciumACPIHandler {};
+        let tables = unsafe { AcpiTables::from_rsdp(handler, rsdp_addr as usize).unwrap() };
+        acpi::platform::PlatformInfo::new_in(&tables, &alloc::alloc::Global).unwrap()
+    };
 }
 
 pub fn platform_specific_init() {}
 
 pub fn scheduler_pre_init() {
     // enable timer irq
-    let timer_irq = 0; // PIC on IRQ 0!
+    let timer_irq = 2; // PIC on IRQ 2...
 
     let mut controller_lock = INTERRUPT_CONTROLLER.lock();
     let mut distributor_lock = INTERRUPT_DISTRIBUTOR.lock();
     controller_lock.init();
     distributor_lock.init();
     distributor_lock.enable_interrupt(timer_irq);
-
-    // Enable IRQ2 so cascading works later.
-    distributor_lock.enable_interrupt(2);
 
     // enable arch timer, 100hz
     let mut timer_lock = DEFAULT_TIMER.lock();

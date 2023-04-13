@@ -223,7 +223,6 @@ pub extern "C" fn rust_lower_el_aarch64_irq(_ctx: &mut ExceptionContext) {
                     timer_lock.reset_timer();
                 }
                 _ => {
-                    // Handle? Somehow?
                     INTERRUPT_DISTRIBUTOR.lock().disable_interrupt(interrupt);
                     crate::svc::event::dispatch_interrupt_event(interrupt as usize);
                 }

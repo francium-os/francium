@@ -25,6 +25,7 @@ francium_mmu = { path = "../crates/francium_mmu" }
 
 [target.'cfg(target_arch = "x86_64")'.dependencies]
 francium_x86 = { path = "../crates/francium_x86" }
+acpi = { git = "https://github.com/rust-osdev/acpi.git", branch = "main" }
 
 [target.'cfg(target_arch = "aarch64")'.dependencies]
 francium_aarch64 = { path = "../crates/francium_aarch64" }

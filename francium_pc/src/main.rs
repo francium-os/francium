@@ -35,29 +35,6 @@ fn bootloader_main_thunk(info: &'static mut bootloader_api::BootInfo) -> ! {
     bootloader_main(info);
 }
 
-use acpi::{AcpiHandler, AcpiTables, PhysicalMapping};
-use core::ptr::NonNull;
-
-#[derive(Copy, Clone)]
-struct FranciumACPIHandler {}
-impl AcpiHandler for FranciumACPIHandler {
-    unsafe fn map_physical_region<T>(
-        &self,
-        physical_address: usize,
-        size: usize,
-    ) -> PhysicalMapping<Self, T> {
-        PhysicalMapping::new(
-            physical_address,
-            NonNull::new(mmu::phys_to_virt(PhysAddr(physical_address)) as *mut T).unwrap(),
-            size,
-            size,
-            *self,
-        )
-    }
-
-    fn unmap_physical_region<T>(_region: &PhysicalMapping<Self, T>) {}
-}
-
 fn bootloader_main(info: &'static mut bootloader_api::BootInfo) -> ! {
     platform::platform_specific_init();
     let rsdp_addr = info.rsdp_addr.into_option().unwrap();
@@ -97,12 +74,6 @@ fn bootloader_main(info: &'static mut bootloader_api::BootInfo) -> ! {
     }
 
     log_sink::init().unwrap();
-
-    let handler = FranciumACPIHandler {};
-    let tables = unsafe { AcpiTables::from_rsdp(handler, rsdp_addr as usize).unwrap() };
-
-    let plat = acpi::platform::PlatformInfo::new_in(&tables, &alloc::alloc::Global).unwrap();
-    println!("{:?}", plat);
 
     platform::scheduler_pre_init();
     scheduler::init();

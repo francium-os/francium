@@ -1,6 +1,6 @@
 use crate::arch::{aarch64, arch_timer::ArchTimer};
 use crate::constants::*;
-use crate::drivers::bcm_interrupt::BCMInterrupt;
+use crate::drivers::bcm_interrupt::*;
 use crate::drivers::pl011_uart::Pl011Uart;
 use crate::drivers::{InterruptController, Timer};
 use francium_common::types::PhysAddr;

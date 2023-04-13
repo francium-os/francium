@@ -312,14 +312,13 @@ unsafe extern "C" fn handle_exception(
         32..=39 => {
             // IRQ0-7
             let irq_number = interrupt_number - 32;
-
             if irq_number == 7 {
                 println!("Spurious IRQ?");
                 // todo spurious irq handling
-            } else if irq_number == 0 {
+            } else if irq_number == 2 {
                 // handle Timer specially
                 {
-                    INTERRUPT_CONTROLLER.lock().ack_interrupt(0);
+                    INTERRUPT_CONTROLLER.lock().ack_interrupt(2);
                 }
 
                 {

@@ -48,7 +48,6 @@ pub static INTERRUPT_EVENT_TABLE: Mutex<[Option<Arc<Event>>; 128]> = Mutex::new(
 
 pub fn dispatch_interrupt_event(index: usize) {
     if let Some(ev) = &INTERRUPT_EVENT_TABLE.lock()[index] {
-        //debug!("Signalling interrupt event for {}", index);
         ev.w.signal_one();
     }
 }
