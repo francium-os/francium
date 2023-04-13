@@ -14,7 +14,7 @@ pub struct GICv2Cpu {
 const GICD_CTLR: usize = 0;
 const GICD_ISENABLER: usize = 0x100;
 const GICD_ICENABLER: usize = 0x180;
-const GICD_ICPENDR: usize = 0x280;
+//const GICD_ICPENDR: usize = 0x280;
 const GICD_ICFGR: usize = 0xC00;
 
 // CPU interface Controller

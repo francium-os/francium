@@ -1,4 +1,5 @@
-use crate::InterruptController;
+use crate::{InterruptController, InterruptDistributor};
+use log::debug;
 
 pub struct BCMGlobalInterrupt {
     base_address: usize,
@@ -109,6 +110,33 @@ impl InterruptController for BCMGlobalInterrupt {
     }
 }
 
+
+impl InterruptDistributor for BCMGlobalInterrupt {
+    fn init(&mut self) {}
+
+    fn enable_interrupt(&mut self, n: u32) {
+        if n < 32 {
+            unsafe {
+                self.write_enable_1(1 << n);
+            }
+        } else {
+            unsafe {
+                self.write_enable_2(1 << (n - 32));
+            }
+        }
+    }
+
+    fn disable_interrupt(&mut self, n: u32) {
+        if n < 32 {
+            unsafe {
+                self.write_disable_1(1 << n);
+            }
+        } else {
+            unsafe { self.write_disable_2(1 << (n - 32)) }
+        }
+    }
+}
+
 pub struct BCMLocalInterrupt {
     base_address: usize
 }
@@ -140,15 +168,37 @@ Address: 0x4000_0068 Core2 interrupt source
 Address: 0x4000_006C Core3 interrupt source
 */
 
+impl InterruptDistributor for BCMLocalInterrupt {
+    fn init(&mut self) {}
+
+    fn enable_interrupt(&mut self, n: u32) {
+        unsafe {
+            debug!("Enable! {}",n);
+            let val = ((self.base_address + 0x40) as *mut u32).read_volatile();
+            ((self.base_address + 0x40) as *mut u32).write_volatile(val | (1<<n));
+        }
+    }
+
+    fn disable_interrupt(&mut self, n: u32) {
+        unsafe {
+            let val = ((self.base_address + 0x40) as *mut u32).read_volatile();
+            ((self.base_address + 0x40) as *mut u32).write_volatile(val & !(1<<n));
+        }
+    }
+}
+
+
 impl InterruptController for BCMLocalInterrupt {
     fn init(&mut self) {}
 
-    fn ack_interrupt(&mut self, n: u32) {
-        unimplemented!();
+    fn ack_interrupt(&mut self, _n: u32) {
+        // This is done by the pending read I think
     }
 
     const NUM_PENDING: u32 = 1;
-    fn read_pending(&self, i: u32) -> u32 {
-        unimplemented!();
+    fn read_pending(&self, _i: u32) -> u32 {
+        unsafe {
+            ((self.base_address + 0x60) as *mut u32).read_volatile()
+        }
     }
 }

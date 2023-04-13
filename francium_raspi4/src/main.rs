@@ -1,7 +1,6 @@
 #![no_std]
 #![no_main]
 
-use francium_common::types::PhysAddr;
 use francium_kernel::constants::*;
 use francium_kernel::memory::KERNEL_ADDRESS_SPACE;
 use francium_kernel::mmu::PagePermission;
