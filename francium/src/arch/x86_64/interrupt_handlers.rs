@@ -1,7 +1,7 @@
 use crate::arch::context::ExceptionContext;
 use crate::drivers::InterruptController;
 use crate::drivers::Timer;
-use crate::platform::DEFAULT_INTERRUPT;
+use crate::platform::INTERRUPT_CONTROLLER;
 use crate::platform::DEFAULT_TIMER;
 use core::arch::{asm, global_asm};
 
@@ -319,7 +319,7 @@ unsafe extern "C" fn handle_exception(
             } else if irq_number == 0 {
                 // handle Timer specially
                 {
-                    DEFAULT_INTERRUPT.lock().ack_interrupt(0);
+                    INTERRUPT_CONTROLLER.lock().ack_interrupt(0);
                 }
 
                 {
@@ -332,7 +332,7 @@ unsafe extern "C" fn handle_exception(
                 // pog
                 {
                     crate::svc::event::dispatch_interrupt_event(irq_number as usize);
-                    DEFAULT_INTERRUPT.lock().ack_interrupt(irq_number as u32);
+                    INTERRUPT_CONTROLLER.lock().ack_interrupt(irq_number as u32);
                 }
             }
         }
@@ -346,7 +346,7 @@ unsafe extern "C" fn handle_exception(
                 // pog
                 {
                     crate::svc::event::dispatch_interrupt_event(irq_number as usize);
-                    DEFAULT_INTERRUPT.lock().ack_interrupt(irq_number as u32);
+                    INTERRUPT_CONTROLLER.lock().ack_interrupt(irq_number as u32);
                 }
             }
         }

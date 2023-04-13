@@ -1,6 +1,6 @@
-use crate::drivers::InterruptController;
+use crate::drivers::InterruptDistributor;
 use crate::handle::HandleObject;
-use crate::platform::DEFAULT_INTERRUPT;
+use crate::platform::INTERRUPT_DISTRIBUTOR;
 use crate::scheduler;
 use crate::waitable::{Waitable, Waiter};
 use alloc::sync::Arc;
@@ -62,7 +62,7 @@ pub fn svc_bind_interrupt(h: u32, index: usize) -> ResultCode {
         if let None = lock[index] {
             ev.interrupt.store(index as u32, Ordering::Release);
             lock[index] = Some(ev);
-            DEFAULT_INTERRUPT.lock().enable_interrupt(index as u32);
+            INTERRUPT_DISTRIBUTOR.lock().enable_interrupt(index as u32);
 
             RESULT_OK
         } else {
@@ -81,7 +81,7 @@ pub fn svc_unbind_interrupt(h: u32, index: usize) -> ResultCode {
         let mut lock = INTERRUPT_EVENT_TABLE.lock();
         if let Some(_x) = &lock[index] {
             lock[index] = None;
-            DEFAULT_INTERRUPT.lock().disable_interrupt(index as u32);
+            INTERRUPT_DISTRIBUTOR.lock().disable_interrupt(index as u32);
         } else {
             return ResultCode::new(Module::Kernel, Reason::Unknown);
         }

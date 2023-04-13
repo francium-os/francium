@@ -1,12 +1,12 @@
 use crate::InterruptController;
 
-pub struct BCMInterrupt {
+pub struct BCMGlobalInterrupt {
     base_address: usize,
 }
 
-impl BCMInterrupt {
-    pub fn new(base_address: usize) -> BCMInterrupt {
-        BCMInterrupt {
+impl BCMGlobalInterrupt {
+    pub fn new(base_address: usize) -> BCMGlobalInterrupt {
+        BCMGlobalInterrupt {
             base_address: base_address,
         }
     }
@@ -62,10 +62,10 @@ impl BCMInterrupt {
     }
 }
 
-impl InterruptController for BCMInterrupt {
+impl InterruptController for BCMGlobalInterrupt {
     fn init(&mut self) {}
 
-    fn enable_interrupt(&mut self, n: u32) {
+    /*fn enable_interrupt(&mut self, n: u32) {
         if n < 32 {
             unsafe {
                 self.write_enable_1(1 << n);
@@ -85,7 +85,7 @@ impl InterruptController for BCMInterrupt {
         } else {
             unsafe { self.write_disable_2(1 << (n - 32)) }
         }
-    }
+    }*/
 
     fn ack_interrupt(&mut self, n: u32) {
         if n < 32 {
@@ -106,5 +106,49 @@ impl InterruptController for BCMInterrupt {
         } else {
             0
         }
+    }
+}
+
+pub struct BCMLocalInterrupt {
+    base_address: usize
+}
+
+impl BCMLocalInterrupt {
+    pub fn new(base_address: usize) -> BCMLocalInterrupt {
+        BCMLocalInterrupt {
+            base_address: base_address,
+        }
+    }
+}
+
+/*
+Address: 0x4000_0040 Core 0 Timers interrupt control
+Address: 0x4000_0044 Core 1 Timers interrupt control
+Address: 0x4000_0048 Core 2 Timers interrupt control
+Address: 0x4000_004C Core 3 Timers interrupt control
+
+Address: 0x4000_0050 Core0 Mailboxes interrupt control
+Address: 0x4000_0054 Core1 Mailboxes interrupt control
+Address: 0x4000_0058 Core2 Mailboxes interrupt control
+Address: 0x4000_005C Core3 Mailboxes interrupt control
+
+Pending registers:
+
+Address: 0x4000_0060 Core0 interrupt source
+Address: 0x4000_0064 Core1 interrupt source
+Address: 0x4000_0068 Core2 interrupt source
+Address: 0x4000_006C Core3 interrupt source
+*/
+
+impl InterruptController for BCMLocalInterrupt {
+    fn init(&mut self) {}
+
+    fn ack_interrupt(&mut self, n: u32) {
+        unimplemented!();
+    }
+
+    const NUM_PENDING: u32 = 1;
+    fn read_pending(&self, i: u32) -> u32 {
+        unimplemented!();
     }
 }

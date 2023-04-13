@@ -1,8 +1,8 @@
 use super::context::ExceptionContext;
 use crate::arch::aarch64::svc_wrappers;
-use crate::drivers::InterruptController;
+use crate::drivers::{InterruptController, InterruptDistributor};
 use crate::drivers::Timer;
-use crate::platform::{DEFAULT_INTERRUPT, DEFAULT_TIMER};
+use crate::platform::{INTERRUPT_CONTROLLER, INTERRUPT_DISTRIBUTOR, DEFAULT_TIMER};
 use crate::timer;
 
 use aarch64_cpu::registers::*;
@@ -213,7 +213,7 @@ pub extern "C" fn rust_lower_el_aarch64_irq(_ctx: &mut ExceptionContext) {
     // for now, just ack timer
 
     {
-        let mut locked = DEFAULT_INTERRUPT.lock();
+        let mut locked = INTERRUPT_CONTROLLER.lock();
         while let Some(interrupt) = locked.next_pending() {
             // handle!
             match interrupt {
@@ -224,7 +224,7 @@ pub extern "C" fn rust_lower_el_aarch64_irq(_ctx: &mut ExceptionContext) {
                 }
                 _ => {
                     // Handle? Somehow?
-                    locked.disable_interrupt(interrupt);
+                    INTERRUPT_DISTRIBUTOR.lock().disable_interrupt(interrupt);
                     crate::svc::event::dispatch_interrupt_event(interrupt as usize);
                 }
             }

@@ -19,7 +19,7 @@ lazy_static! {
         115200,
         48000000
     ));
-    pub static ref DEFAULT_INTERRUPT: Mutex<GICv2> =
+    pub static ref INTERRUPT_CONTROLLER: Mutex<GICv2> =
         Mutex::new(GICv2::new(RPI_GICD_BASE, RPI_GICC_BASE));
     pub static ref DEFAULT_TIMER: Mutex<ArchTimer> = Mutex::new(ArchTimer::new());
 }
@@ -86,7 +86,7 @@ pub fn platform_specific_init() {
 pub fn scheduler_pre_init() {
     // enable GIC
     let timer_irq = 16 + 14; // ARCH_TIMER_NS_EL1_IRQ + 16 because "lol no u"
-    let mut gic_lock = DEFAULT_INTERRUPT.lock();
+    let mut gic_lock = INTERRUPT_CONTROLLER.lock();
     gic_lock.init();
     gic_lock.enable_interrupt(timer_irq);
 

@@ -1,5 +1,7 @@
 use core::arch::asm;
 
+const IA32_APIC_BASE: u32 = 0x1b;
+
 const IA32_EFER: u32 = 0xc0000080;
 const IA32_STAR: u32 = 0xc0000081;
 const IA32_LSTAR: u32 = 0xc0000082;
@@ -61,3 +63,12 @@ pub unsafe fn read_fs_base() -> usize {
 pub unsafe fn write_fs_base(fs_base: usize) {
     write_msr(IA32_FS_BASE, fs_base)
 }
+
+pub unsafe fn read_apic_base() -> usize {
+    read_msr(IA32_APIC_BASE)
+}
+
+pub unsafe fn write_apic_base(apic_base: usize) {
+    write_msr(IA32_APIC_BASE, apic_base)
+}
+

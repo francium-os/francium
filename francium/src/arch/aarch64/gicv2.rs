@@ -1,7 +1,10 @@
-use crate::drivers::InterruptController;
+use crate::drivers::{InterruptController, InterruptDistributor};
 
-pub struct GICv2 {
+pub struct GICv2Dist {
     gicd_base: usize,
+}
+
+pub struct GICv2Cpu {
     gicc_base: usize,
 }
 
@@ -26,11 +29,10 @@ const GICD_ICENABLER_SIZE: u32 = 32;
 //const GICD_ICPENDR_SIZE: u32 = 32;
 const GICD_ICFGR_SIZE: u32 = 16;
 
-impl GICv2 {
-    pub fn new(gicd_base: usize, gicc_base: usize) -> GICv2 {
-        GICv2 {
-            gicd_base: gicd_base,
-            gicc_base: gicc_base,
+impl GICv2Dist {
+    pub fn new(gicd_base: usize) -> GICv2Dist {
+        GICv2Dist {
+            gicd_base: gicd_base
         }
     }
 
@@ -49,12 +51,18 @@ impl GICv2 {
     }
 }
 
-impl InterruptController for GICv2 {
+impl GICv2Cpu {
+    pub fn new(gicc_base: usize) -> GICv2Cpu {
+        GICv2Cpu {
+            gicc_base: gicc_base,
+        }
+    }
+}
+
+impl InterruptDistributor for GICv2Dist {
     fn init(&mut self) {
         unsafe {
             ((self.gicd_base + GICD_CTLR) as *mut u32).write_volatile(1);
-            ((self.gicc_base + GICC_CTLR) as *mut u32).write_volatile(1);
-            ((self.gicc_base + GICC_PMR) as *mut u32).write_volatile(0xff);
 
             // HACK: Virt PCIe interrupts are level triggered
             self.set_config(35, true);
@@ -79,26 +87,26 @@ impl InterruptController for GICv2 {
                 .write_volatile(1 << (interrupt % GICD_ICENABLER_SIZE));
         }
     }
+}
+
+impl InterruptController for GICv2Cpu {
+    fn init(&mut self) {
+        unsafe {
+            ((self.gicc_base + GICC_CTLR) as *mut u32).write_volatile(1);
+            ((self.gicc_base + GICC_PMR) as *mut u32).write_volatile(0xff);
+        }
+    }
 
     fn ack_interrupt(&mut self, interrupt: u32) {
         unsafe {
-            /*((self.gicd_base + GICD_ICPENDR) as *mut u32)
-            .add((interrupt / GICD_ICPENDR_SIZE) as usize)
-            .write_volatile(1 << (interrupt % GICD_ICPENDR_SIZE));*/
-
             ((self.gicc_base + GICC_EOIR) as *mut u32).write_volatile(interrupt)
         }
     }
 
     // TODO: Correct value?
-    const NUM_PENDING: u32 = 2;
+    const NUM_PENDING: u32 = 1;
     fn read_pending(&self, i: u32) -> u32 {
-        let bits = unsafe {
-            ((self.gicd_base + GICD_ICPENDR) as *mut u32)
-                .add(i as usize)
-                .read_volatile()
-        };
-        bits
+        0
     }
 
     fn next_pending(&self) -> Option<u32> {

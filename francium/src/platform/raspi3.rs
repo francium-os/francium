@@ -17,7 +17,7 @@ lazy_static! {
         115200,
         48000000
     ));
-    pub static ref DEFAULT_INTERRUPT: Mutex<BCMInterrupt> =
+    pub static ref INTERRUPT_CONTROLLER: Mutex<BCMInterrupt> =
         Mutex::new(BCMInterrupt::new(RPI_PERIPHERAL_BASE + 0xb000));
     pub static ref DEFAULT_TIMER: Mutex<ArchTimer> = Mutex::new(ArchTimer::new());
 }
@@ -84,7 +84,7 @@ pub fn platform_specific_init() {
 pub fn scheduler_pre_init() {
     // enable interrupts
     let timer_irq = 16 + 14; // ARCH_TIMER_NS_EL1_IRQ + 16
-    let mut intr_lock = DEFAULT_INTERRUPT.lock();
+    let mut intr_lock = INTERRUPT_CONTROLLER.lock();
     intr_lock.init();
     intr_lock.enable_interrupt(timer_irq);
 

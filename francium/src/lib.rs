@@ -1,5 +1,6 @@
 #![no_std]
 #![feature(naked_functions)]
+#![feature(once_cell)]
 
 extern crate alloc;
 

@@ -502,6 +502,8 @@ version = "0.1.0"
 dependencies = [
  "francium_common",
  "francium_x86",
+ "log",
+ "tock-registers",
 ]
 
 [[package]]

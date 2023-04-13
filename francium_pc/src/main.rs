@@ -102,7 +102,7 @@ fn bootloader_main(info: &'static mut bootloader_api::BootInfo) -> ! {
     let tables = unsafe { AcpiTables::from_rsdp(handler, rsdp_addr as usize).unwrap() };
 
     let plat = acpi::platform::PlatformInfo::new_in(&tables, &alloc::alloc::Global).unwrap();
-    println!("{:?}", plat.interrupt_model);
+    println!("{:?}", plat);
 
     platform::scheduler_pre_init();
     scheduler::init();

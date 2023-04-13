@@ -1,4 +1,4 @@
-use crate::InterruptController;
+use crate::{InterruptController, InterruptDistributor};
 use francium_x86::io_port::{inb, io_wait, outb};
 
 const PIC1_COMMAND: u16 = 0x20;
@@ -32,6 +32,14 @@ pub struct PIC {}
 impl PIC {
     pub fn new() -> PIC {
         PIC {}
+    }
+}
+
+pub struct PICDist {}
+
+impl PICDist {
+    pub fn new() -> PICDist {
+        PICDist {}
     }
 }
 
@@ -69,6 +77,19 @@ impl InterruptController for PIC {
         outb(PIC2_DATA, a2);
     }
 
+    fn ack_interrupt(&mut self, n: u32) {
+        pic_send_eoi(n as u8);
+    }
+
+    const NUM_PENDING: u32 = 1;
+    fn read_pending(&self, _n: u32) -> u32 {
+        0
+    }
+}
+
+impl InterruptDistributor for PICDist {
+    fn init(&mut self) {}
+
     fn enable_interrupt(&mut self, n: u32) {
         if n < 8 {
             outb(PIC1_DATA, inb(PIC1_DATA) & !(1 << n));
@@ -85,12 +106,28 @@ impl InterruptController for PIC {
         }
     }
 
-    fn ack_interrupt(&mut self, n: u32) {
-        pic_send_eoi(n as u8);
-    }
+}
 
-    const NUM_PENDING: u32 = 1;
-    fn read_pending(&self, _n: u32) -> u32 {
-        0
-    }
+pub fn disable_pic() {
+    outb(PIC1_COMMAND, ICW1_INIT | ICW1_ICW4); // starts the initialization sequence (in cascade mode)
+    io_wait();
+    outb(PIC2_COMMAND, ICW1_INIT | ICW1_ICW4);
+    io_wait();
+    outb(PIC1_DATA, 32); // ICW2: Master PIC vector offset
+    io_wait();
+    outb(PIC2_DATA, 32 + 8); // ICW2: Slave PIC vector offset
+    io_wait();
+    outb(PIC1_DATA, 4); // ICW3: tell Master PIC that there is a slave PIC at IRQ2 (0000 0100)
+    io_wait();
+    outb(PIC2_DATA, 2); // ICW3: tell Slave PIC its cascade identity (0000 0010)
+    io_wait();
+
+    outb(PIC1_DATA, ICW4_8086);
+    io_wait();
+    outb(PIC2_DATA, ICW4_8086);
+    io_wait();
+
+    // Mask all interrupts.
+    outb(PIC1_DATA, 0xff);
+    outb(PIC2_DATA, 0xff);
 }

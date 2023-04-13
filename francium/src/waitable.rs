@@ -3,7 +3,7 @@ use crate::process::Thread;
 use crate::scheduler;
 use alloc::sync::Arc;
 use core::sync::atomic::{AtomicBool, Ordering};
-use francium_drivers::InterruptController;
+use francium_drivers::InterruptDistributor;
 use smallvec::SmallVec;
 use spin::Mutex;
 
@@ -165,7 +165,7 @@ pub fn wait_handles(handles: &[u32]) -> usize {
                 // going into an event wait
                 let interrupt_id = event.interrupt.load(Ordering::Acquire);
                 if interrupt_id != 0 {
-                    crate::platform::DEFAULT_INTERRUPT
+                    crate::platform::INTERRUPT_DISTRIBUTOR
                         .lock()
                         .enable_interrupt(interrupt_id);
                 }

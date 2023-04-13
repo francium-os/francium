@@ -1,9 +1,9 @@
 #![no_std]
 
+// ie gic core, local apic
 pub trait InterruptController {
     fn init(&mut self);
-    fn enable_interrupt(&mut self, n: u32);
-    fn disable_interrupt(&mut self, n: u32);
+
     fn ack_interrupt(&mut self, n: u32);
 
     const NUM_PENDING: u32;
@@ -19,6 +19,14 @@ pub trait InterruptController {
 
         None
     }
+}
+
+// ie gic distributor, IOAPIC
+pub trait InterruptDistributor {
+    fn init(&mut self);
+    fn enable_interrupt(&mut self, n: u32);
+    fn disable_interrupt(&mut self, n: u32);
+    // TODO: setup core affinity
 }
 
 pub trait Timer {
@@ -52,6 +60,11 @@ pub trait SerialPort {
 pub mod pc_uart;
 #[cfg(target_arch = "x86_64")]
 pub mod pic_interrupt_controller;
+#[cfg(target_arch = "x86_64")]
+pub mod pc_local_apic;
+#[cfg(target_arch = "x86_64")]
+pub mod pc_io_apic;
+
 #[cfg(target_arch = "x86_64")]
 pub mod pit_timer;
 pub mod pl011_uart;
