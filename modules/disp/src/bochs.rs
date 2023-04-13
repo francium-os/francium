@@ -11,7 +11,7 @@ pub struct BochsAdapter {
     current_y: usize,
 }
 
-//const VBE_DISPI_INDEX_ID: usize = 0;
+const VBE_DISPI_INDEX_ID: usize = 0;
 const VBE_DISPI_INDEX_XRES: usize = 1;
 const VBE_DISPI_INDEX_YRES: usize = 2;
 const VBE_DISPI_INDEX_BPP: usize = 3;
@@ -49,12 +49,14 @@ impl BochsAdapter {
         )
         .unwrap();
 
-        Some(BochsAdapter {
+        let adapter = BochsAdapter {
             framebuffer_virt: fb_virt,
             io_virt: io_virt,
             current_x: 0,
             current_y: 0,
-        })
+        };
+        assert!(adapter.bochs_io_read(VBE_DISPI_INDEX_ID) == 0xb0c5);
+        Some(adapter)
     }
 
     fn bochs_io_read(&self, index: usize) -> u16 {
