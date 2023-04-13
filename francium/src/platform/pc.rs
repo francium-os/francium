@@ -42,14 +42,14 @@ pub fn scheduler_pre_init() {
     // enable timer irq
     let timer_irq = 0; // PIC on IRQ 0!
 
-    let mut picc_lock = INTERRUPT_CONTROLLER.lock();
-    let mut picd_lock = INTERRUPT_DISTRIBUTOR.lock();
-    picc_lock.init();
-    picd_lock.init();
-    picd_lock.enable_interrupt(timer_irq);
+    let mut controller_lock = INTERRUPT_CONTROLLER.lock();
+    let mut distributor_lock = INTERRUPT_DISTRIBUTOR.lock();
+    controller_lock.init();
+    distributor_lock.init();
+    distributor_lock.enable_interrupt(timer_irq);
 
     // Enable IRQ2 so cascading works later.
-    picd_lock.enable_interrupt(2);
+    distributor_lock.enable_interrupt(2);
 
     // enable arch timer, 100hz
     let mut timer_lock = DEFAULT_TIMER.lock();
