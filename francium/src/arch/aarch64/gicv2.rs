@@ -105,7 +105,7 @@ impl InterruptController for GICv2Cpu {
 
     // TODO: Correct value?
     const NUM_PENDING: u32 = 1;
-    fn read_pending(&self, i: u32) -> u32 {
+    fn read_pending(&self, _i: u32) -> u32 {
         0
     }
 

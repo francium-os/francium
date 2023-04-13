@@ -4,7 +4,6 @@
 
 extern crate alloc;
 
-use francium_common::types::PhysAddr;
 use francium_kernel::constants::*;
 use francium_kernel::memory::KERNEL_ADDRESS_SPACE;
 use francium_kernel::mmu::PagePermission;
@@ -37,10 +36,8 @@ fn bootloader_main_thunk(info: &'static mut bootloader_api::BootInfo) -> ! {
 
 fn bootloader_main(info: &'static mut bootloader_api::BootInfo) -> ! {
     platform::platform_specific_init();
-    let rsdp_addr = info.rsdp_addr.into_option().unwrap();
 
     for m in info.memory_regions.iter() {
-        println!("{:x?}", m);
         if m.kind == bootloader_api::info::MemoryRegionKind::Usable {
             println!("using {:?} for memory", m);
             init::setup_physical_allocator(m.start as usize, m.end as usize);

@@ -1,6 +1,5 @@
 // I can't use tock_registers here. Because Intel is very smart. Thanks, Intel.
 use crate::InterruptDistributor;
-use log::debug;
 
 const IOAPIC_REDIR_TABLE: u32 = 0x10;
 
@@ -32,9 +31,8 @@ impl InterruptDistributor for IoApic {
 	fn enable_interrupt(&mut self, n: u32) {
 		unsafe {
 			let idx = IOAPIC_REDIR_TABLE + 2*n;
-
 			let lower = self.read_register(idx);
-			let upper = self.read_register(idx + 1);
+			//let upper = self.read_register(idx + 1);
 
 			let new_value = (lower & !0x100ff) | (0x20 + n);
 			self.write_register(idx, new_value);
@@ -46,7 +44,7 @@ impl InterruptDistributor for IoApic {
 			let idx = IOAPIC_REDIR_TABLE + 2*n;
 
 			let lower = self.read_register(idx);
-			let upper = self.read_register(idx + 1);
+			//let upper = self.read_register(idx + 1);
 			let new_value = lower | 0x10000;
 			self.write_register(idx, new_value);
 		}

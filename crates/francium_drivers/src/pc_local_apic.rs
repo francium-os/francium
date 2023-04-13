@@ -114,14 +114,13 @@ impl InterruptController for LocalApic {
 		self.regs.spurious_interrupt_vector.set(0x1ff);
 	}
 
-	fn ack_interrupt(&mut self, n: u32) {
+	fn ack_interrupt(&mut self, _n: u32) {
 		self.regs.end_of_interrupt.set(0);
 	}
 
 	const NUM_PENDING: u32 = 1;
-	fn read_pending(&self, i: u32) -> u32 {
+	fn read_pending(&self, _i: u32) -> u32 {
 		// We can take this shortcut, because x86 has IRQ numbers.
-		//unimplemented!();
 		0
 	}
 }

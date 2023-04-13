@@ -1,7 +1,7 @@
 use common::os_error::{ResultCode, RESULT_OK};
 use common::system_info::*;
 
-pub fn svc_get_system_info(ty: SystemInfoType, index: usize, out_ptr: *mut SystemInfo) -> ResultCode {
+pub fn svc_get_system_info(ty: SystemInfoType, _index: usize, out_ptr: *mut SystemInfo) -> ResultCode {
     match ty {
         SystemInfoType::Platform => {
             #[cfg(feature = "platform_pc")]

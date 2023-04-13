@@ -1,9 +1,8 @@
-use crate::arch::{aarch64, arch_timer::ArchTimer};
+use crate::arch::{arch_timer::ArchTimer};
 use crate::constants::*;
 use crate::drivers::bcm_interrupt::*;
 use crate::drivers::pl011_uart::Pl011Uart;
 use crate::drivers::{InterruptController, InterruptDistributor, Timer};
-use francium_common::types::PhysAddr;
 use spin::Mutex;
 
 // TODO: we need multiple interrupt controllers to do this properly
