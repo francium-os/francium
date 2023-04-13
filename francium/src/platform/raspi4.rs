@@ -1,7 +1,7 @@
-use crate::arch::{aarch64, arch_timer::ArchTimer, gicv2::GICv2};
+use crate::arch::{aarch64, arch_timer::ArchTimer, gicv2::*};
 use crate::constants::*;
 use crate::drivers::pl011_uart::Pl011Uart;
-use crate::drivers::{InterruptController, Timer};
+use crate::drivers::{InterruptController, InterruptDistributor, Timer};
 use francium_common::types::PhysAddr;
 use spin::Mutex;
 
@@ -19,8 +19,10 @@ lazy_static! {
         115200,
         48000000
     ));
-    pub static ref INTERRUPT_CONTROLLER: Mutex<GICv2> =
-        Mutex::new(GICv2::new(RPI_GICD_BASE, RPI_GICC_BASE));
+
+    pub static ref INTERRUPT_CONTROLLER: Mutex<GICv2Cpu> = Mutex::new(GICv2Cpu::new(RPI_GICC_BASE));
+    pub static ref INTERRUPT_DISTRIBUTOR: Mutex<GICv2Dist> = Mutex::new(GICv2Dist::new(RPI_GICD_BASE));
+
     pub static ref DEFAULT_TIMER: Mutex<ArchTimer> = Mutex::new(ArchTimer::new());
 }
 
@@ -86,9 +88,12 @@ pub fn platform_specific_init() {
 pub fn scheduler_pre_init() {
     // enable GIC
     let timer_irq = 16 + 14; // ARCH_TIMER_NS_EL1_IRQ + 16 because "lol no u"
-    let mut gic_lock = INTERRUPT_CONTROLLER.lock();
-    gic_lock.init();
-    gic_lock.enable_interrupt(timer_irq);
+
+    let mut controller_lock = INTERRUPT_CONTROLLER.lock();
+    let mut distributor_lock = INTERRUPT_DISTRIBUTOR.lock();
+    controller_lock.init();
+    distributor_lock.init();
+    distributor_lock.enable_interrupt(timer_irq);
 
     // enable arch timer, 100hz
     let mut timer_lock = DEFAULT_TIMER.lock();
