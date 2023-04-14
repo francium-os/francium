@@ -1,8 +1,8 @@
-use crate::arch::{aarch64, arch_timer::ArchTimer, gicv2::*};
+use crate::arch::arch_timer::ArchTimer;
 use crate::constants::*;
+use crate::drivers::arm_gicv2::*;
 use crate::drivers::pl011_uart::Pl011Uart;
 use crate::drivers::{InterruptController, InterruptDistributor, Timer};
-use francium_common::types::PhysAddr;
 use spin::Mutex;
 
 pub const PHYS_MEM_BASE: usize = 0;
@@ -19,9 +19,9 @@ lazy_static! {
         115200,
         48000000
     ));
-    pub static ref INTERRUPT_CONTROLLER: Mutex<GICv2Cpu> = Mutex::new(GICv2Cpu::new(RPI_GICC_BASE));
-    pub static ref INTERRUPT_DISTRIBUTOR: Mutex<GICv2Dist> =
-        Mutex::new(GICv2Dist::new(RPI_GICD_BASE));
+    pub static ref INTERRUPT_CONTROLLER: Mutex<Gicv2Cpu> = Mutex::new(Gicv2Cpu::new(RPI_GICC_BASE));
+    pub static ref INTERRUPT_DISTRIBUTOR: Mutex<Gicv2Distributor> =
+        Mutex::new(Gicv2Distributor::new(RPI_GICD_BASE));
     pub static ref DEFAULT_TIMER: Mutex<ArchTimer> = Mutex::new(ArchTimer::new());
 }
 

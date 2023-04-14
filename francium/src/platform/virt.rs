@@ -1,5 +1,6 @@
-use crate::arch::{arch_timer::ArchTimer, gicv2::*};
+use crate::arch::arch_timer::ArchTimer;
 use crate::constants;
+use crate::drivers::arm_gicv2::*;
 use crate::drivers::pl011_uart::Pl011Uart;
 use crate::drivers::Timer;
 use crate::drivers::{InterruptController, InterruptDistributor};
@@ -11,8 +12,8 @@ const VIRT_GICC_BASE: usize = constants::PERIPHERAL_BASE + 0x08010000;
 lazy_static! {
     // Qemu doesn't care about the baud rate, but we give it one and a UART clock anyway.
     pub static ref DEFAULT_UART: Mutex<Pl011Uart> = Mutex::new(Pl011Uart::new(constants::PERIPHERAL_BASE + 0x09000000, 115200, 48000000));
-    pub static ref INTERRUPT_CONTROLLER: Mutex<GICv2Cpu> = Mutex::new(GICv2Cpu::new(VIRT_GICC_BASE));
-    pub static ref INTERRUPT_DISTRIBUTOR: Mutex<GICv2Dist> = Mutex::new(GICv2Dist::new(VIRT_GICD_BASE));
+    pub static ref INTERRUPT_CONTROLLER: Mutex<Gicv2Cpu> = Mutex::new(Gicv2Cpu::new(VIRT_GICC_BASE));
+    pub static ref INTERRUPT_DISTRIBUTOR: Mutex<Gicv2Distributor> = Mutex::new(Gicv2Distributor::new(VIRT_GICD_BASE));
     pub static ref DEFAULT_TIMER: Mutex<ArchTimer> = Mutex::new(ArchTimer::new());
 }
 

@@ -1,7 +1,6 @@
 pub mod arch_timer;
 pub mod cache;
 pub mod context;
-pub mod gicv2;
 pub mod interrupt;
 pub mod mmu;
 pub mod svc_wrappers;

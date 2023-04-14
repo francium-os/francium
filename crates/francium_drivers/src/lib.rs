@@ -69,6 +69,7 @@ pub mod pic_interrupt_controller;
 pub mod pit_timer;
 pub mod pl011_uart;
 
+pub mod arm_gicv2;
 pub mod bcm_interrupt;
 
 pub mod print;
