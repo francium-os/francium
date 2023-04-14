@@ -19,6 +19,8 @@ intrusive_adapter!(pub ThreadRunnableAdapter = Arc<Thread>: Thread { running_lin
 pub struct Scheduler {
     pub threads: LinkedList<ThreadAdapter>,
     pub runnable_threads: LinkedList<ThreadRunnableAdapter>,
+    
+    // XXX: PER CPU (ie remove from scheduler!)
     pub current_thread: Option<Arc<Thread>>,
     pub idle_thread: Option<Arc<Thread>>,
 }
@@ -33,12 +35,6 @@ extern "C" {
         from: usize,
         to: usize,
     ) -> usize;
-}
-
-#[cfg(target_arch = "x86_64")]
-extern "C" {
-    #[link_name = "current_thread_kernel_stack"]
-    static mut CURRENT_THREAD_KERNEL_STACK: usize;
 }
 
 #[no_mangle]
@@ -63,7 +59,7 @@ use crate::arch;
 
 #[cfg(target_arch = "x86_64")]
 pub unsafe fn set_current_thread_state(kernel_stack: usize, tls: usize) {
-    CURRENT_THREAD_KERNEL_STACK = kernel_stack;
+    crate::per_cpu::get().saved_kernel_stack = kernel_stack;
     arch::x86_64::gdt::TSS_STORAGE.rsp0 = kernel_stack as u64;
     arch::msr::write_fs_base(tls);
 }
@@ -167,6 +163,9 @@ impl Scheduler {
         // do the thing
         let this_thread = self.get_current_thread();
         let next = self.advance_to_next_thread();
+
+        println!("{:?}", self.runnable_threads);
+
         self.switch_thread(&this_thread, &next);
     }
 

@@ -2,8 +2,10 @@ use crate::arch::x86_64::svc_wrappers::SYSCALL_WRAPPERS;
 use core::arch::asm;
 #[naked]
 unsafe extern "C" fn syscall_handler() {
-    asm!("mov r9, rsp
-		mov rsp, [rip + current_thread_kernel_stack]
+    asm!("swapgs
+
+    	mov r9, rsp
+		mov rsp, gs:8
 
 		push r11
 		push rcx
@@ -34,6 +36,8 @@ unsafe extern "C" fn syscall_handler() {
 		pop rcx
 		pop r11
 		mov rsp, r9
+
+		swapgs
 
 		sysretq
 	",

@@ -11,6 +11,7 @@ extern crate lazy_static;
 pub mod print;
 
 pub mod constants;
+pub mod per_cpu;
 
 pub use francium_drivers as drivers;
 

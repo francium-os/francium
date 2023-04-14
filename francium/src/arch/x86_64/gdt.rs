@@ -23,6 +23,7 @@ static mut GDT_ENTRIES: [GDTEntry; 8] = [
     GDTEntry::null(),
 ];
 
+/* XXX PERCPU */
 pub static mut TSS_STORAGE: TSS = TSS {
     reserved_0: 0,
     rsp0: 0,

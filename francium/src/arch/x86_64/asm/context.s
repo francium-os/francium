@@ -32,6 +32,10 @@ mov r12, 0
 mov r13, 0
 mov r14, 0
 mov r15, 0
+
+// The new thread will swapgs on exit. Swap again.
+swapgs
+
 ret
 
 // As defined in interrupt.s

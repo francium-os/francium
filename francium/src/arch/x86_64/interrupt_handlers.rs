@@ -96,14 +96,19 @@ push rcx
 push rbx
 push rax
 
+swapgs
+
 // Reach back into the stack to grab the error code...
 mov rdi, rsp
 mov rsi, [rsp + 16*8]
 mov rdx, [rsp + 15*8]
 call handle_exception
 
+
+
 // falls through
 restore_exception_context:
+swapgs
 pop rax
 pop rbx
 pop rcx

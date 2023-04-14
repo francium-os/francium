@@ -27,6 +27,3 @@ interrupt_stack_guard:
 interrupt_stack_bottom:
 .space 0x1000
 interrupt_stack_top:
-
-current_thread_kernel_stack:
-.quad 0
