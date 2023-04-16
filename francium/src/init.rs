@@ -394,7 +394,7 @@ use crate::per_cpu::PerCpuData;
 static mut PER_CPU_SINGLE_CORE: PerCpuData = PerCpuData {
     per_cpu_ptr: 0,
     saved_kernel_stack: 0,
-    current_thread: None
+    current_thread: None,
 };
 
 pub fn setup_boot_per_cpu() {

@@ -25,7 +25,7 @@ register_structs! {
         (0x84 => _reserved4),
 
         (0x90 => arbitration_priority: ReadOnly<u32>),
-         (0x94 => _reserved5),
+        (0x94 => _reserved5),
 
         (0xa0 => processor_priority: ReadOnly<u32>),
         (0xa4 => _reserved6),

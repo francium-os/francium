@@ -3,8 +3,8 @@ pub mod cache;
 pub mod context;
 pub mod interrupt;
 pub mod mmu;
-pub mod svc_wrappers;
 pub mod per_cpu;
+pub mod svc_wrappers;
 
 pub use interrupt::enable_interrupts;
 pub use mmu::enable_mmu;

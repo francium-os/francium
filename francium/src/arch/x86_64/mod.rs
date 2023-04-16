@@ -4,9 +4,9 @@ pub mod idt;
 pub mod info;
 mod interrupt_handlers;
 pub mod mmu;
+pub mod per_cpu;
 mod svc_wrappers;
 pub mod syscall;
-pub mod per_cpu;
 
 use core::arch::global_asm;
 global_asm!(include_str!("asm/stack.s"));

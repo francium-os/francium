@@ -129,9 +129,8 @@ impl Scheduler {
 
     pub fn advance_to_next_thread(&mut self) -> Arc<Thread> {
         let mut cursor = unsafe {
-            self.runnable_threads.cursor_from_ptr(Arc::<Thread>::as_ptr(
-                &crate::per_cpu::get_current_thread(),
-            ))
+            self.runnable_threads
+                .cursor_from_ptr(Arc::<Thread>::as_ptr(&crate::per_cpu::get_current_thread()))
         };
         cursor.move_next();
         if cursor.is_null() {
@@ -159,8 +158,7 @@ impl Scheduler {
             } else {
                 Some(cursor.clone_pointer().unwrap())
             }
-        }
-        else {
+        } else {
             Some(self.advance_to_next_thread())
         };
 
@@ -175,7 +173,6 @@ impl Scheduler {
                 .state
                 .store(ThreadState::Suspended, Ordering::Release);
 
-            
             let current_thread = crate::per_cpu::get_current_thread();
             let current_id = current_thread.id;
 

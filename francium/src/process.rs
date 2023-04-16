@@ -6,8 +6,8 @@ use alloc::alloc::{alloc, Layout};
 use alloc::boxed::Box;
 use alloc::sync::Arc;
 use atomic_enum::atomic_enum;
-use core::sync::atomic::{AtomicUsize, AtomicBool};
 use core::sync::atomic::Ordering;
+use core::sync::atomic::{AtomicBool, AtomicUsize};
 use spin::Mutex;
 
 use intrusive_collections::intrusive_adapter;
@@ -35,7 +35,7 @@ pub struct Thread {
     pub kernel_stack_top: usize,
     pub kernel_stack_size: usize,
 
-    pub is_idle_thread: AtomicBool
+    pub is_idle_thread: AtomicBool,
 }
 
 intrusive_adapter!(pub ThreadProcessAdapter = Arc<Thread>: Thread { process_link: LinkedListAtomicLink });
@@ -78,7 +78,7 @@ impl Thread {
             process: process.clone(),
             kernel_stack_top: kernel_stack as *const usize as usize + kernel_stack_size,
             kernel_stack_size: kernel_stack_size,
-            is_idle_thread: AtomicBool::new(false)
+            is_idle_thread: AtomicBool::new(false),
         });
 
         process.lock().threads.push_back(thread.clone());

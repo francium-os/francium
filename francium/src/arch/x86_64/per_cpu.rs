@@ -1,5 +1,5 @@
-use core::arch::asm;
 use crate::arch::x86_64::msr;
+use core::arch::asm;
 
 pub unsafe fn setup_per_cpu(per_cpu_base: usize) {
     // We need this to be visible immediately.
