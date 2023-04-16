@@ -95,11 +95,7 @@ impl Scheduler {
         // TODO: see comment in wake, this kind of sucks
         if from.id == idle_thread.id {
             // We are switching off the idle thread. Suspend it.
-            let mut cursor = unsafe {
-                self.runnable_threads
-                    .cursor_mut_from_ptr(Arc::<Thread>::as_ptr(&idle_thread))
-            };
-            cursor.remove();
+
             idle_thread
                 .state
                 .store(ThreadState::Suspended, Ordering::Release);
@@ -162,11 +158,22 @@ impl Scheduler {
 
         // do the thing
         let this_thread = self.get_current_thread();
-        let next = self.advance_to_next_thread();
+        let next: Option<Arc<Thread>> = if this_thread.is_idle_thread.load(Ordering::Acquire) {
+            trace!("Runnable threads: {:?}", self.runnable_threads);
+            let cursor = self.runnable_threads.front();
+            if cursor.is_null() {
+                panic!("No more runnable threads!");
+            } else {
+                Some(cursor.clone_pointer().unwrap())
+            }
+        }
+        else {
+            Some(self.advance_to_next_thread())
+        };
 
-        println!("{:?}", self.runnable_threads);
-
-        self.switch_thread(&this_thread, &next);
+        if let Some(next_thread) = next {
+            self.switch_thread(&this_thread, &next_thread);
+        }
     }
 
     pub fn suspend(&mut self, thread: &Arc<Thread>) -> usize {
@@ -175,7 +182,7 @@ impl Scheduler {
                 .state
                 .store(ThreadState::Suspended, Ordering::Release);
 
-            // Safety: thread is runnable
+            
             let current_thread = self.get_current_thread();
             let current_id = current_thread.id;
 
@@ -185,6 +192,11 @@ impl Scheduler {
                 current_thread.process.lock().name
             );
 
+            if current_thread.is_idle_thread.load(Ordering::Acquire) {
+                panic!("Tried to suspend the idle thread");
+            }
+
+            // Safety: thread is runnable and not the idle thread
             let mut cursor = unsafe {
                 self.runnable_threads
                     .cursor_mut_from_ptr(Arc::<Thread>::as_ptr(&current_thread))
@@ -192,36 +204,20 @@ impl Scheduler {
 
             // Cursor now points to old thread
             cursor.remove();
-            if cursor.is_null() {
+            let next_thread = if cursor.is_null() {
                 cursor.move_next();
 
                 // If list is empty, it will still be on the null element.
                 if cursor.is_null() {
-                    trace!("Starting idle thread.");
-
-                    for t in self.threads.iter() {
-                        trace!("Thread: {:?}, {:?} {:?}", t, t.process.lock().name, t.state);
-                    }
-
-                    let idle_thread = self.idle_thread.as_ref().unwrap();
-                    // Get the idle thread running.
-                    if idle_thread.state.load(Ordering::Acquire) == ThreadState::Suspended {
-                        //self.wake(&self.idle_thread, 0xffffffffffffffff);
-                        idle_thread
-                            .state
-                            .store(ThreadState::Runnable, Ordering::Release);
-                        cursor.insert_after(idle_thread.clone());
-                        cursor.move_next();
-                    } else {
-                        // Huh?
-                        panic!("Out of threads!!!");
-                    }
+                    self.idle_thread.as_ref().unwrap().clone()
+                } else {
+                    cursor.as_cursor().clone_pointer().unwrap()
                 }
-            }
+            } else {
+                cursor.as_cursor().clone_pointer().unwrap()
+            };
 
-            let next_thread = cursor.as_cursor().clone_pointer().unwrap();
-
-            // If we got switched out, switch to the new current process.
+            // If we got switched out, switch to the new current thread.
             if current_id == thread.id {
                 return self.switch_thread(thread, &next_thread);
             }
@@ -259,6 +255,11 @@ impl Scheduler {
 
     pub fn terminate_current_thread(&mut self) {
         let current_thread = self.get_current_thread();
+
+        if current_thread.is_idle_thread.load(Ordering::Acquire) {
+            panic!("Tried to terminate the idle thread");
+        }
+
         // Safety: Current thread is a thread
         let mut cursor = unsafe {
             self.threads
@@ -297,9 +298,11 @@ pub fn init() {
 
     let idle_process = Arc::new(Mutex::new(Process::new("idle", aspace)));
     let idle_thread = Thread::new(idle_process);
+    idle_thread.is_idle_thread.store(true, Ordering::Release);
+
     idle_thread
         .state
-        .store(ThreadState::Suspended, Ordering::Release);
+        .store(ThreadState::Runnable, Ordering::Release);
 
     crate::init::setup_thread_context(
         &idle_thread,
