@@ -1,5 +1,6 @@
 use alloc::sync::Arc;
 use crate::process::Thread;
+use crate::arch;
 
 pub struct PerCpuData {
 	pub per_cpu_ptr: usize,
@@ -7,21 +8,14 @@ pub struct PerCpuData {
 	pub current_thread: Option<Arc<Thread>>
 }
 
-static mut PER_CPU_SINGLE_CORE: PerCpuData = PerCpuData {
-	per_cpu_ptr: 0,
-	saved_kernel_stack: 0,
-	current_thread: None
-};
-
 pub fn get() -> &'static mut PerCpuData {
-	// safety: Dude trust me it's ok
 	unsafe {
-		&mut PER_CPU_SINGLE_CORE
+		(arch::get_per_cpu_base() as *mut PerCpuData).as_mut().unwrap()
 	}
 }
 
 pub unsafe fn get_base() -> usize {
-	((&PER_CPU_SINGLE_CORE) as *const PerCpuData) as usize
+	arch::get_per_cpu_base()
 }
 
 pub fn get_current_thread() -> Arc<Thread> {

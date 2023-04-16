@@ -48,7 +48,7 @@ fn bootloader_main(info: &'static mut bootloader_api::BootInfo) -> ! {
     init::setup_virtual_memory();
     arch::gdt::setup_gdt();
     arch::idt::setup_idt();
-    arch::setup_per_cpu();
+    init::setup_boot_per_cpu();
     arch::syscall::setup_syscall();
 
     /* Be careful - bootloader memory mappings are clobbered when we switch. */

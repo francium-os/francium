@@ -4,9 +4,13 @@ pub mod context;
 pub mod interrupt;
 pub mod mmu;
 pub mod svc_wrappers;
+pub mod per_cpu;
 
 pub use interrupt::enable_interrupts;
 pub use mmu::enable_mmu;
+
+pub use per_cpu::get_per_cpu_base;
+pub use per_cpu::setup_per_cpu;
 
 use core::arch::global_asm;
 global_asm!(include_str!("asm/context.s"));

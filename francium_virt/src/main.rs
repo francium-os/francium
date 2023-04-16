@@ -15,6 +15,7 @@ pub extern "C" fn rust_main() -> ! {
 
     init::setup_physical_allocator(phys_mem_start, phys_mem_end);
     init::setup_virtual_memory();
+    init::setup_boot_per_cpu();
 
     println!("hello from rust before enabling mmu!");
     mmu::enable_mmu();
