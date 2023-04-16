@@ -19,9 +19,7 @@ intrusive_adapter!(pub ThreadRunnableAdapter = Arc<Thread>: Thread { running_lin
 pub struct Scheduler {
     pub threads: LinkedList<ThreadAdapter>,
     pub runnable_threads: LinkedList<ThreadRunnableAdapter>,
-    
-    // XXX: PER CPU (ie remove from scheduler!)
-    pub current_thread: Option<Arc<Thread>>,
+
     pub idle_thread: Option<Arc<Thread>>,
 }
 
@@ -69,17 +67,12 @@ impl Scheduler {
         Scheduler {
             threads: LinkedList::new(ThreadAdapter::new()),
             runnable_threads: LinkedList::new(ThreadRunnableAdapter::new()),
-            current_thread: None,
             idle_thread: None,
         }
     }
 
     fn set_idle_thread(&mut self, thread: Arc<Thread>) {
         self.idle_thread = Some(thread);
-    }
-
-    fn get_current_thread(&self) -> Arc<Thread> {
-        self.current_thread.as_ref().unwrap().clone()
     }
 
     fn switch_thread(&mut self, from: &Arc<Thread>, to: &Arc<Thread>) -> usize {
@@ -101,7 +94,7 @@ impl Scheduler {
                 .store(ThreadState::Suspended, Ordering::Release);
         }
 
-        self.current_thread = Some(to.clone());
+        crate::per_cpu::set_current_thread(to.clone());
 
         // TODO: wow, this sucks
         {
@@ -137,7 +130,7 @@ impl Scheduler {
     pub fn advance_to_next_thread(&mut self) -> Arc<Thread> {
         let mut cursor = unsafe {
             self.runnable_threads.cursor_from_ptr(Arc::<Thread>::as_ptr(
-                &self.current_thread.as_ref().unwrap(),
+                &crate::per_cpu::get_current_thread(),
             ))
         };
         cursor.move_next();
@@ -146,7 +139,7 @@ impl Scheduler {
         }
 
         let new_thread = cursor.clone_pointer().unwrap();
-        self.current_thread = Some(new_thread.clone());
+        crate::per_cpu::set_current_thread(new_thread.clone());
         new_thread
     }
 
@@ -157,7 +150,7 @@ impl Scheduler {
         }
 
         // do the thing
-        let this_thread = self.get_current_thread();
+        let this_thread = crate::per_cpu::get_current_thread();
         let next: Option<Arc<Thread>> = if this_thread.is_idle_thread.load(Ordering::Acquire) {
             trace!("Runnable threads: {:?}", self.runnable_threads);
             let cursor = self.runnable_threads.front();
@@ -183,7 +176,7 @@ impl Scheduler {
                 .store(ThreadState::Suspended, Ordering::Release);
 
             
-            let current_thread = self.get_current_thread();
+            let current_thread = crate::per_cpu::get_current_thread();
             let current_id = current_thread.id;
 
             trace!(
@@ -254,7 +247,7 @@ impl Scheduler {
     }
 
     pub fn terminate_current_thread(&mut self) {
-        let current_thread = self.get_current_thread();
+        let current_thread = crate::per_cpu::get_current_thread();
 
         if current_thread.is_idle_thread.load(Ordering::Acquire) {
             panic!("Tried to terminate the idle thread");
@@ -329,8 +322,7 @@ pub fn register_thread(thread: Arc<Thread>) {
 }
 
 pub fn get_current_thread() -> Arc<Thread> {
-    let sched = SCHEDULER.lock();
-    sched.get_current_thread()
+    crate::per_cpu::get_current_thread()
 }
 
 pub fn get_current_process() -> Arc<Mutex<Process>> {
@@ -344,7 +336,7 @@ pub fn suspend_process(p: Arc<Thread>) {
 
 pub fn suspend_current_thread() -> usize {
     let mut sched = SCHEDULER.lock();
-    let curr = sched.get_current_thread();
+    let curr = crate::per_cpu::get_current_thread();
 
     return sched.suspend(&curr);
 }
@@ -361,7 +353,7 @@ pub fn terminate_current_thread() {
 
 pub fn terminate_current_process() {
     let mut sched = SCHEDULER.lock();
-    let current_thread = sched.get_current_thread();
+    let current_thread = crate::per_cpu::get_current_thread();
     let current_process = current_thread.process.clone();
     let process = current_process.lock();
 
@@ -387,7 +379,7 @@ pub fn force_switch_to(thread: Arc<Thread>) {
         thread.state.store(ThreadState::Runnable, Ordering::Release);
         let mut sched = SCHEDULER.lock();
         // TODO: assert in runnable?
-        sched.current_thread = Some(thread.clone());
+        crate::per_cpu::set_current_thread(thread.clone());
     }
 
     thread.process.lock().use_pages();

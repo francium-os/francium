@@ -23,3 +23,11 @@ pub fn get() -> &'static mut PerCpuData {
 pub unsafe fn get_base() -> usize {
 	((&PER_CPU_SINGLE_CORE) as *const PerCpuData) as usize
 }
+
+pub fn get_current_thread() -> Arc<Thread> {
+	get().current_thread.as_ref().unwrap().clone()
+}
+
+pub fn set_current_thread(a: Arc<Thread>) {
+	get().current_thread = Some(a);
+}
