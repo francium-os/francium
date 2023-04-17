@@ -4,6 +4,7 @@ struct GDTR {
     base: u64,
 }
 
+#[derive(Default)]
 #[repr(C, packed)]
 pub struct GDTEntry {
     limit_low: u16,
@@ -14,6 +15,7 @@ pub struct GDTEntry {
     base_high: u8,
 }
 
+#[derive(Default)]
 #[repr(C, packed)]
 pub struct TSS {
     pub reserved_0: u32,
@@ -27,16 +29,32 @@ pub struct TSS {
     pub iomap_base: u16,
 }
 
+impl TSS {
+    pub const DEFAULT: TSS = TSS {
+        reserved_0: 0,
+        rsp0: 0,
+        rsp1: 0,
+        rsp2: 0,
+        reserved_1: 0,
+        ist: [0; 7],
+        reserved_2: 0,
+        reserved_3: 0,
+        iomap_base: 104,
+    };
+}
+
 impl GDTEntry {
+    pub const DEFAULT: GDTEntry = GDTEntry {
+        limit_low: 0,
+        base_low: 0,
+        base_middle: 0,
+        access: 0,
+        flags_limit: 0,
+        base_high: 0,
+    };
+
     pub const fn null() -> GDTEntry {
-        GDTEntry {
-            limit_low: 0,
-            base_low: 0,
-            base_middle: 0,
-            access: 0,
-            flags_limit: 0,
-            base_high: 0,
-        }
+        GDTEntry::DEFAULT
     }
 
     pub const fn new(base: u32, limit: u32, access: u8, long_mode: bool) -> GDTEntry {

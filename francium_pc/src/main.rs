@@ -46,9 +46,10 @@ fn bootloader_main(info: &'static mut bootloader_api::BootInfo) -> ! {
 
     println!("hello from rust before setting up anything!");
     init::setup_virtual_memory();
+    init::setup_boot_per_cpu();
+
     arch::gdt::setup_gdt();
     arch::idt::setup_idt();
-    init::setup_boot_per_cpu();
     arch::syscall::setup_syscall();
 
     /* Be careful - bootloader memory mappings are clobbered when we switch. */

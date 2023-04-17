@@ -20,7 +20,7 @@ pub struct Block {
 
 pub struct AddressSpace {
     pub page_table: &'static mut PageTable,
-    page_table_phys: PhysAddr,
+    pub page_table_phys: PhysAddr,
     pub regions: SmallVec<[Block; 4]>,
 }
 

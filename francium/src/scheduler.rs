@@ -58,7 +58,7 @@ use crate::arch;
 #[cfg(target_arch = "x86_64")]
 pub unsafe fn set_current_thread_state(kernel_stack: usize, tls: usize) {
     crate::per_cpu::get().saved_kernel_stack = kernel_stack;
-    arch::x86_64::gdt::TSS_STORAGE.rsp0 = kernel_stack as u64;
+    crate::per_cpu::get().tss.rsp0 = kernel_stack as u64;
     arch::msr::write_fs_base(tls);
 }
 

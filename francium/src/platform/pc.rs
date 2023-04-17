@@ -122,6 +122,16 @@ extern "C" {
     static mut AP_TRAMPOLINE_END: u8;
 }
 
+use crate::mmu::PageTable;
+use francium_common::types::{PagePermission, MapType};
+lazy_static! {
+    static ref TRAMPOLINE_PAGETABLE: PageTable = {
+        let mut pg = crate::KERNEL_ADDRESS_SPACE.read().page_table.user_process();
+        pg.map_4k(PhysAddr(0x8000), 0x8000, PagePermission::KERNEL_RWX, MapType::NormalCachable);
+        pg
+    };
+}
+
 pub fn bringup_other_cpus() {
     let mut lapic = INTERRUPT_CONTROLLER.lock();
 
@@ -143,6 +153,10 @@ pub fn bringup_other_cpus() {
             trampoline_ptr as *mut u8,
             ap_trampoline_end - ap_trampoline_start,
         );
+
+        let kernel = crate::KERNEL_ADDRESS_SPACE.read();
+        let cr3_phys = kernel.page_table.virt_to_phys(&*TRAMPOLINE_PAGETABLE as *const PageTable as usize).unwrap();
+        ((trampoline_ptr + 0x18) as *mut usize).write_volatile(cr3_phys.0);
     }
     // Flush caches?
 

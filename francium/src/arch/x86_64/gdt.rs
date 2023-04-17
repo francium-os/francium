@@ -1,6 +1,7 @@
 use francium_x86::gdt::*;
+use crate::per_cpu;
 
-static mut GDT_ENTRIES: [GDTEntry; 8] = [
+const GDT_ENTRIES: [GDTEntry; 8] = [
     // 0x0
     GDTEntry::null(),
     // 0x08 - Kernel code
@@ -23,19 +24,6 @@ static mut GDT_ENTRIES: [GDTEntry; 8] = [
     GDTEntry::null(),
 ];
 
-/* XXX PERCPU */
-pub static mut TSS_STORAGE: TSS = TSS {
-    reserved_0: 0,
-    rsp0: 0,
-    rsp1: 0,
-    rsp2: 0,
-    reserved_1: 0,
-    ist: [0; 7],
-    reserved_2: 0,
-    reserved_3: 0,
-    iomap_base: 104,
-};
-
 extern "C" {
     static interrupt_stack_top: i32;
 }
@@ -43,25 +31,30 @@ extern "C" {
 pub fn setup_gdt() {
     unsafe {
         // setup tss
-        let tss_location = &TSS_STORAGE as *const TSS as usize;
+
+        per_cpu::get().gdt = GDT_ENTRIES;
+        let gdt = &mut per_cpu::get().gdt;
+
+        let tss = &mut per_cpu::get().tss;
+        let tss_location = tss as *const TSS as usize;
         let limit = core::mem::size_of::<TSS>() - 1;
 
-        GDT_ENTRIES[6] = GDTEntry::new_tss_low(tss_location, limit);
-        GDT_ENTRIES[7] = GDTEntry::new_tss_high(tss_location, limit);
+        gdt[6] = GDTEntry::new_tss_low(tss_location, limit);
+        gdt[7] = GDTEntry::new_tss_high(tss_location, limit);
 
-        francium_x86::gdt::use_gdt(&GDT_ENTRIES);
+        francium_x86::gdt::use_gdt(gdt);
         core::arch::asm!("mov ax, 0x33; ltr ax");
 
-        TSS_STORAGE.rsp0 = &interrupt_stack_top as *const i32 as u64;
-        TSS_STORAGE.rsp1 = 0xaaaaaaaaaaaaaaaa;
-        TSS_STORAGE.rsp2 = 0xaaaaaaaaaaaaaaaa;
+        tss.rsp0 = &interrupt_stack_top as *const i32 as u64;
+        tss.rsp1 = 0xaaaaaaaaaaaaaaaa;
+        tss.rsp2 = 0xaaaaaaaaaaaaaaaa;
 
-        TSS_STORAGE.ist[0] = 0xaaaaaaaaaaaaaaaa;
-        TSS_STORAGE.ist[1] = 0xaaaaaaaaaaaaaaaa;
-        TSS_STORAGE.ist[2] = 0xaaaaaaaaaaaaaaaa;
-        TSS_STORAGE.ist[3] = 0xaaaaaaaaaaaaaaaa;
-        TSS_STORAGE.ist[4] = 0xaaaaaaaaaaaaaaaa;
-        TSS_STORAGE.ist[5] = 0xaaaaaaaaaaaaaaaa;
-        TSS_STORAGE.ist[6] = 0xaaaaaaaaaaaaaaaa;
+        tss.ist[0] = 0xaaaaaaaaaaaaaaaa;
+        tss.ist[1] = 0xaaaaaaaaaaaaaaaa;
+        tss.ist[2] = 0xaaaaaaaaaaaaaaaa;
+        tss.ist[3] = 0xaaaaaaaaaaaaaaaa;
+        tss.ist[4] = 0xaaaaaaaaaaaaaaaa;
+        tss.ist[5] = 0xaaaaaaaaaaaaaaaa;
+        tss.ist[6] = 0xaaaaaaaaaaaaaaaa;
     }
 }

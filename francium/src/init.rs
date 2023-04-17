@@ -391,16 +391,22 @@ pub fn setup_virtual_memory() {
 }
 
 use crate::per_cpu::PerCpuData;
+use francium_x86::gdt::*;
+
 static mut PER_CPU_SINGLE_CORE: PerCpuData = PerCpuData {
     per_cpu_ptr: 0,
     saved_kernel_stack: 0,
     current_thread: None,
+    #[cfg(target_arch = "x86_64")]
+    gdt: [GDTEntry::DEFAULT; 8],
+    tss: TSS::DEFAULT
 };
 
 pub fn setup_boot_per_cpu() {
     unsafe {
         let per_cpu_ptr = &PER_CPU_SINGLE_CORE as *const PerCpuData as usize;
         PER_CPU_SINGLE_CORE.per_cpu_ptr = per_cpu_ptr;
+
         crate::arch::setup_per_cpu(per_cpu_ptr);
     }
 }
