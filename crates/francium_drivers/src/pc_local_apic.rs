@@ -49,7 +49,7 @@ register_structs! {
         (0x180 => trigger_mode: [PaddedRegister; 8]),
         (0x200 => interrupt_request: [PaddedRegister; 8]),
 
-        (0x280 => error_status: ReadOnly<u32>),
+        (0x280 => error_status: ReadWrite<u32>),
         (0x284 => _reserved15),
 
         (0x2f0 => corrected_machine_check: ReadWrite<u32>),
@@ -94,6 +94,15 @@ impl LocalApic {
         LocalApic {
             regs: unsafe { (base_address_virt as *mut LocalApicRegs).as_mut().unwrap() },
         }
+    }
+
+    pub fn send_init_sipi(&mut self, core_id: u32) {
+        self.regs.error_status.set(0);
+
+        // Send a SIPI, and wait for it to be delivered.
+        self.regs.interrupt_command_upper.set((core_id as u32) << 24);
+        self.regs.interrupt_command.set(0x0000_0608);
+        while (self.regs.interrupt_command.get() & (1<<12)) == (1<<12) { core::hint::spin_loop(); }
     }
 }
 

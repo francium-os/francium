@@ -374,8 +374,6 @@ extern "C" {
 pub fn force_switch_to(thread: Arc<Thread>) {
     {
         thread.state.store(ThreadState::Runnable, Ordering::Release);
-        let mut sched = SCHEDULER.lock();
-        // TODO: assert in runnable?
         crate::per_cpu::set_current_thread(thread.clone());
     }
 

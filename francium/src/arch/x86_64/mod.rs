@@ -12,6 +12,7 @@ use core::arch::global_asm;
 global_asm!(include_str!("asm/stack.s"));
 global_asm!(include_str!("asm/context.s"));
 global_asm!(include_str!("asm/scheduler.s"));
+global_asm!(include_str!("asm/trampoline.s"), options(att_syntax));
 
 pub use per_cpu::get_per_cpu_base;
 pub use per_cpu::setup_per_cpu;

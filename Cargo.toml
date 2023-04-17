@@ -26,9 +26,10 @@ panic = "abort"
 
 [profile.release]
 panic = "abort"
-debug = true
+debug = false
 overflow-checks = true
 opt-level = 3
+strip = "debuginfo"
 
 [patch.crates-io]
 libc = { git = "https://github.com/francium-os/rust-libc.git", branch = "francium-mlibc" }
