@@ -2,7 +2,10 @@
 .global ap_trampoline_end
 
 // this code will be relocated to 0x8000, sets up environment for calling a C function
-    .code16
+
+.align 64
+
+.code16
 ap_trampoline:
     cli
     cld

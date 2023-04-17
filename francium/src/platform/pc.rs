@@ -1,15 +1,15 @@
 use crate::arch::msr;
-use crate::mmu;
 use crate::drivers::pc_io_apic::IoApic;
 use crate::drivers::pc_local_apic::LocalApic;
 use crate::drivers::pc_uart::COMPort;
 use crate::drivers::pit_timer::PIT;
 use crate::drivers::Timer;
 use crate::drivers::{InterruptController, InterruptDistributor};
+use crate::mmu;
+use acpi::platform::ProcessorState::WaitingForSipi;
 use core::arch::asm;
 use francium_common::types::PhysAddr;
 use spin::Mutex;
-use acpi::platform::ProcessorState::WaitingForSipi;
 
 pub const PHYS_MEM_BASE: usize = 0;
 pub const PHYS_MEM_SIZE: usize = 0x80000000; // 2gb?? for now
@@ -132,16 +132,26 @@ pub fn bringup_other_cpus() {
         let ap_trampoline_start = ap_trampoline as *const u8 as usize;
         let ap_trampoline_end = &AP_TRAMPOLINE_END as *const u8 as usize;
 
-        println!("{:x?} {:x}", trampoline_ptr, ap_trampoline_end - ap_trampoline_start);
-    
-        core::ptr::copy_nonoverlapping(ap_trampoline_start as *const u8, trampoline_ptr as *mut u8, ap_trampoline_end - ap_trampoline_start);
+        println!(
+            "{:x?} {:x}",
+            trampoline_ptr,
+            ap_trampoline_end - ap_trampoline_start
+        );
+
+        core::ptr::copy_nonoverlapping(
+            ap_trampoline_start as *const u8,
+            trampoline_ptr as *mut u8,
+            ap_trampoline_end - ap_trampoline_start,
+        );
     }
     // Flush caches?
-    
+
     let processor_info = PLATFORM_INFO.processor_info.as_ref().unwrap();
     for ap in processor_info.application_processors.iter() {
         println!("{:?}", ap);
         assert!(ap.state == WaitingForSipi);
-        lapic.send_init_sipi(ap.local_apic_id);
+        // Bochs wants an init IPI first.
+        lapic.send_init_ipi(ap.local_apic_id);
+        lapic.send_sipi(ap.local_apic_id);
     }
 }

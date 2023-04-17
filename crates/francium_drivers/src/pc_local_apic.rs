@@ -96,13 +96,39 @@ impl LocalApic {
         }
     }
 
-    pub fn send_init_sipi(&mut self, core_id: u32) {
+    pub fn send_sipi(&mut self, core_id: u32) {
         self.regs.error_status.set(0);
 
         // Send a SIPI, and wait for it to be delivered.
-        self.regs.interrupt_command_upper.set((core_id as u32) << 24);
+        self.regs
+            .interrupt_command_upper
+            .set((core_id as u32) << 24);
         self.regs.interrupt_command.set(0x0000_0608);
-        while (self.regs.interrupt_command.get() & (1<<12)) == (1<<12) { core::hint::spin_loop(); }
+        while (self.regs.interrupt_command.get() & (1 << 12)) == (1 << 12) {
+            core::hint::spin_loop();
+        }
+    }
+
+    pub fn send_init_ipi(&mut self, core_id: u32) {
+        self.regs.error_status.set(0);
+
+        // Send an INIT IPI, and wait for it to be delivered.
+        self.regs
+            .interrupt_command_upper
+            .set((core_id as u32) << 24);
+        self.regs.interrupt_command.set(0x0000_c500);
+        while (self.regs.interrupt_command.get() & (1 << 12)) == (1 << 12) {
+            core::hint::spin_loop();
+        }
+
+        // De-assert the IPI
+        self.regs
+            .interrupt_command_upper
+            .set((core_id as u32) << 24);
+        self.regs.interrupt_command.set(0x0000_8500);
+        while (self.regs.interrupt_command.get() & (1 << 12)) == (1 << 12) {
+            core::hint::spin_loop();
+        }
     }
 }
 

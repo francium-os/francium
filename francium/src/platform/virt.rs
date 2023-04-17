@@ -44,8 +44,7 @@ pub fn scheduler_post_init() {
     DEFAULT_TIMER.lock().enable_timer();
 }
 
-pub fn bringup_other_cpus() {
-}
+pub fn bringup_other_cpus() {}
 
 use core::arch::global_asm;
 global_asm!(include_str!("../arch/aarch64/asm/stub_virt.s"));
