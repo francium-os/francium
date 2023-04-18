@@ -392,6 +392,7 @@ pub fn setup_virtual_memory() {
 }
 
 use crate::per_cpu::PerCpuData;
+#[cfg(target_arch = "x86_64")]
 use francium_x86::gdt::*;
 
 static mut PER_CPU_SINGLE_CORE: PerCpuData = PerCpuData {

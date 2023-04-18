@@ -108,3 +108,7 @@ pub fn bringup_other_cpus() {}
 
 use core::arch::global_asm;
 global_asm!(include_str!("../arch/aarch64/asm/stub_raspi4.s"));
+
+pub fn get_cpu_count() -> usize {
+    1
+}
