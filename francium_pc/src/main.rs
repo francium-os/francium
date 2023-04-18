@@ -1,6 +1,7 @@
 #![no_std]
 #![no_main]
 #![feature(allocator_api)]
+#![feature(naked_functions)]
 
 extern crate alloc;
 
@@ -8,6 +9,7 @@ use francium_kernel::constants::*;
 use francium_kernel::memory::KERNEL_ADDRESS_SPACE;
 use francium_kernel::mmu::PagePermission;
 use francium_kernel::*;
+use francium_kernel::arch::x86_64;
 
 extern "C" {
     fn switch_stacks();
@@ -55,7 +57,7 @@ fn bootloader_main(info: &'static mut bootloader_api::BootInfo) -> ! {
     /* Be careful - bootloader memory mappings are clobbered when we switch. */
     unsafe {
         //FRAMEBUFFER = info.framebuffer;
-        francium_kernel::arch::x86_64::info::SYSTEM_INFO_RSDP_ADDR = info.rsdp_addr.into_option();
+        x86_64::info::SYSTEM_INFO_RSDP_ADDR = info.rsdp_addr.into_option();
     }
 
     println!("hello from rust before enabling mmu!");
@@ -75,7 +77,7 @@ fn bootloader_main(info: &'static mut bootloader_api::BootInfo) -> ! {
     log_sink::init().unwrap();
 
     platform::scheduler_pre_init();
-    scheduler::init();
+    scheduler::init(platform::get_cpu_count());
 
     platform::bringup_other_cpus();
 
@@ -94,18 +96,40 @@ fn bootloader_main(info: &'static mut bootloader_api::BootInfo) -> ! {
     let sm_main_thread = init::load_process(sm_buf, "sm");
     scheduler::register_thread(sm_main_thread.clone());
 
-    /*let pcie_main_thread = init::load_process(pcie_buf, "pcie");
+    /*
+    let pcie_main_thread = init::load_process(pcie_buf, "pcie");
     scheduler::register_thread(pcie_main_thread.clone());
 
     let disp_main_thread = init::load_process(disp_buf, "disp");
-    scheduler::register_thread(disp_main_thread.clone());*/
+    scheduler::register_thread(disp_main_thread.clone());
+    */
 
     platform::scheduler_post_init();
 
     println!("Running...");
 
     scheduler::force_switch_to(fs_main_thread);
-    println!("We shouldn't get here, ever!!");
+    panic!("We shouldn't get here!");
+}
 
-    loop {}
+#[naked]
+#[no_mangle]
+unsafe extern "C" fn ap_entry_trampoline() {
+    core::arch::asm!("mov rbx, [rip + __ap_stack_pointers]
+        mov rsp, [rbx + rdi * 8]
+        jmp ap_entry", options(noreturn));
+}
+
+#[no_mangle]
+extern "C" fn ap_entry(cpu_number: usize) {
+    println!("Hello from an AP! ({})", cpu_number);
+    platform::scheduler_post_init();
+    x86_64::syscall::setup_syscall();
+    init::setup_ap_per_cpu(cpu_number);
+    x86_64::gdt::setup_gdt();
+
+    let idle_thread = per_cpu::get().idle_thread.as_ref().unwrap().clone();
+    println!("AP going idle...");
+    scheduler::force_switch_to(idle_thread);
+    panic!("We shouldn't get here.");
 }

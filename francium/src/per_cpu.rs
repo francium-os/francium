@@ -17,6 +17,7 @@ pub struct PerCpuData {
     #[cfg(target_arch = "x86_64")]
     pub tss: TSS,
     pub current_thread: Option<Arc<Thread>>,
+    pub idle_thread: Option<Arc<Thread>>
 }
 
 const _: () = assert!(core::mem::size_of::<PerCpuData>() <= 0x1000);

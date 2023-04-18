@@ -1,3 +1,5 @@
+use alloc::alloc::{Layout, alloc_zeroed};
+use alloc::vec::Vec;
 use crate::arch::msr;
 use crate::drivers::pc_io_apic::IoApic;
 use crate::drivers::pc_local_apic::LocalApic;
@@ -120,7 +122,10 @@ extern "C" {
     fn ap_trampoline();
     #[link_name = "ap_trampoline_end"]
     static mut AP_TRAMPOLINE_END: u8;
+    #[link_name = "__ap_stack_pointers"]
+    static mut AP_STACK_POINTERS: *mut usize;
 }
+static mut AP_BOOTSTRAP_STACKS: Vec<usize> = Vec::new();
 
 use crate::mmu::PageTable;
 use francium_common::types::{PagePermission, MapType};
@@ -142,12 +147,6 @@ pub fn bringup_other_cpus() {
         let ap_trampoline_start = ap_trampoline as *const u8 as usize;
         let ap_trampoline_end = &AP_TRAMPOLINE_END as *const u8 as usize;
 
-        println!(
-            "{:x?} {:x}",
-            trampoline_ptr,
-            ap_trampoline_end - ap_trampoline_start
-        );
-
         core::ptr::copy_nonoverlapping(
             ap_trampoline_start as *const u8,
             trampoline_ptr as *mut u8,
@@ -158,9 +157,26 @@ pub fn bringup_other_cpus() {
         let cr3_phys = kernel.page_table.virt_to_phys(&*TRAMPOLINE_PAGETABLE as *const PageTable as usize).unwrap();
         ((trampoline_ptr + 0x18) as *mut usize).write_volatile(cr3_phys.0);
     }
-    // Flush caches?
+    
+    // TODO: Flush caches? maybe.
 
     let processor_info = PLATFORM_INFO.processor_info.as_ref().unwrap();
+
+    unsafe {
+        AP_BOOTSTRAP_STACKS.push(0);
+    }
+
+    for _ in processor_info.application_processors.iter() {
+        unsafe {
+            let cpu_stack = alloc_zeroed(Layout::from_size_align(0x1000, 64).unwrap()) as usize + 0x1000;
+            AP_BOOTSTRAP_STACKS.push(cpu_stack);
+        }
+    }
+
+    unsafe {
+        AP_STACK_POINTERS = AP_BOOTSTRAP_STACKS.as_mut_ptr();
+    }
+    
     for ap in processor_info.application_processors.iter() {
         println!("{:?}", ap);
         assert!(ap.state == WaitingForSipi);
@@ -168,4 +184,9 @@ pub fn bringup_other_cpus() {
         lapic.send_init_ipi(ap.local_apic_id);
         lapic.send_sipi(ap.local_apic_id);
     }
+}
+
+pub fn get_cpu_count() -> usize {
+    let processor_info = PLATFORM_INFO.processor_info.as_ref().unwrap();
+    processor_info.application_processors.len() + 1
 }

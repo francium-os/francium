@@ -9,18 +9,15 @@ use crate::process::{Process, Thread, ThreadState};
 use intrusive_collections::intrusive_adapter;
 use intrusive_collections::{LinkedList, LinkedListAtomicLink};
 
+use alloc::vec::Vec;
 use log::trace;
 
 intrusive_adapter!(pub ThreadAdapter = Arc<Thread>: Thread { all_threads_link: LinkedListAtomicLink });
 intrusive_adapter!(pub ThreadRunnableAdapter = Arc<Thread>: Thread { running_link: LinkedListAtomicLink });
 
-// TODO: idle_thread is an option because constructing an Arc needs the heap up.
-
 pub struct Scheduler {
     pub threads: LinkedList<ThreadAdapter>,
-    pub runnable_threads: LinkedList<ThreadRunnableAdapter>,
-
-    pub idle_thread: Option<Arc<Thread>>,
+    pub runnable_threads: LinkedList<ThreadRunnableAdapter>
 }
 
 lazy_static! {
@@ -67,12 +64,7 @@ impl Scheduler {
         Scheduler {
             threads: LinkedList::new(ThreadAdapter::new()),
             runnable_threads: LinkedList::new(ThreadRunnableAdapter::new()),
-            idle_thread: None,
         }
-    }
-
-    fn set_idle_thread(&mut self, thread: Arc<Thread>) {
-        self.idle_thread = Some(thread);
     }
 
     fn switch_thread(&mut self, from: &Arc<Thread>, to: &Arc<Thread>) -> usize {
@@ -84,10 +76,10 @@ impl Scheduler {
             return 0;
         }
 
-        let idle_thread = self.idle_thread.as_ref().unwrap();
+        let idle_thread = crate::per_cpu::get().idle_thread.as_ref().unwrap();
         // TODO: see comment in wake, this kind of sucks
         if from.id == idle_thread.id {
-            // We are switching off the idle thread. Suspend it.
+            // We are switching off an idle thread. Suspend it.
 
             idle_thread
                 .state
@@ -183,10 +175,10 @@ impl Scheduler {
             );
 
             if current_thread.is_idle_thread.load(Ordering::Acquire) {
-                panic!("Tried to suspend the idle thread");
+                panic!("Tried to suspend an idle thread");
             }
 
-            // Safety: thread is runnable and not the idle thread
+            // Safety: thread is runnable and not an idle thread
             let mut cursor = unsafe {
                 self.runnable_threads
                     .cursor_mut_from_ptr(Arc::<Thread>::as_ptr(&current_thread))
@@ -199,7 +191,7 @@ impl Scheduler {
 
                 // If list is empty, it will still be on the null element.
                 if cursor.is_null() {
-                    self.idle_thread.as_ref().unwrap().clone()
+                    crate::per_cpu::get().idle_thread.as_ref().unwrap().clone()
                 } else {
                     cursor.as_cursor().clone_pointer().unwrap()
                 }
@@ -234,7 +226,7 @@ impl Scheduler {
             set_thread_context_tag(thread, tag);
             self.runnable_threads.push_back(thread.clone());
 
-            // TODO: I tried to add an optimization to immediately suspend the idle thread if its running.
+            // TODO: I tried to add an optimization to immediately suspend an idle thread if its running.
             // but calling switch_thread in wake breaks things pretty badly
             // self.switch_thread(&self.get_current_thread(), thread);
         } else {
@@ -247,7 +239,7 @@ impl Scheduler {
         let current_thread = crate::per_cpu::get_current_thread();
 
         if current_thread.is_idle_thread.load(Ordering::Acquire) {
-            panic!("Tried to terminate the idle thread");
+            panic!("Tried to terminate an idle thread");
         }
 
         // Safety: Current thread is a thread
@@ -275,8 +267,10 @@ unsafe extern "C" fn idle_thread_func() {
     core::arch::asm!("2: hlt; jmp 2b", options(noreturn));
 }
 
-// Set up the idle thread.
-pub fn init() {
+static mut IDLE_THREADS: Vec<Arc<Thread>> = Vec::new();
+
+// Set up the idle threads.
+pub fn init(num_cpus: usize) {
     use crate::memory::AddressSpace;
     use crate::KERNEL_ADDRESS_SPACE;
 
@@ -286,23 +280,43 @@ pub fn init() {
         AddressSpace::new(page_table_root.user_process())
     };
 
+    // TODO: We create an idle thread per core, due to needing a kernel stack. This is a massive hack because there's no thread pinning or anything.
+
     let idle_process = Arc::new(Mutex::new(Process::new("idle", aspace)));
-    let idle_thread = Thread::new(idle_process);
-    idle_thread.is_idle_thread.store(true, Ordering::Release);
+    
+    let mut thread_list = Vec::new();
 
-    idle_thread
-        .state
-        .store(ThreadState::Runnable, Ordering::Release);
+    for _ in 0..num_cpus {
+        let idle_thread = Thread::new(idle_process.clone());
+        idle_thread.is_idle_thread.store(true, Ordering::Release);
 
-    crate::init::setup_thread_context(
-        &idle_thread,
-        idle_thread_func as usize,
-        idle_thread.kernel_stack_top,
-        true,
-    );
+        idle_thread
+            .state
+            .store(ThreadState::Runnable, Ordering::Release);
 
-    sched.threads.push_back(idle_thread.clone());
-    sched.set_idle_thread(idle_thread);
+        crate::init::setup_thread_context(
+            &idle_thread,
+            idle_thread_func as usize,
+            idle_thread.kernel_stack_top,
+            true,
+        );
+
+        sched.threads.push_back(idle_thread.clone());
+        thread_list.push(idle_thread);
+    }
+
+    unsafe {
+        IDLE_THREADS = thread_list;
+    }
+
+    // This runs on the boot cpu. Populate its entry.
+    crate::per_cpu::get().idle_thread = Some(get_idle_thread(0));
+}
+
+pub fn get_idle_thread(cpu_num: usize) -> Arc<Thread> {
+    unsafe {
+        IDLE_THREADS[cpu_num].clone()
+    }
 }
 
 pub fn tick() {

@@ -1,5 +1,6 @@
 .global ap_trampoline
 .global ap_trampoline_end
+.global ap_entry
 
 // this code will be relocated to 0x8000, sets up environment for calling a C function
 
@@ -54,6 +55,22 @@ _L8060:
     .align 16
     .code64
 _L8090:
-    jmp _L8090
+    
+    // Get the CPU number (well, apic ID)
+    mov rax, 1
+    cpuid
+    shr ebx, 24
+    mov edi, ebx
+
+    mov ecx, 0xC0000080 // EFER
+    rdmsr
+    or eax, 1<<11 // set NX enable
+    wrmsr
+
+    // Now go!
+    lea rax, (ap_entry_trampoline - 0xfffffff800000000)
+    mov rbx, 0xfffffff800000000
+    add rax, rbx
+    jmp rax
 
 ap_trampoline_end:
