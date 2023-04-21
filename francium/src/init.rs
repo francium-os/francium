@@ -95,7 +95,7 @@ const AT_PHENT: usize = 4;
 const AT_PHNUM: usize = 5;
 
 pub fn load_process(elf_buf: &[u8], name: &'static str) -> Arc<Thread> {
-    println!("loading {}", name);
+    log::debug!("loading {}", name);
 
     // Load the first process
     let aspace = {

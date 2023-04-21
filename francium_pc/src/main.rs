@@ -105,7 +105,6 @@ fn bootloader_main(info: &'static mut bootloader_api::BootInfo) -> ! {
         );
     }
     log::debug!("after setting up heap");
-    log::debug!("heap deez nuts");
 
     platform::scheduler_pre_init();
     log::debug!("scheduler preinit");
@@ -154,14 +153,14 @@ unsafe extern "C" fn ap_entry_trampoline() {
 
 #[no_mangle]
 extern "C" fn ap_entry(cpu_number: usize) {
-    println!("Hello from an AP! ({})", cpu_number);
+    log::debug!("Hello from an AP! ({})", cpu_number);
     platform::scheduler_post_init();
     x86_64::syscall::setup_syscall();
     init::setup_ap_per_cpu(cpu_number);
     x86_64::gdt::setup_gdt();
 
     let idle_thread = per_cpu::get().idle_thread.as_ref().unwrap().clone();
-    println!("AP going idle...");
+    log::debug!("AP going idle...");
     scheduler::force_switch_to(idle_thread);
     panic!("We shouldn't get here.");
 }
