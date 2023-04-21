@@ -12,7 +12,8 @@ pub fn svc_get_process_id() -> usize {
 }
 
 pub fn svc_get_thread_id() -> usize {
-    event!(Level::TRACE, svc_name = "get_thread_id");
+    // Wayyy too noisy.
+    //event!(Level::TRACE, svc_name = "get_thread_id");
     scheduler::get_current_thread().id
 }
 

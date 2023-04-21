@@ -22,7 +22,7 @@ const VBE_DISPI_INDEX_ENABLE: usize = 4;
 //const VBE_DISPI_INDEX_X_OFFSET: usize = 8;
 //const VBE_DISPI_INDEX_Y_OFFSET: usize = 9;
 
-impl BochsAdapter {
+impl<'a> BochsAdapter {
     pub fn new() -> Option<BochsAdapter> {
         /* something something shared mem */
         let device_id = *ipc::pcie::get_devices_by_vidpid(0x1234, 0x1111).get(0)?;
@@ -86,9 +86,16 @@ impl BochsAdapter {
         unsafe {
             core::ptr::write_bytes(
                 self.framebuffer_virt as *mut u8,
-                0xaa,
+                0,
                 self.current_x * self.current_y * 4,
             );
+        }
+    }
+
+    pub fn get_framebuffer(&self) -> &'a mut [u32] {
+        unsafe {
+            core::slice::from_raw_parts_mut(self.framebuffer_virt as *mut u32,
+            self.current_x * self.current_y)
         }
     }
 }

@@ -35,6 +35,8 @@ pub extern "C" fn rust_main() -> ! {
 
     platform::scheduler_pre_init();
     scheduler::init();
+    // todo
+    // platform::bringup_other_cpus();
 
     let fs_buf = include_bytes!("../../target/aarch64-unknown-francium/release/fs");
     let test_buf = include_bytes!("../../target/aarch64-unknown-francium/release/test");

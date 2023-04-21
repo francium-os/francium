@@ -339,6 +339,34 @@ pub fn setup_virtual_memory() {
         PagePermission::KERNEL_RWX,
         MapType::NormalCachable,
     );
+    
+    page_table_root.map_1gb(
+        PhysAddr(0x100000000),
+        PHYSMAP_BASE + 0x100000000,
+        PagePermission::KERNEL_RWX,
+        MapType::NormalCachable,
+    );
+
+    page_table_root.map_1gb(
+        PhysAddr(0x140000000),
+        PHYSMAP_BASE + 0x140000000,
+        PagePermission::KERNEL_RWX,
+        MapType::NormalCachable,
+    );
+
+    page_table_root.map_1gb(
+        PhysAddr(0x180000000),
+        PHYSMAP_BASE + 0x180000000,
+        PagePermission::KERNEL_RWX,
+        MapType::NormalCachable,
+    );
+
+    page_table_root.map_1gb(
+        PhysAddr(0x1c0000000),
+        PHYSMAP_BASE + 0x1c0000000,
+        PagePermission::KERNEL_RWX,
+        MapType::NormalCachable,
+    );
 
     // map first 4gb into devicemap
     page_table_root.map_1gb(

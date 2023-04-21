@@ -10,6 +10,8 @@ use francium_kernel::memory::KERNEL_ADDRESS_SPACE;
 use francium_kernel::mmu::PagePermission;
 use francium_kernel::*;
 use francium_kernel::arch::x86_64;
+use francium_kernel::log_sink::early_framebuffer;
+use francium_kernel::log_sink::early_framebuffer::{EarlyFramebuffer, EarlyFramebufferFormat, EarlyFramebufferLogger};
 
 extern "C" {
     fn switch_stacks();
@@ -56,13 +58,42 @@ fn bootloader_main(info: &'static mut bootloader_api::BootInfo) -> ! {
 
     /* Be careful - bootloader memory mappings are clobbered when we switch. */
     unsafe {
-        //FRAMEBUFFER = info.framebuffer;
+        let framebuffer = info.framebuffer.as_mut().unwrap();
+        let fb_info = framebuffer.info();
+
+        // Get the physical address of the framebuffer...
+        let pages = arch::mmu::get_current_page_table();
+        let framebuffer_slice = framebuffer.buffer_mut();
+        let framebuffer_phys = pages.virt_to_phys(framebuffer_slice.as_ptr() as usize).unwrap().0;
+        let framebuffer_slice_phys = core::slice::from_raw_parts_mut((constants::PHYSMAP_BASE + framebuffer_phys) as *mut u8, framebuffer_slice.len());
+
+        // The framebuffer is probably not contained in the bootloader's mapping of memory.
+        // Don't log anything before we switch page tables.
+        early_framebuffer::init(early_framebuffer::EarlyFramebuffer {
+                framebuffer: framebuffer_slice_phys,
+                width: fb_info.width,
+                height: fb_info.height,
+                stride: fb_info.stride,
+                bytes_per_pixel: fb_info.bytes_per_pixel,
+                pixel_format: match fb_info.pixel_format {
+                    bootloader_api::info::PixelFormat::Rgb => EarlyFramebufferFormat::Rgb,
+                    bootloader_api::info::PixelFormat::Bgr => EarlyFramebufferFormat::Bgr,
+                    _ => panic!("Unknown pixel format!")
+                },
+
+                x: 0,
+                y: 0
+            }
+        ).unwrap();
+
         x86_64::info::SYSTEM_INFO_RSDP_ADDR = info.rsdp_addr.into_option();
     }
 
     println!("hello from rust before enabling mmu!");
     mmu::enable_mmu();
-    println!("hello from rust after enabling mmu!");
+    early_framebuffer::clear_screen();
+
+    log::debug!("hello from rust after enabling nyaa!");
 
     // Set up kernel heap
     {
@@ -73,13 +104,16 @@ fn bootloader_main(info: &'static mut bootloader_api::BootInfo) -> ! {
             PagePermission::KERNEL_READ_WRITE,
         );
     }
-
-    log_sink::init().unwrap();
+    log::debug!("after setting up heap");
+    log::debug!("heap deez nuts");
 
     platform::scheduler_pre_init();
+    log::debug!("scheduler preinit");
     scheduler::init(platform::get_cpu_count());
+    log::debug!("scheduler init");
 
     platform::bringup_other_cpus();
+    log::debug!("bringup");
 
     let fs_buf = include_bytes!("../../target/x86_64-unknown-francium/release/fs");
     let test_buf = include_bytes!("../../target/x86_64-unknown-francium/release/test");
@@ -96,17 +130,15 @@ fn bootloader_main(info: &'static mut bootloader_api::BootInfo) -> ! {
     let sm_main_thread = init::load_process(sm_buf, "sm");
     scheduler::register_thread(sm_main_thread.clone());
 
-    /*
     let pcie_main_thread = init::load_process(pcie_buf, "pcie");
     scheduler::register_thread(pcie_main_thread.clone());
 
-    let disp_main_thread = init::load_process(disp_buf, "disp");
-    scheduler::register_thread(disp_main_thread.clone());
-    */
+    /*let disp_main_thread = init::load_process(disp_buf, "disp");
+    scheduler::register_thread(disp_main_thread.clone());*/
 
     platform::scheduler_post_init();
 
-    println!("Running...");
+    log::debug!("Running...");
 
     scheduler::force_switch_to(fs_main_thread);
     panic!("We shouldn't get here!");

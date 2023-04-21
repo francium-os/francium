@@ -10,3 +10,4 @@ resolver = "2"
 "francium_kernel" = { path = "../francium", features = ["platform_pc"] }
 "francium_common" = { path = "../crates/francium_common" }
 bootloader_api = { path = "../../bootloader/api" }
+log = { version = "*", default-features = false }

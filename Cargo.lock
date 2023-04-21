@@ -546,6 +546,7 @@ dependencies = [
  "bootloader_api",
  "francium_common",
  "francium_kernel",
+ "log",
 ]
 
 [[package]]

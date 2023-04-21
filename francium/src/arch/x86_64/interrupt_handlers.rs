@@ -249,54 +249,53 @@ unsafe extern "C" fn handle_exception(
     error_code: u64,
     interrupt_number: u64,
 ) {
-    //println!("Current process: {}", crate::scheduler::get_current_process().lock().name);
     match interrupt_number {
         0x6 => {
-            println!("Invalid instruction!");
+            log::debug!("Invalid instruction!");
             panic!("No");
         }
 
         0xe => {
             let cr2 = read_cr2();
-            println!("Page fault at {:x}!", cr2);
+            log::debug!("Page fault at {:x}!", cr2);
             if (error_code & (1 << 0)) == (1 << 0) {
-                print!("protection violation");
+                log::debug!("protection violation");
             } else {
-                print!("not present")
+                log::debug!("not present")
             }
 
             if (error_code & (1 << 1)) == (1 << 1) {
-                print!(", write");
+                log::debug!(", write");
             } else {
-                print!(", read");
+                log::debug!(", read");
             }
 
             if (error_code & (1 << 2)) == (1 << 2) {
-                print!(", user");
+                log::debug!(", user");
             } else {
-                print!(", supervisor");
+                log::debug!(", supervisor");
             }
 
             if (error_code & (1 << 4)) == (1 << 4) {
-                print!(" instruction fetch");
+                log::debug!(" instruction fetch");
             } else {
-                print!(" data fetch");
+                log::debug!(" data fetch");
             }
 
             if (error_code & (1 << 3)) == (1 << 3) {
-                print!(" (reserved bit violation)");
+                log::debug!(" (reserved bit violation)");
             }
 
-            println!("");
+            log::debug!("Register dump\n{:x?}", ctx.regs);
 
-            let process = &crate::scheduler::get_current_process();
+            /*let process = &crate::scheduler::get_current_process();
             let process_locked = process.lock();
-            let _pg = &process_locked.address_space.page_table;
-            //println!("Walk: {:x}", pg.virt_to_phys(cr2).unwrap().0);
+            let _pg = &process_locked.address_space.page_table;*/
+            //log::debug!("Walk: {:x}", pg.virt_to_phys(cr2).unwrap().0);
 
-            println!("stack dump");
+            log::debug!("stack dump");
             for i in -32..32 {
-                println!("{:?}: {:x}", i, *(ctx.regs.rsp as *const usize).offset(i));
+                log::debug!("{:?}: {:x}", i, *(ctx.regs.rsp as *const usize).offset(i));
             }
 
             /*if error_code & (1<<5) {
@@ -318,9 +317,10 @@ unsafe extern "C" fn handle_exception(
             // IRQ0-7
             let irq_number = interrupt_number - 32;
             if irq_number == 7 {
-                println!("Spurious IRQ?");
+                log::debug!("Spurious IRQ?");
                 // todo spurious irq handling
             } else if irq_number == 2 {
+                log::debug!("Timer!");
                 // handle Timer specially
                 {
                     INTERRUPT_CONTROLLER.lock().ack_interrupt(2);
@@ -355,12 +355,12 @@ unsafe extern "C" fn handle_exception(
             }
         }
         _ => {
-            println!(
+            log::debug!(
                 "Current process: {}",
                 crate::scheduler::get_current_process().lock().name
             );
-            println!("error_code: {}", error_code);
-            println!("register dump:\n{:?}", ctx.regs);
+            log::debug!("error_code: {}", error_code);
+            log::debug!("register dump:\n{:?}", ctx.regs);
             panic!("Unhandled interrupt {:?}", interrupt_number);
         }
     }
