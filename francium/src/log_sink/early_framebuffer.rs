@@ -31,6 +31,14 @@ impl EarlyFramebuffer {
         }
     }
 
+    fn scroll(&mut self) {
+        let line_bytes = self.stride * self.bytes_per_pixel;
+
+        self.framebuffer.copy_within(8 * line_bytes .. self.height * line_bytes, 0);
+        self.framebuffer[(self.height - 8) * line_bytes .. self.height * line_bytes].fill(0);
+        self.y -= 8;
+    }
+
     fn print(&mut self, s: &str) {
         for c in s.chars() {
             match c {
@@ -57,6 +65,15 @@ impl EarlyFramebuffer {
                     }
                     self.x += 8;
                 }
+            }
+
+            if self.x >= self.width {
+                self.x = 0;
+                self.y += 8;
+            }
+
+            if self.y >= self.height {
+                self.scroll();
             }
         }
     }
@@ -86,7 +103,7 @@ impl<'a> core::fmt::Write for EarlyFramebuffer {
 
 impl log::Log for EarlyFramebufferLogger {
     fn enabled(&self, metadata: &Metadata) -> bool {
-        metadata.level() <= Level::Trace
+        metadata.level() <= Level::Debug
     }
 
     fn log(&self, record: &Record) {
@@ -103,7 +120,7 @@ static mut FB_LOGGER: Option<EarlyFramebufferLogger> = None;
 pub fn init(logger: EarlyFramebuffer) -> Result<(), SetLoggerError> {
     unsafe {
         FB_LOGGER = Some(EarlyFramebufferLogger::new(logger));
-        let res = log::set_logger(FB_LOGGER.as_ref().unwrap()).map(|()| log::set_max_level(LevelFilter::Trace));
+        let res = log::set_logger(FB_LOGGER.as_ref().unwrap()).map(|()| log::set_max_level(LevelFilter::Debug));
         res
     }
 }
