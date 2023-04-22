@@ -320,7 +320,7 @@ unsafe extern "C" fn handle_exception(
                 log::debug!("Spurious IRQ?");
                 // todo spurious irq handling
             } else if irq_number == 2 {
-                log::debug!("Timer!");
+                //log::debug!("Timer!");
                 // handle Timer specially
                 {
                     INTERRUPT_CONTROLLER.lock().ack_interrupt(2);

@@ -94,8 +94,8 @@ pub fn scheduler_pre_init() {
     // enable timer irq
     let timer_irq = 2; // PIC on IRQ 2...
 
-    log::debug!("{:x?}", PLATFORM_INFO.interrupt_model);
-    loop{}
+    //log::debug!("{:x?}", PLATFORM_INFO.interrupt_model);
+    //loop{}
 
     log::debug!("before ... locking????");
     let mut controller_lock = INTERRUPT_CONTROLLER.lock();

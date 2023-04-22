@@ -28,6 +28,7 @@ fs = target/$(target)/release/fs
 test = target/$(target)/release/test
 pcie = target/$(target)/release/pcie
 disp = target/$(target)/release/disp
+ps2 = target/$(target)/release/ps2
 
 bootimg_bios = target/release/bios.img
 bootimg_uefi = target/release/uefi.img
@@ -49,10 +50,10 @@ endif
 
 CARGO_FLAGS =
 
-.PHONY: qemu gdb bochs $(francium) $(bootimg_bios) $(bootimg_uefi) $(fs) $(sm) $(test) $(pcie) $(disp) clean clean-user clean-kernel
+.PHONY: qemu gdb bochs $(francium) $(bootimg_bios) $(bootimg_uefi) $(fs) $(sm) $(test) $(pcie) $(disp) $(ps2) clean clean-user clean-kernel
 
 all: $(francium) $(if $(filter $(board),raspi4), kernel8_pi4.bin)
-$(francium): $(fs) $(sm) $(test) $(pcie) $(disp)
+$(francium): $(fs) $(sm) $(test) $(pcie) $(disp) $(ps2)
 	cargo build --package=francium_$(board) --release --target=$(kernel_target)
 
 $(bootimg_bios) $(bootimg_uefi): $(francium)
@@ -82,6 +83,9 @@ $(pcie):
 
 $(disp):
 	$(CARGO) build --package=disp --release --target=$(target)
+
+$(ps2):
+	$(CARGO) build --package=ps2 --release --target=$(target)
 
 qemu: $(francium) $(if $(filter $(board),pc), $(bootimg_uefi)) $(if $(filter $(board),raspi3), kernel8_pi3.bin)
 	qemu-system-$(arch) $(qemu_args) -s

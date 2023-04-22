@@ -26,7 +26,7 @@ pub struct TSS {
     pub ist: [u64; 7],
     pub reserved_2: u64,
     pub reserved_3: u16,
-    pub iomap_base: u16,
+    pub iomap_base: u16
 }
 
 impl TSS {

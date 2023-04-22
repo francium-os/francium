@@ -82,7 +82,7 @@ pub fn setup_thread_context(
             context_locked.regs.ss = 0x20 | 3;
         }
 
-        exc_context.regs.eflags = 1 << 9; // enable interrupt flag
+        exc_context.regs.eflags = 1 << 9 | 3 << 12; // enable interrupt flag, set iopl=3 to let user processes do port io
 
         context_locked.regs.rip = user_thread_starter as usize;
         context_locked.regs.rsp = exc_context_location;
