@@ -62,7 +62,7 @@ fn bootloader_main(info: &'static mut bootloader_api::BootInfo) -> ! {
         let fb_info = framebuffer.info();
 
         // Get the physical address of the framebuffer...
-        let pages = arch::mmu::get_current_page_table();
+        /*let pages = arch::mmu::get_current_page_table();
         let framebuffer_slice = framebuffer.buffer_mut();
         let framebuffer_phys = pages.virt_to_phys(framebuffer_slice.as_ptr() as usize).unwrap().0;
         let framebuffer_slice_phys = core::slice::from_raw_parts_mut((constants::PHYSMAP_BASE + framebuffer_phys) as *mut u8, framebuffer_slice.len());
@@ -84,14 +84,16 @@ fn bootloader_main(info: &'static mut bootloader_api::BootInfo) -> ! {
                 x: 0,
                 y: 0
             }
-        ).unwrap();
+        ).unwrap();*/
 
         x86_64::info::SYSTEM_INFO_RSDP_ADDR = info.rsdp_addr.into_option();
     }
 
     println!("hello from rust before enabling mmu!");
     mmu::enable_mmu();
-    early_framebuffer::clear_screen();
+    //early_framebuffer::clear_screen();
+
+    log_sink::init().unwrap();
 
     log::debug!("hello from rust after enabling nyaa!");
 

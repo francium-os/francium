@@ -84,7 +84,7 @@ pub struct EarlyFramebufferLogger {
 }
 
 impl EarlyFramebufferLogger {
-    fn new(mut fb: EarlyFramebuffer) -> EarlyFramebufferLogger {
+    fn new(fb: EarlyFramebuffer) -> EarlyFramebufferLogger {
         EarlyFramebufferLogger {
             fb: Mutex::new(fb)
         }

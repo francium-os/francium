@@ -142,5 +142,5 @@ pub fn scan() {
     outb(DATA, 0xf2);
     println!("{:0x}", read_response());
     println!("{:0x}", read_response());
-    println!("{:0x}", read_response());
+    //println!("{:0x}", read_response());
 }

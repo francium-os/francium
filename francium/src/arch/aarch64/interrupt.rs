@@ -208,34 +208,31 @@ pub extern "C" fn rust_lower_el_spx_sync(ctx: &mut ExceptionContext) {
 
 #[no_mangle]
 pub extern "C" fn rust_lower_el_aarch64_irq(_ctx: &mut ExceptionContext) {
-    // we know it's an interrupt
-    // which one?
-    // for now, just ack timer
-
-    {
-        let mut locked = INTERRUPT_CONTROLLER.lock();
-        while let Some(interrupt) = locked.next_pending() {
-            // handle!
-            match interrupt {
-                // Arch specific might have different way of identfying interrupts.
-                1 => {
-                    // Pi3 timer
-                    let mut timer_lock = DEFAULT_TIMER.lock();
-                    timer_lock.tick();
-                    timer_lock.reset_timer();
-                }
-                30 => {
-                    let mut timer_lock = DEFAULT_TIMER.lock();
-                    timer_lock.tick();
-                    timer_lock.reset_timer();
-                }
-                _ => {
-                    INTERRUPT_DISTRIBUTOR.lock().disable_interrupt(interrupt);
-                    crate::svc::event::dispatch_interrupt_event(interrupt as usize);
+    let next = INTERRUPT_CONTROLLER.lock().next_pending();
+    if let Some(interrupt) = next {
+        // handle!
+        match interrupt {
+            // TODO: Arch specific might have different way of identfying interrupts.
+            1 => {
+                // Pi3 timer
+                let mut timer_lock = DEFAULT_TIMER.lock();
+                timer_lock.tick();
+                timer_lock.reset_timer();
+                INTERRUPT_CONTROLLER.lock().ack_interrupt(interrupt);
+            }
+            30 => {
+                let mut timer_lock = DEFAULT_TIMER.lock();
+                timer_lock.tick();
+                timer_lock.reset_timer();
+                INTERRUPT_CONTROLLER.lock().ack_interrupt(interrupt);
+            }
+            _ => {
+                INTERRUPT_DISTRIBUTOR.lock().disable_interrupt(interrupt);
+                if !crate::svc::event::dispatch_interrupt_event(interrupt as usize) {
+                    // An interrupt event will ack the interrupt when it's done.
+                    INTERRUPT_CONTROLLER.lock().ack_interrupt(interrupt);
                 }
             }
-
-            locked.ack_interrupt(interrupt);
         }
     }
 

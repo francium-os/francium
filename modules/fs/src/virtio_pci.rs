@@ -343,7 +343,10 @@ impl VirtioPciDevice {
 impl VirtioNotifier {
     pub fn wait_for_isr(&self) -> u8 {
         syscalls::wait_one(self.interrupt_event).unwrap();
-        unsafe { self.isr_status.read_volatile() }
+        let isr_status = unsafe { self.isr_status.read_volatile() };
+        syscalls::clear_event(self.interrupt_event).unwrap();
+
+        isr_status
     }
 }
 

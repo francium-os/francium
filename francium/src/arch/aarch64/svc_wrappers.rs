@@ -157,8 +157,18 @@ fn syscall_wrapper_wait_one(ctx: &mut ExceptionContext) {
     ctx.regs[0] = res.0 as usize;
 }
 
+fn syscall_wrapper_signal_event(ctx: &mut ExceptionContext) {
+    let res = svc::svc_signal_event(ctx.regs[0] as u32);
+    ctx.regs[0] = res.0 as usize;
+}
+
+fn syscall_wrapper_clear_event(ctx: &mut ExceptionContext) {
+    let res = svc::svc_clear_event(ctx.regs[0] as u32);
+    ctx.regs[0] = res.0 as usize;
+}
+
 type SVCHandler = fn(&mut ExceptionContext);
-pub const SVC_HANDLERS: [SVCHandler; 27] = [
+pub const SVC_HANDLERS: [SVCHandler; 29] = [
     syscall_wrapper_break,
     syscall_wrapper_debug_output,
     syscall_wrapper_create_port,
@@ -186,4 +196,6 @@ pub const SVC_HANDLERS: [SVCHandler; 27] = [
     syscall_wrapper_bind_interrupt,
     syscall_wrapper_unbind_interrupt,
     syscall_wrapper_wait_one,
+    syscall_wrapper_signal_event,
+    syscall_wrapper_clear_event,
 ];

@@ -57,19 +57,34 @@ impl Waiter {
     }
 
     pub fn signal_one(&self) {
+        let mut did_wake = false;
         match self.waiters.lock().pop() {
-            Some(waiter) => scheduler::wake_thread(&waiter.0, waiter.1),
+            Some(waiter) => {
+                did_wake = true;
+                scheduler::wake_thread(&waiter.0, waiter.1);
+            },
             None => self.pending.store(true, Ordering::Release),
+        }
+
+        if did_wake {
+            scheduler::tick();
         }
     }
 
     pub fn signal_one_with_callback(&self, callback: &dyn Fn(&Arc<Thread>) -> ()) {
+        let mut did_wake = false;
+
         match self.waiters.lock().pop() {
             Some(waiter) => {
                 callback(&waiter.0);
+                did_wake = true;
                 scheduler::wake_thread(&waiter.0, waiter.1);
             }
             None => self.pending.store(true, Ordering::Release),
+        }
+
+        if did_wake {
+            scheduler::tick();
         }
     }
 
@@ -80,7 +95,11 @@ impl Waiter {
             .map(|x| {
                 scheduler::wake_thread(&x.0, x.1);
             })
-            .collect()
+            .for_each(drop);
+    }
+
+    pub fn clear(&self) {
+        self.pending.store(false, Ordering::Release);
     }
 }
 

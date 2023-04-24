@@ -209,3 +209,13 @@ syscall_wait_one:
 mov eax, 0x1a
 syscall
 ret
+
+syscall_signal_event:
+mov eax, 0x1b
+syscall
+ret
+
+syscall_clear_event:
+mov eax, 0x1c
+syscall
+ret

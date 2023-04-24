@@ -154,6 +154,14 @@ syscall_wait_one:
 svc #0x1a
 ret
 
+syscall_signal_event:
+svc #0x1b
+ret
+
+syscall_clear_event:
+svc #0x1c
+ret
+
 get_tpidr_el0_asm:
 mrs x0, tpidr_el0
 ret

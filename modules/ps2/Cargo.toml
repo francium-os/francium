@@ -9,7 +9,9 @@ edition = "2018"
 "process" = { path = "../../libprocess" }
 "common" = { path = "../../libcommon" }
 "francium_common" = { path = "../../crates/francium_common" }
-"francium_x86" = { path = "../../crates/francium_x86" }
 "bitflags" = "1.2.1"
+
+[target.'cfg(target_arch = "x86_64")'.dependencies]
+"francium_x86" = { path = "../../crates/francium_x86" }
 
 [build-dependencies]

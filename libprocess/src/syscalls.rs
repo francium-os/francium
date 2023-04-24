@@ -52,6 +52,8 @@ extern "C" {
     pub fn syscall_bind_interrupt(handle: Handle, index: usize) -> ResultCode;
     pub fn syscall_unbind_interrupt(handle: Handle, index: usize) -> ResultCode;
     pub fn syscall_wait_one(handle: Handle) -> ResultCode;
+    pub fn syscall_signal_event(handle: Handle) -> ResultCode;
+    pub fn syscall_clear_event(handle: Handle) -> ResultCode;
 }
 
 pub fn print(s: &str) {
@@ -306,6 +308,30 @@ pub fn wait_one(handle: Handle) -> Result<(), OSError> {
         }
     }
 }
+
+pub fn signal_event(handle: Handle) -> Result<(), OSError> {
+    unsafe {
+        let res = syscall_signal_event(handle);
+        if res == RESULT_OK {
+            Ok(())
+        } else {
+            Err(OSError::from_result_code(res))
+        }
+    }
+}
+
+
+pub fn clear_event(handle: Handle) -> Result<(), OSError> {
+    unsafe {
+        let res = syscall_clear_event(handle);
+        if res == RESULT_OK {
+            Ok(())
+        } else {
+            Err(OSError::from_result_code(res))
+        }
+    }
+}
+
 
 use core::arch::global_asm;
 #[cfg(target_arch = "x86_64")]

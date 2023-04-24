@@ -42,7 +42,7 @@ qemu_args=-M $(board)b -kernel kernel8_pi3.bin -serial stdio
 endif
 
 else ifeq ($(arch), x86_64)
-qemu_args=-M q35 -smp 8 -bios /usr/share/edk2/x64/OVMF.fd -drive format=raw,file=$(bootimg_uefi),if=none,id=boot -device virtio-blk,serial=fee1dead,drive=boot -serial stdio -m 2048 -no-reboot -enable-kvm
+qemu_args=-M q35  -bios /usr/share/edk2/x64/OVMF.fd -drive format=raw,file=$(bootimg_uefi),if=none,id=boot -device virtio-blk,serial=fee1dead,drive=boot -serial stdio -m 2048 -no-reboot -enable-kvm
 #qemu_args=-M q35 -bios /usr/share/edk2/x64/OVMF.fd -drive format=raw,file=$(bootimg_uefi),if=none,id=nvme -device nvme,serial=fee1dead,drive=nvme -serial stdio -m 2048 -no-reboot -enable-kvm
 #qemu_args=-M q35 -drive format=raw,file=$(bootimg_bios),if=none,id=nvme -device nvme,serial=fee1dead,drive=nvme -serial stdio -m 2048 -no-reboot -enable-kvm -d int
 gdb=rust-gdb

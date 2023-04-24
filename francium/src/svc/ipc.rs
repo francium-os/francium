@@ -99,22 +99,31 @@ pub fn svc_create_port(tag: u64) -> (ResultCode, u32) {
 
     // if not a private port
     if tag != 0 {
-        let mut ports = PORT_LIST.lock();
-        if ports.contains_key(&tag) {
-            panic!("panik");
+        let mut did_wake = false;
+        // Hold port list/waiter locks
+        {
+            let mut ports = PORT_LIST.lock();
+            if ports.contains_key(&tag) {
+                panic!("Port already contains key!");
+            }
+
+            ports.insert(tag, server_port_handle.clone());
+
+            let mut port_waiters = PORT_WAITERS.lock();
+            port_waiters.retain(|x| {
+                if x.0 == tag {
+                    did_wake = true;
+                    scheduler::wake_thread(&x.1, 0xffffffffffffffff);
+                    false
+                } else {
+                    true
+                }
+            });
         }
 
-        let mut port_waiters = PORT_WAITERS.lock();
-        port_waiters.retain(|x| {
-            if x.0 == tag {
-                scheduler::wake_thread(&x.1.clone(), 0xffffffffffffffff);
-                false
-            } else {
-                true
-            }
-        });
-
-        ports.insert(tag, server_port_handle.clone());
+        if did_wake {
+            scheduler::tick();
+        }
     }
 
     let proc_locked = scheduler::get_current_process();

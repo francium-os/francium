@@ -23,6 +23,7 @@ pub struct Scheduler {
 lazy_static! {
     static ref SCHEDULER: Mutex<Scheduler> = Mutex::new(Scheduler::new());
 }
+
 extern "C" {
     fn switch_thread_asm(
         from_context: *mut ThreadContext,
@@ -228,7 +229,10 @@ impl Scheduler {
 
             // TODO: I tried to add an optimization to immediately suspend an idle thread if its running.
             // but calling switch_thread in wake breaks things pretty badly
-            // self.switch_thread(&self.get_current_thread(), thread);
+            //let current_thread = crate::per_cpu::get_current_thread();
+            //self.switch_thread(&current_thread, thread);
+
+            // Do it outside, instead.
         } else {
             // This should be OK, hopefully.
             trace!("Trying to re-wake thread {:?}!", thread.id);
@@ -364,17 +368,21 @@ pub fn terminate_current_thread() {
 
 pub fn terminate_current_process() {
     let mut sched = SCHEDULER.lock();
-    let current_thread = crate::per_cpu::get_current_thread();
-    let current_process = current_thread.process.clone();
-    let process = current_process.lock();
 
-    let mut cursor = process.threads.front();
-    while !cursor.is_null() {
-        let thread = cursor.get().unwrap();
-        if thread.id != current_thread.id {
-            sched.suspend(&cursor.clone_pointer().unwrap());
+    // don't hold the process lock while calling terminate_current_thread
+    {
+        let current_thread = crate::per_cpu::get_current_thread();
+        let current_process = current_thread.process.clone();
+        let process = current_process.lock();
+
+        let mut cursor = process.threads.front();
+        while !cursor.is_null() {
+            let thread = cursor.get().unwrap();
+            if thread.id != current_thread.id {
+                sched.suspend(&cursor.clone_pointer().unwrap());
+            }
+            cursor.move_next();
         }
-        cursor.move_next();
     }
 
     sched.terminate_current_thread();

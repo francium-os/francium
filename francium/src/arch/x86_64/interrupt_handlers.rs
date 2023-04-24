@@ -2,8 +2,9 @@ use crate::arch::context::ExceptionContext;
 use crate::drivers::InterruptController;
 use crate::drivers::Timer;
 use crate::platform::DEFAULT_TIMER;
-use crate::platform::INTERRUPT_CONTROLLER;
+use crate::platform::{INTERRUPT_DISTRIBUTOR, INTERRUPT_CONTROLLER};
 use core::arch::{asm, global_asm};
+use francium_drivers::InterruptDistributor;
 
 macro_rules! interrupt_noerror {
     ($interrupt_name:ident, $interrupt_number:expr) => {
@@ -313,14 +314,11 @@ unsafe extern "C" fn handle_exception(
 
             panic!("Can't handle page fault!");
         }
-        32..=39 => {
-            // IRQ0-7
+        32..=47 => {
+            // IRQs
             let irq_number = interrupt_number - 32;
-            if irq_number == 7 {
-                log::debug!("Spurious IRQ?");
-                // todo spurious irq handling
-            } else if irq_number == 2 {
-                //log::debug!("Timer!");
+
+            if irq_number == 2 {
                 // handle Timer specially
                 {
                     INTERRUPT_CONTROLLER.lock().ack_interrupt(2);
@@ -333,23 +331,10 @@ unsafe extern "C" fn handle_exception(
 
                 crate::timer::tick();
             } else {
-                // pog
-                {
-                    crate::svc::event::dispatch_interrupt_event(irq_number as usize);
-                    INTERRUPT_CONTROLLER.lock().ack_interrupt(irq_number as u32);
-                }
-            }
-        }
-        40..=47 => {
-            // IRQ8-15
-            let irq_number = interrupt_number - 32;
+                println!("Got int {}", irq_number);
 
-            if irq_number == 15 {
-                // todo spurious irq handling
-            } else {
-                // pog
-                {
-                    crate::svc::event::dispatch_interrupt_event(irq_number as usize);
+                INTERRUPT_DISTRIBUTOR.lock().disable_interrupt(irq_number as u32);
+                if !crate::svc::event::dispatch_interrupt_event(irq_number as usize) {
                     INTERRUPT_CONTROLLER.lock().ack_interrupt(irq_number as u32);
                 }
             }

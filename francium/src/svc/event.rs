@@ -1,6 +1,6 @@
 use crate::drivers::InterruptDistributor;
 use crate::handle::HandleObject;
-use crate::platform::INTERRUPT_DISTRIBUTOR;
+use crate::platform::{INTERRUPT_CONTROLLER, INTERRUPT_DISTRIBUTOR};
 use crate::scheduler;
 use crate::waitable::{Waitable, Waiter};
 use alloc::sync::Arc;
@@ -8,6 +8,7 @@ use common::os_error::{Module, Reason, ResultCode, RESULT_OK};
 use core::sync::atomic::AtomicU32;
 use core::sync::atomic::Ordering;
 use spin::Mutex;
+use francium_drivers::InterruptController;
 
 #[derive(Debug)]
 pub struct Event {
@@ -43,12 +44,45 @@ pub fn svc_create_event() -> (ResultCode, u32) {
     (RESULT_OK, handle_value)
 }
 
+pub fn svc_signal_event(h: u32) -> ResultCode {
+    let proc_locked = scheduler::get_current_process();
+    let process = proc_locked.lock();
+
+    if let HandleObject::Event(ev) = process.handle_table.get_object(h) {
+        ev.w.signal_one();
+        RESULT_OK
+    } else {
+        ResultCode::new(Module::Kernel, Reason::InvalidHandle)
+    }
+}
+
+pub fn svc_clear_event(h: u32) -> ResultCode {
+    let proc_locked = scheduler::get_current_process();
+    let process = proc_locked.lock();
+
+
+    if let HandleObject::Event(ev) = process.handle_table.get_object(h) {
+        ev.w.clear();
+
+        let interrupt_id = ev.interrupt.load(Ordering::Acquire);
+        if interrupt_id != 0 {
+            INTERRUPT_CONTROLLER.lock().ack_interrupt(interrupt_id);
+        }
+        RESULT_OK
+    } else {
+        ResultCode::new(Module::Kernel, Reason::InvalidHandle)
+    }   
+}
+
 const NO_EVENT: Option<Arc<Event>> = None;
 pub static INTERRUPT_EVENT_TABLE: Mutex<[Option<Arc<Event>>; 128]> = Mutex::new([NO_EVENT; 128]);
 
-pub fn dispatch_interrupt_event(index: usize) {
+pub fn dispatch_interrupt_event(index: usize) -> bool {
     if let Some(ev) = &INTERRUPT_EVENT_TABLE.lock()[index] {
         ev.w.signal_one();
+        true
+    } else {
+        false
     }
 }
 
