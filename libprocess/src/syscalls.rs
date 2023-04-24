@@ -320,7 +320,6 @@ pub fn signal_event(handle: Handle) -> Result<(), OSError> {
     }
 }
 
-
 pub fn clear_event(handle: Handle) -> Result<(), OSError> {
     unsafe {
         let res = syscall_clear_event(handle);
@@ -331,7 +330,6 @@ pub fn clear_event(handle: Handle) -> Result<(), OSError> {
         }
     }
 }
-
 
 use core::arch::global_asm;
 #[cfg(target_arch = "x86_64")]

@@ -1,5 +1,3 @@
-use alloc::alloc::{Layout, alloc_zeroed};
-use alloc::vec::Vec;
 use crate::arch::msr;
 use crate::drivers::pc_io_apic::IoApic;
 use crate::drivers::pc_local_apic::LocalApic;
@@ -9,6 +7,8 @@ use crate::drivers::Timer;
 use crate::drivers::{InterruptController, InterruptDistributor};
 use crate::mmu;
 use acpi::platform::ProcessorState::WaitingForSipi;
+use alloc::alloc::{alloc_zeroed, Layout};
+use alloc::vec::Vec;
 use core::arch::asm;
 use francium_common::types::PhysAddr;
 use spin::Mutex;
@@ -137,11 +137,16 @@ extern "C" {
 static mut AP_BOOTSTRAP_STACKS: Vec<usize> = Vec::new();
 
 use crate::mmu::PageTable;
-use francium_common::types::{PagePermission, MapType};
+use francium_common::types::{MapType, PagePermission};
 lazy_static! {
     static ref TRAMPOLINE_PAGETABLE: PageTable = {
         let mut pg = crate::KERNEL_ADDRESS_SPACE.read().page_table.user_process();
-        pg.map_4k(PhysAddr(0x8000), 0x8000, PagePermission::KERNEL_RWX, MapType::NormalCachable);
+        pg.map_4k(
+            PhysAddr(0x8000),
+            0x8000,
+            PagePermission::KERNEL_RWX,
+            MapType::NormalCachable,
+        );
         pg
     };
 }
@@ -163,10 +168,13 @@ pub fn bringup_other_cpus() {
         );
 
         let kernel = crate::KERNEL_ADDRESS_SPACE.read();
-        let cr3_phys = kernel.page_table.virt_to_phys(&*TRAMPOLINE_PAGETABLE as *const PageTable as usize).unwrap();
+        let cr3_phys = kernel
+            .page_table
+            .virt_to_phys(&*TRAMPOLINE_PAGETABLE as *const PageTable as usize)
+            .unwrap();
         ((trampoline_ptr + 0x18) as *mut usize).write_volatile(cr3_phys.0);
     }
-    
+
     // TODO: Flush caches? maybe.
 
     let processor_info = PLATFORM_INFO.processor_info.as_ref().unwrap();
@@ -177,7 +185,8 @@ pub fn bringup_other_cpus() {
 
     for _ in processor_info.application_processors.iter() {
         unsafe {
-            let cpu_stack = alloc_zeroed(Layout::from_size_align(0x1000, 64).unwrap()) as usize + 0x1000;
+            let cpu_stack =
+                alloc_zeroed(Layout::from_size_align(0x1000, 64).unwrap()) as usize + 0x1000;
             AP_BOOTSTRAP_STACKS.push(cpu_stack);
         }
     }
@@ -185,7 +194,7 @@ pub fn bringup_other_cpus() {
     unsafe {
         AP_STACK_POINTERS = AP_BOOTSTRAP_STACKS.as_mut_ptr();
     }
-    
+
     for ap in processor_info.application_processors.iter() {
         println!("{:?}", ap);
         assert!(ap.state == WaitingForSipi);

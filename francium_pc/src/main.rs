@@ -5,13 +5,15 @@
 
 extern crate alloc;
 
+use francium_kernel::arch::x86_64;
 use francium_kernel::constants::*;
+use francium_kernel::log_sink::early_framebuffer;
+use francium_kernel::log_sink::early_framebuffer::{
+    EarlyFramebuffer, EarlyFramebufferFormat, EarlyFramebufferLogger,
+};
 use francium_kernel::memory::KERNEL_ADDRESS_SPACE;
 use francium_kernel::mmu::PagePermission;
 use francium_kernel::*;
-use francium_kernel::arch::x86_64;
-use francium_kernel::log_sink::early_framebuffer;
-use francium_kernel::log_sink::early_framebuffer::{EarlyFramebuffer, EarlyFramebufferFormat, EarlyFramebufferLogger};
 
 extern "C" {
     fn switch_stacks();
@@ -152,9 +154,12 @@ fn bootloader_main(info: &'static mut bootloader_api::BootInfo) -> ! {
 #[naked]
 #[no_mangle]
 unsafe extern "C" fn ap_entry_trampoline() {
-    core::arch::asm!("mov rbx, [rip + __ap_stack_pointers]
+    core::arch::asm!(
+        "mov rbx, [rip + __ap_stack_pointers]
         mov rsp, [rbx + rdi * 8]
-        jmp ap_entry", options(noreturn));
+        jmp ap_entry",
+        options(noreturn)
+    );
 }
 
 #[no_mangle]

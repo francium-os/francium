@@ -1,4 +1,3 @@
-use alloc::boxed::Box;
 use crate::arch::cache::clear_cache_for_address;
 use crate::arch::mmu::{get_current_page_table, invalidate_tlb_for_range};
 use crate::constants::*;
@@ -8,6 +7,7 @@ use crate::mmu::{MapType, PagePermission};
 use crate::phys_allocator;
 use crate::platform;
 use crate::process::{Process, Thread};
+use alloc::boxed::Box;
 use francium_common::align::align_up;
 use francium_common::types::PhysAddr;
 
@@ -339,7 +339,7 @@ pub fn setup_virtual_memory() {
         PagePermission::KERNEL_RWX,
         MapType::NormalCachable,
     );
-    
+
     page_table_root.map_1gb(
         PhysAddr(0x100000000),
         PHYSMAP_BASE + 0x100000000,
@@ -432,7 +432,7 @@ static mut PER_CPU_SINGLE_CORE: PerCpuData = PerCpuData {
     #[cfg(target_arch = "x86_64")]
     gdt: [GDTEntry::DEFAULT; 8],
     #[cfg(target_arch = "x86_64")]
-    tss: TSS::DEFAULT
+    tss: TSS::DEFAULT,
 };
 
 pub fn setup_boot_per_cpu() {
@@ -454,7 +454,7 @@ pub fn setup_ap_per_cpu(cpu_num: usize) {
             #[cfg(target_arch = "x86_64")]
             gdt: [GDTEntry::DEFAULT; 8],
             #[cfg(target_arch = "x86_64")]
-            tss: TSS::DEFAULT
+            tss: TSS::DEFAULT,
         });
         let per_cpu_mut = Box::leak(per_cpu);
 

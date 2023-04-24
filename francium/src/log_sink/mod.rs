@@ -23,5 +23,5 @@ pub fn init() -> Result<(), SetLoggerError> {
     log::set_logger(&LOGGER).map(|()| log::set_max_level(LevelFilter::Debug))
 }
 
-mod font;
 pub mod early_framebuffer;
+mod font;

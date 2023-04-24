@@ -114,7 +114,7 @@ impl PCIDevice {
                 /* pci bridge */
                 1 => {
                     println!("Skipping PCI bridge!");
-                },
+                }
                 _ => todo!(),
             }
 

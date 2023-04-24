@@ -212,7 +212,7 @@ pub extern "C" fn rust_lower_el_aarch64_irq(_ctx: &mut ExceptionContext) {
     if let Some(interrupt) = next {
         // handle!
         match interrupt {
-            // TODO: Arch specific might have different way of identfying interrupts.
+            // TODO: Architectures might have different ways of identfying interrupts.
             1 => {
                 // Pi3 timer
                 let mut timer_lock = DEFAULT_TIMER.lock();

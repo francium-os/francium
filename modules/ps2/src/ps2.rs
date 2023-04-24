@@ -1,19 +1,19 @@
-use francium_x86::io_port::*;
 use bitflags::bitflags;
+use francium_x86::io_port::*;
 
 const DATA: u16 = 0x60;
-const STATUS_COMMAND:u16 = 0x64;
+const STATUS_COMMAND: u16 = 0x64;
 
 const READ_CONTROLLER_CONFIG: u8 = 0x20;
 const WRITE_CONTROLLER_CONFIG: u8 = 0x60;
 
-const DISABLE_PORT_2 : u8 = 0xa7;
-const ENABLE_PORT_2 : u8 = 0xa8;
-const TEST_PORT_2 : u8 = 0xa9;
+const DISABLE_PORT_2: u8 = 0xa7;
+const ENABLE_PORT_2: u8 = 0xa8;
+const TEST_PORT_2: u8 = 0xa9;
 const SELF_TEST: u8 = 0xaa;
-const TEST_PORT_1 : u8 = 0xab;
-const DISABLE_PORT_1 : u8 = 0xae;
-const ENABLE_PORT_1 : u8 = 0xad;
+const TEST_PORT_1: u8 = 0xab;
+const DISABLE_PORT_1: u8 = 0xae;
+const ENABLE_PORT_1: u8 = 0xad;
 
 /* status bits */
 bitflags! {
@@ -94,9 +94,9 @@ pub fn scan() {
 
     let status = read_controller_config();
     println!("{:x}", status);
-    write_controller_config(status & !(1<<6 | 1<<1 | 1<<0));
+    write_controller_config(status & !(1 << 6 | 1 << 1 | 1 << 0));
 
-    if (status & (1<<5)) == 0 {
+    if (status & (1 << 5)) == 0 {
         println!("Second port didn't disable");
     }
 
@@ -104,7 +104,7 @@ pub fn scan() {
     println!("self test: {:x?}", self_test_result);
 
     enable_port_2();
-    if (read_controller_config() & (1<<5)) == (1<<5) {
+    if (read_controller_config() & (1 << 5)) == (1 << 5) {
         println!("2nd port didn't enable");
     } else {
         disable_port_2();

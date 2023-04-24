@@ -17,7 +17,7 @@ intrusive_adapter!(pub ThreadRunnableAdapter = Arc<Thread>: Thread { running_lin
 
 pub struct Scheduler {
     pub threads: LinkedList<ThreadAdapter>,
-    pub runnable_threads: LinkedList<ThreadRunnableAdapter>
+    pub runnable_threads: LinkedList<ThreadRunnableAdapter>,
 }
 
 lazy_static! {
@@ -287,7 +287,7 @@ pub fn init(num_cpus: usize) {
     // TODO: We create an idle thread per core, due to needing a kernel stack. This is a massive hack because there's no thread pinning or anything.
 
     let idle_process = Arc::new(Mutex::new(Process::new("idle", aspace)));
-    
+
     let mut thread_list = Vec::new();
 
     for _ in 0..num_cpus {
@@ -318,9 +318,7 @@ pub fn init(num_cpus: usize) {
 }
 
 pub fn get_idle_thread(cpu_num: usize) -> Arc<Thread> {
-    unsafe {
-        IDLE_THREADS[cpu_num].clone()
-    }
+    unsafe { IDLE_THREADS[cpu_num].clone() }
 }
 
 pub fn tick() {

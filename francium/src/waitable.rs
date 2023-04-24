@@ -62,7 +62,7 @@ impl Waiter {
             Some(waiter) => {
                 did_wake = true;
                 scheduler::wake_thread(&waiter.0, waiter.1);
-            },
+            }
             None => self.pending.store(true, Ordering::Release),
         }
 

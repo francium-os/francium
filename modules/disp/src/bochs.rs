@@ -94,8 +94,10 @@ impl<'a> BochsAdapter {
 
     pub fn get_framebuffer(&self) -> &'a mut [u32] {
         unsafe {
-            core::slice::from_raw_parts_mut(self.framebuffer_virt as *mut u32,
-            self.current_x * self.current_y)
+            core::slice::from_raw_parts_mut(
+                self.framebuffer_virt as *mut u32,
+                self.current_x * self.current_y,
+            )
         }
     }
 }

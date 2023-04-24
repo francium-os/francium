@@ -1,5 +1,5 @@
-use francium_x86::gdt::*;
 use crate::per_cpu;
+use francium_x86::gdt::*;
 
 const GDT_ENTRIES: [GDTEntry; 8] = [
     // 0x0

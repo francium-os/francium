@@ -9,8 +9,8 @@ pub fn svc_debug_output(user_ptr: *const u8, len: usize) {
     let as_utf8 = core::str::from_utf8(&temp_buffer[0..len]).unwrap();
 
     // Strip a newline off the end, if it's present. Log will add one for us.
-    if &as_utf8[len-1..len] == "\n" {
-        log::debug!("{}", &as_utf8[0..len-1]);
+    if &as_utf8[len - 1..len] == "\n" {
+        log::debug!("{}", &as_utf8[0..len - 1]);
     } else {
         log::debug!("{}", as_utf8);
     }

@@ -2,7 +2,7 @@ use crate::arch::context::ExceptionContext;
 use crate::drivers::InterruptController;
 use crate::drivers::Timer;
 use crate::platform::DEFAULT_TIMER;
-use crate::platform::{INTERRUPT_DISTRIBUTOR, INTERRUPT_CONTROLLER};
+use crate::platform::{INTERRUPT_CONTROLLER, INTERRUPT_DISTRIBUTOR};
 use core::arch::{asm, global_asm};
 use francium_drivers::InterruptDistributor;
 
@@ -333,7 +333,9 @@ unsafe extern "C" fn handle_exception(
             } else {
                 println!("Got int {}", irq_number);
 
-                INTERRUPT_DISTRIBUTOR.lock().disable_interrupt(irq_number as u32);
+                INTERRUPT_DISTRIBUTOR
+                    .lock()
+                    .disable_interrupt(irq_number as u32);
                 if !crate::svc::event::dispatch_interrupt_event(irq_number as usize) {
                     INTERRUPT_CONTROLLER.lock().ack_interrupt(irq_number as u32);
                 }

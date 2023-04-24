@@ -43,9 +43,9 @@ pub use get_system_info::svc_get_system_info;
 pub use get_system_tick::svc_get_system_tick;
 
 pub use event::svc_bind_interrupt;
-pub use event::svc_create_event;
-pub use event::svc_unbind_interrupt;
-pub use event::svc_signal_event;
 pub use event::svc_clear_event;
+pub use event::svc_create_event;
+pub use event::svc_signal_event;
+pub use event::svc_unbind_interrupt;
 
 pub use wait::svc_wait_one;

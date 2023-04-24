@@ -7,8 +7,8 @@ use alloc::sync::Arc;
 use common::os_error::{Module, Reason, ResultCode, RESULT_OK};
 use core::sync::atomic::AtomicU32;
 use core::sync::atomic::Ordering;
-use spin::Mutex;
 use francium_drivers::InterruptController;
+use spin::Mutex;
 
 #[derive(Debug)]
 pub struct Event {
@@ -60,7 +60,6 @@ pub fn svc_clear_event(h: u32) -> ResultCode {
     let proc_locked = scheduler::get_current_process();
     let process = proc_locked.lock();
 
-
     if let HandleObject::Event(ev) = process.handle_table.get_object(h) {
         ev.w.clear();
 
@@ -71,7 +70,7 @@ pub fn svc_clear_event(h: u32) -> ResultCode {
         RESULT_OK
     } else {
         ResultCode::new(Module::Kernel, Reason::InvalidHandle)
-    }   
+    }
 }
 
 const NO_EVENT: Option<Arc<Event>> = None;
