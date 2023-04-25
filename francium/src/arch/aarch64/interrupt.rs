@@ -227,7 +227,6 @@ pub extern "C" fn rust_lower_el_aarch64_irq(_ctx: &mut ExceptionContext) {
                 INTERRUPT_CONTROLLER.lock().ack_interrupt(interrupt);
             }
             _ => {
-                INTERRUPT_DISTRIBUTOR.lock().disable_interrupt(interrupt);
                 if !crate::svc::event::dispatch_interrupt_event(interrupt as usize) {
                     // An interrupt event will ack the interrupt when it's done.
                     INTERRUPT_CONTROLLER.lock().ack_interrupt(interrupt);

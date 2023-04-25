@@ -1,9 +1,12 @@
 use bitflags::bitflags;
+use common::Handle;
 use francium_x86::io_port::*;
+use process::syscalls;
 
 const DATA: u16 = 0x60;
 const STATUS_COMMAND: u16 = 0x64;
 
+/* controller command definitions */
 const READ_CONTROLLER_CONFIG: u8 = 0x20;
 const WRITE_CONTROLLER_CONFIG: u8 = 0x60;
 
@@ -14,6 +17,18 @@ const SELF_TEST: u8 = 0xaa;
 const TEST_PORT_1: u8 = 0xab;
 const DISABLE_PORT_1: u8 = 0xae;
 const ENABLE_PORT_1: u8 = 0xad;
+const SECOND_PORT_DATA: u8 = 0xd4;
+
+/* ps2 device commands */
+const DEVICE_ENABLE_SCAN: u8 = 0xf4;
+const DEVICE_DISABLE_SCAN: u8 = 0xf5;
+const DEVICE_IDENTIFY: u8 = 0xf2;
+const DEVICE_RESET: u8 = 0xff;
+
+/* ps2 device commands */
+const RESPONSE_OK: u8 = 0xfa;
+const RESPONSE_FAIL: u8 = 0xfc;
+//const RESPONSE_OK: u8 = 0xfa;
 
 /* status bits */
 bitflags! {
@@ -29,6 +44,59 @@ bitflags! {
     }
 }
 
+pub struct PS2Port {
+    is_second_port: bool,
+    pub interrupt_event: Handle,
+}
+
+impl PS2Port {
+    fn write_byte(&self, byte: u8) {
+        if self.is_second_port {
+            outb(STATUS_COMMAND, SECOND_PORT_DATA);
+        }
+        outb(DATA, byte);
+    }
+
+    fn reset(&self) -> Vec<u8> {
+        self.write_byte(0xff);
+
+        let mut res = Vec::new();
+        while let Some(x) = read_response_with_timeout() {
+            res.push(x);
+        }
+        res
+    }
+
+    fn disable_scan(&self) -> u8 {
+        self.write_byte(DEVICE_DISABLE_SCAN);
+        read_response()
+    }
+
+    fn enable_scan(&self) -> u8 {
+        self.write_byte(DEVICE_ENABLE_SCAN);
+        read_response()
+    }
+
+    fn identify(&self) -> Vec<u8> {
+        println!("id {}", self.is_second_port);
+        self.write_byte(DEVICE_IDENTIFY);
+
+        let mut res = Vec::new();
+        while let Some(x) = read_response_with_timeout() {
+            res.push(x);
+        }
+        res
+    }
+
+    pub fn read(&self) -> Vec<u8> {
+        let mut res = Vec::new();
+        while let Some(x) = read_response_with_timeout() {
+            res.push(x);
+        }
+        res
+    }
+}
+
 fn cmd_no_args(cmd: u8) {
     outb(STATUS_COMMAND, cmd);
 }
@@ -40,9 +108,22 @@ fn cmd_one_arg(cmd: u8, val: u8) {
 }
 
 fn read_response() -> u8 {
-    let status = inb(STATUS_COMMAND);
     while (inb(STATUS_COMMAND) & StatusFlags::OUTPUT_FULL.bits()) == 0 {}
     inb(DATA)
+}
+
+fn read_response_with_timeout() -> Option<u8> {
+    let start_system_tick = syscalls::get_system_tick();
+    // Spinwait because sleeping for 1ms probably won't work.
+    let mut attempts = 1000;
+    while (inb(STATUS_COMMAND) & StatusFlags::OUTPUT_FULL.bits()) == 0 {
+        if attempts == 0 {
+            return None;
+        }
+        attempts -= 1;
+    }
+
+    Some(inb(DATA))
 }
 
 fn read_controller_config() -> u8 {
@@ -85,15 +166,25 @@ fn test_port_2() -> u8 {
     read_response()
 }
 
-pub fn scan() {
+pub fn scan() -> Vec<PS2Port> {
+    let mut ports = Vec::new();
+
     // to start: disable ps2 devices
-    outb(STATUS_COMMAND, 0xad);
-    outb(STATUS_COMMAND, 0xa7);
+    disable_port_1();
+    disable_port_2();
+
     // clear out data reg
+    println!(
+        "Initial output full: {:x}",
+        inb(STATUS_COMMAND) & StatusFlags::OUTPUT_FULL.bits()
+    );
     inb(DATA);
+    println!(
+        "Initial output full: {:x}",
+        inb(STATUS_COMMAND) & StatusFlags::OUTPUT_FULL.bits()
+    );
 
     let status = read_controller_config();
-    println!("{:x}", status);
     write_controller_config(status & !(1 << 6 | 1 << 1 | 1 << 0));
 
     if (status & (1 << 5)) == 0 {
@@ -110,37 +201,46 @@ pub fn scan() {
         disable_port_2();
     }
 
-    println!("{:x}", test_port_1());
-    println!("{:x}", test_port_2());
+    let port_1 = PS2Port {
+        is_second_port: false,
+        interrupt_event: syscalls::create_event().unwrap(),
+    };
+    let port_2 = PS2Port {
+        is_second_port: true,
+        interrupt_event: syscalls::create_event().unwrap(),
+    };
+
+    ports.push(port_1);
+    ports.push(port_2);
 
     enable_port_1();
     enable_port_2();
 
-    outb(DATA, 0xff);
-    println!("Reset port 1: {:x} {:x}", read_response(), read_response());
+    for p in &ports {
+        println!("Reset: {:x?}", p.reset());
+    }
 
-    outb(STATUS_COMMAND, 0xd4);
-    outb(DATA, 0xff);
-    println!("Reset port 2: {:x} {:x}", read_response(), read_response());
+    for p in &ports {
+        p.disable_scan();
+    }
 
-    outb(DATA, 0xf5);
-    println!("{:0x}", read_response());
+    for p in &ports {
+        println!("Identify: {:x?}", p.identify());
+    }
 
-    println!("identify");
-    outb(DATA, 0xf2);
-    println!("{:0x}", read_response());
-    println!("{:0x}", read_response());
-    println!("{:0x}", read_response());
+    for p in &ports {
+        p.enable_scan();
+    }
 
-    println!("port 2");
-    outb(STATUS_COMMAND, 0xd4);
-    outb(DATA, 0xf5);
-    println!("{:0x}", read_response());
+    // Bind the interrupt events we created earlier.
+    for p in &ports {
+        let interrupt_id = if !p.is_second_port { 1 } else { 12 };
+        syscalls::bind_interrupt(p.interrupt_event, interrupt_id).unwrap();
+    }
 
-    println!("identify");
-    outb(STATUS_COMMAND, 0xd4);
-    outb(DATA, 0xf2);
-    println!("{:0x}", read_response());
-    println!("{:0x}", read_response());
-    //println!("{:0x}", read_response());
+    // All good, enable IRQs.
+    let status_2 = read_controller_config();
+    write_controller_config(status_2 | (1 << 0) | (1 << 1));
+
+    ports
 }

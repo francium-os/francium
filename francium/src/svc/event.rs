@@ -65,6 +65,7 @@ pub fn svc_clear_event(h: u32) -> ResultCode {
 
         let interrupt_id = ev.interrupt.load(Ordering::Acquire);
         if interrupt_id != 0 {
+            println!("clearing interrupt event {}", interrupt_id);
             INTERRUPT_CONTROLLER.lock().ack_interrupt(interrupt_id);
         }
         RESULT_OK
@@ -78,6 +79,9 @@ pub static INTERRUPT_EVENT_TABLE: Mutex<[Option<Arc<Event>>; 128]> = Mutex::new(
 
 pub fn dispatch_interrupt_event(index: usize) -> bool {
     if let Some(ev) = &INTERRUPT_EVENT_TABLE.lock()[index] {
+        unsafe {
+            INTERRUPT_EVENT_TABLE.force_unlock();
+        }
         ev.w.signal_one();
         true
     } else {

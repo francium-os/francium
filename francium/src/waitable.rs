@@ -182,12 +182,13 @@ pub fn wait_handles(handles: &[u32]) -> usize {
 
             HandleObject::Event(event) => {
                 // going into an event wait
-                let interrupt_id = event.interrupt.load(Ordering::Acquire);
+                /*let interrupt_id = event.interrupt.load(Ordering::Acquire);
                 if interrupt_id != 0 {
+                    println!("Enable interrupt {}", interrupt_id);
                     crate::platform::INTERRUPT_DISTRIBUTOR
                         .lock()
                         .enable_interrupt(interrupt_id);
-                }
+                }*/
 
                 if event.post_wait(index) {
                     any_pending = true;

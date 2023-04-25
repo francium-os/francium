@@ -48,4 +48,5 @@ pub use event::svc_create_event;
 pub use event::svc_signal_event;
 pub use event::svc_unbind_interrupt;
 
+pub use wait::svc_wait_many;
 pub use wait::svc_wait_one;

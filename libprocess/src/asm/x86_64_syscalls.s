@@ -219,3 +219,12 @@ syscall_clear_event:
 mov eax, 0x1c
 syscall
 ret
+
+syscall_wait_many:
+push rbx
+mov eax, 0x1d
+mov rbx, rdx
+syscall
+mov [rbx], rdx
+pop rbx
+ret

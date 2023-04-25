@@ -162,7 +162,12 @@ syscall_clear_event:
 svc #0x1c
 ret
 
+syscall_wait_many:
+mov x9, x2
+svc #0x1d
+str x1, [x9]
+ret
+
 get_tpidr_el0_asm:
 mrs x0, tpidr_el0
 ret
-

@@ -54,6 +54,12 @@ extern "C" {
     pub fn syscall_wait_one(handle: Handle) -> ResultCode;
     pub fn syscall_signal_event(handle: Handle) -> ResultCode;
     pub fn syscall_clear_event(handle: Handle) -> ResultCode;
+
+    pub fn syscall_wait_many(
+        sessions: *const Handle,
+        num_sessions: usize,
+        index_out: *mut usize,
+    ) -> ResultCode;
 }
 
 pub fn print(s: &str) {
@@ -325,6 +331,18 @@ pub fn clear_event(handle: Handle) -> Result<(), OSError> {
         let res = syscall_clear_event(handle);
         if res == RESULT_OK {
             Ok(())
+        } else {
+            Err(OSError::from_result_code(res))
+        }
+    }
+}
+
+pub fn wait_many(handles: &[Handle]) -> Result<usize, OSError> {
+    unsafe {
+        let mut index_out: usize = 0;
+        let res = syscall_wait_many(handles.as_ptr(), handles.len(), &mut index_out);
+        if res == RESULT_OK {
+            Ok(index_out)
         } else {
             Err(OSError::from_result_code(res))
         }

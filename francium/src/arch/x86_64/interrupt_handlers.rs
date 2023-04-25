@@ -331,11 +331,6 @@ unsafe extern "C" fn handle_exception(
 
                 crate::timer::tick();
             } else {
-                println!("Got int {}", irq_number);
-
-                INTERRUPT_DISTRIBUTOR
-                    .lock()
-                    .disable_interrupt(irq_number as u32);
                 if !crate::svc::event::dispatch_interrupt_event(irq_number as usize) {
                     INTERRUPT_CONTROLLER.lock().ack_interrupt(irq_number as u32);
                 }
