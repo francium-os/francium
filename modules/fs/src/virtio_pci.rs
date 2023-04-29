@@ -254,19 +254,19 @@ impl VirtioPciDevice {
         const VIRTIO_F_VERSION_1: u64 = 1 << 32;
 
         /*
-        The driver MUST follow this sequence to initialize a device:
-        1. Reset the device.
-        2. Set the ACKNOWLEDGE status bit: the guest OS has noticed the device.
-        3. Set the DRIVER status bit: the guest OS knows how to drive the device.
-        4. Read device feature bits, and write the subset of feature bits understood by the OS and driver to the
-        device. During this step the driver MAY read (but MUST NOT write) the device-specific configuration
-        fields to check that it can support the device before accepting it.
-        5. Set the FEATURES_OK status bit. The driver MUST NOT accept new feature bits after this step.
-        6. Re-read device status to ensure the FEATURES_OK bit is still set: otherwise, the device does not
-        support our subset of features and the device is unusable.
-        7. Perform device-specific setup, including discovery of virtqueues for the device, optional per-bus setup,
-        reading and possibly writing the device’s virtio configuration space, and population of virtqueues.
-        8. Set the DRIVER_OK status bit. At this point the device is “live”
+            The driver MUST follow this sequence to initialize a device:
+            1. Reset the device.
+            2. Set the ACKNOWLEDGE status bit: the guest OS has noticed the device.
+            3. Set the DRIVER status bit: the guest OS knows how to drive the device.
+            4. Read device feature bits, and write the subset of feature bits understood by the OS and driver to the
+            device. During this step the driver MAY read (but MUST NOT write) the device-specific configuration
+            fields to check that it can support the device before accepting it.
+            5. Set the FEATURES_OK status bit. The driver MUST NOT accept new feature bits after this step.
+            6. Re-read device status to ensure the FEATURES_OK bit is still set: otherwise, the device does not
+            support our subset of features and the device is unusable.
+            7. Perform device-specific setup, including discovery of virtqueues for the device, optional per-bus setup,
+            reading and possibly writing the device’s virtio configuration space, and population of virtqueues.
+            8. Set the DRIVER_OK status bit. At this point the device is “live”
         */
 
         self.common
@@ -358,21 +358,6 @@ struct VirtioPciCap {
     length: u32,
 }
 
-/*
-ACKNOWLEDGE (1) Indicates that the guest OS has found the device and recognized it as a valid virtio
-device.
-DRIVER (2) Indicates that the guest OS knows how to drive the device.
-Note: There could be a significant (or infinite) delay before setting this bit. For example, under Linux,
-drivers can be loadable modules.
-FAILED (128) Indicates that something went wrong in the guest, and it has given up on the device. This
-could be an internal error, or the driver didn’t like the device for some reason, or even a fatal error
-during device operation.
-FEATURES_OK (8) Indicates that the driver has acknowledged all the features it understands, and feature
-negotiation is complete.
-DRIVER_OK (4) Indicates that the driver is set up and ready to drive the device.
-DEVICE_NEEDS_RESET (64) Indicates that the device has experienced an error from which it can’t recover
-*/
-
 register_bitfields! [
     u8,
     DeviceStatus [
@@ -384,31 +369,6 @@ register_bitfields! [
         ACKNOWLEDGE        0  // 1
     ]
 ];
-
-/*
-From spec:
-
-struct virtio_pci_common_cfg {
-/* About the whole device. */
-le32 device_feature_select; /* read-write */
-le32 device_feature; /* read-only for driver */
-le32 driver_feature_select; /* read-write */
-le32 driver_feature; /* read-write */
-le16 msix_config; /* read-write */
-le16 num_queues; /* read-only for driver */
-u8 device_status; /* read-write */
-u8 config_generation; /* read-only for driver */
-/* About a specific virtqueue. */
-le16 queue_select; /* read-write */
-le16 queue_size; /* read-write */
-le16 queue_msix_vector; /* read-write */
-le16 queue_enable; /* read-write */
-le16 queue_notify_off; /* read-only for driver */
-le64 queue_desc; /* read-write */
-le64 queue_driver; /* read-write */
-le64 queue_device; /* read-write */
-};
-*/
 
 register_structs! {
     VirtioPciCommonCfg {
@@ -434,51 +394,6 @@ register_structs! {
         (0x38 => @END),
     }
 }
-
-/*
-struct virtq_desc {
-/* Address (guest-physical). */
-le64 addr;
-/* Length. */
-le32 len;
-/* This marks a buffer as continuing via the next field. */
-#define VIRTQ_DESC_F_NEXT 1
-/* This marks a buffer as device write-only (otherwise device read-only). */
-#define VIRTQ_DESC_F_WRITE 2
-/* This means the buffer contains a list of buffer descriptors. */
-#define VIRTQ_DESC_F_INDIRECT 4
-/* The flags as indicated above. */
-le16 flags;
-/* Next field if flags & NEXT */
-le16 next;
-};*/
-
-/*
-struct virtq_avail {
-#define VIRTQ_AVAIL_F_NO_INTERRUPT 1
-le16 flags;
-le16 idx;
-le16 ring[ /* Queue Size */ ];
-le16 used_event; /* Only if VIRTIO_F_EVENT_IDX */
-};
-*/
-
-/*
-struct virtq_used {
-#define VIRTQ_USED_F_NO_NOTIFY 1
-le16 flags;
-le16 idx;
-struct virtq_used_elem ring[ /* Queue Size */];
-le16 avail_event; /* Only if VIRTIO_F_EVENT_IDX */
-};
-/* le32 is used here for ids for padding reasons. */
-struct virtq_used_elem {
-/* Index of start of used descriptor chain. */
-le32 id;
-/* Total length of the descriptor chain which was used (written to) */
-le32 len;
-};
-*/
 
 #[repr(C)]
 #[derive(Copy, Clone)]
