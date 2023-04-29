@@ -70,6 +70,14 @@ impl FSServerStruct {
 async fn main() {
     println!("Hello from fs!");
 
+    unsafe {
+        let mut ver_string_ptr: *const i8 = core::ptr::null();
+        let mut date_string_ptr: *const i8 = core::ptr::null();
+        let ret = ext2fs_sys::ext2fs_get_library_version(&mut ver_string_ptr, &mut date_string_ptr);
+
+        println!("{} {:?} {:?}", ret, ver_string_ptr, core::ffi::CStr::from_ptr(ver_string_ptr));
+    }
+
     let port = syscalls::create_port("").unwrap();
 
     sm::register_port(syscalls::make_tag("fs"), TranslateCopyHandle(port)).unwrap();

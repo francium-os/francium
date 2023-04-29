@@ -52,6 +52,12 @@ qemu_args=-M q35  -bios /usr/share/edk2/x64/OVMF.fd -drive format=raw,file=$(boo
 gdb=rust-gdb
 endif
 
+ifeq ($(arch),aarch64)
+export PKG_CONFIG=/home/stary/develop/osdev/toolchain/francium-aarch64-pkg-config
+else ifeq ($(arch), x86_64)
+export PKG_CONFIG=/home/stary/develop/osdev/toolchain/francium-x86_64-pkg-config
+endif
+
 CARGO_FLAGS =
 
 .PHONY: qemu gdb bochs $(francium) $(bootimg_bios) $(bootimg_uefi) $(fs) $(sm) $(test) $(pcie) $(disp) $(ps2) $(net) $(loader) clean clean-user clean-kernel
