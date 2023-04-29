@@ -894,6 +894,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "955be5d0ca0465caf127165acb47964f911e2bc26073e865deb8be7189302faf"
 
 [[package]]
+name = "loader"
+version = "0.1.0"
+dependencies = [
+ "common",
+ "francium_common",
+ "process",
+]
+
+[[package]]
 name = "lock_api"
 version = "0.4.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -947,6 +956,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d61c719bcfbcf5d62b3a09efa6088de8c54bc0bfcd3ea7ae39fcc186108b8de1"
 dependencies = [
  "autocfg",
+]
+
+[[package]]
+name = "net"
+version = "0.1.0"
+dependencies = [
+ "common",
+ "francium_common",
+ "process",
 ]
 
 [[package]]

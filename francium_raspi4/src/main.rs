@@ -41,8 +41,9 @@ pub extern "C" fn rust_main() -> ! {
     let fs_buf = include_bytes!("../../target/aarch64-unknown-francium/release/fs");
     let test_buf = include_bytes!("../../target/aarch64-unknown-francium/release/test");
     let sm_buf = include_bytes!("../../target/aarch64-unknown-francium/release/sm");
-    //let pcie_buf = include_bytes!("../../target/aarch64-unknown-francium/release/pcie");
     let disp_buf = include_bytes!("../../target/aarch64-unknown-francium/release/disp");
+    let net_buf = include_bytes!("../../target/aarch64-unknown-francium/release/net");
+    let loader_buf = include_bytes!("../../target/aarch64-unknown-francium/release/loader_buf");
 
     let fs_main_thread = init::load_process(fs_buf, "fs");
     scheduler::register_thread(fs_main_thread.clone());
@@ -53,11 +54,14 @@ pub extern "C" fn rust_main() -> ! {
     let sm_main_thread = init::load_process(sm_buf, "sm");
     scheduler::register_thread(sm_main_thread.clone());
 
-    //let pcie_main_thread = init::load_process(pcie_buf, "pcie");
-    //scheduler::register_thread(pcie_main_thread.clone());
-
     let disp_main_thread = init::load_process(disp_buf, "disp");
     scheduler::register_thread(disp_main_thread.clone());
+
+    let net_main_thread = init::load_process(net_buf, "net");
+    scheduler::register_thread(net_main_thread.clone());
+
+    let loader_main_thread = init::load_process(loader_buf, "loader");
+    scheduler::register_thread(loader_main_thread.clone());
 
     platform::scheduler_post_init();
 

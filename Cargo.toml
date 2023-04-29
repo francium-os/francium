@@ -15,6 +15,8 @@ members = [
   "modules/pcie",
   "modules/disp",
   "modules/ps2",
+  "modules/net",
+  "modules/loader",
   "ipc-gen-buildtime",
   "crates/francium_common",
   "crates/francium_drivers",
