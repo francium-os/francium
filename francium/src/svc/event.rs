@@ -65,7 +65,7 @@ pub fn svc_clear_event(h: u32) -> ResultCode {
 
         let interrupt_id = ev.interrupt.load(Ordering::Acquire);
         if interrupt_id != 0 {
-            println!("clearing interrupt event {}", interrupt_id);
+            log::trace!("clearing interrupt event {}", interrupt_id);
             INTERRUPT_CONTROLLER.lock().ack_interrupt(interrupt_id);
         }
         RESULT_OK

@@ -12,9 +12,9 @@ const WRITE_CONTROLLER_CONFIG: u8 = 0x60;
 
 const DISABLE_PORT_2: u8 = 0xa7;
 const ENABLE_PORT_2: u8 = 0xa8;
-const TEST_PORT_2: u8 = 0xa9;
+//const TEST_PORT_2: u8 = 0xa9;
 const SELF_TEST: u8 = 0xaa;
-const TEST_PORT_1: u8 = 0xab;
+//const TEST_PORT_1: u8 = 0xab;
 const DISABLE_PORT_1: u8 = 0xae;
 const ENABLE_PORT_1: u8 = 0xad;
 const SECOND_PORT_DATA: u8 = 0xd4;
@@ -25,10 +25,9 @@ const DEVICE_DISABLE_SCAN: u8 = 0xf5;
 const DEVICE_IDENTIFY: u8 = 0xf2;
 const DEVICE_RESET: u8 = 0xff;
 
-/* ps2 device commands */
-const RESPONSE_OK: u8 = 0xfa;
-const RESPONSE_FAIL: u8 = 0xfc;
+/* ps2 device responses */
 //const RESPONSE_OK: u8 = 0xfa;
+//const RESPONSE_FAIL: u8 = 0xfc;
 
 /* status bits */
 bitflags! {
@@ -58,7 +57,7 @@ impl PS2Port {
     }
 
     fn reset(&self) -> Vec<u8> {
-        self.write_byte(0xff);
+        self.write_byte(DEVICE_RESET);
 
         let mut res = Vec::new();
         while let Some(x) = read_response_with_timeout() {
@@ -78,7 +77,6 @@ impl PS2Port {
     }
 
     fn identify(&self) -> Vec<u8> {
-        println!("id {}", self.is_second_port);
         self.write_byte(DEVICE_IDENTIFY);
 
         let mut res = Vec::new();
@@ -113,7 +111,8 @@ fn read_response() -> u8 {
 }
 
 fn read_response_with_timeout() -> Option<u8> {
-    let start_system_tick = syscalls::get_system_tick();
+    // TODO: fix
+    //let start_system_tick = syscalls::get_system_tick();
     // Spinwait because sleeping for 1ms probably won't work.
     let mut attempts = 1000;
     while (inb(STATUS_COMMAND) & StatusFlags::OUTPUT_FULL.bits()) == 0 {
@@ -156,7 +155,7 @@ fn disable_port_2() {
     cmd_no_args(DISABLE_PORT_2);
 }
 
-fn test_port_1() -> u8 {
+/*fn test_port_1() -> u8 {
     cmd_no_args(TEST_PORT_1);
     read_response()
 }
@@ -164,7 +163,7 @@ fn test_port_1() -> u8 {
 fn test_port_2() -> u8 {
     cmd_no_args(TEST_PORT_2);
     read_response()
-}
+}*/
 
 pub fn scan() -> Vec<PS2Port> {
     let mut ports = Vec::new();
@@ -174,15 +173,7 @@ pub fn scan() -> Vec<PS2Port> {
     disable_port_2();
 
     // clear out data reg
-    println!(
-        "Initial output full: {:x}",
-        inb(STATUS_COMMAND) & StatusFlags::OUTPUT_FULL.bits()
-    );
     inb(DATA);
-    println!(
-        "Initial output full: {:x}",
-        inb(STATUS_COMMAND) & StatusFlags::OUTPUT_FULL.bits()
-    );
 
     let status = read_controller_config();
     write_controller_config(status & !(1 << 6 | 1 << 1 | 1 << 0));
@@ -192,7 +183,7 @@ pub fn scan() -> Vec<PS2Port> {
     }
 
     let self_test_result = self_test();
-    println!("self test: {:x?}", self_test_result);
+    assert!(self_test_result == 0x55);
 
     enable_port_2();
     if (read_controller_config() & (1 << 5)) == (1 << 5) {
@@ -217,7 +208,7 @@ pub fn scan() -> Vec<PS2Port> {
     enable_port_2();
 
     for p in &ports {
-        println!("Reset: {:x?}", p.reset());
+        p.reset();
     }
 
     for p in &ports {

@@ -2,9 +2,8 @@ use crate::arch::context::ExceptionContext;
 use crate::drivers::InterruptController;
 use crate::drivers::Timer;
 use crate::platform::DEFAULT_TIMER;
-use crate::platform::{INTERRUPT_CONTROLLER, INTERRUPT_DISTRIBUTOR};
+use crate::platform::INTERRUPT_CONTROLLER;
 use core::arch::{asm, global_asm};
-use francium_drivers::InterruptDistributor;
 
 macro_rules! interrupt_noerror {
     ($interrupt_name:ident, $interrupt_number:expr) => {

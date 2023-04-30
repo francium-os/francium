@@ -93,25 +93,16 @@ pub fn platform_specific_init() {}
 pub fn scheduler_pre_init() {
     // enable timer irq
     let timer_irq = 2; // PIC on IRQ 2...
-
-    //log::debug!("{:x?}", PLATFORM_INFO.interrupt_model);
-    //loop{}
-
-    log::debug!("before ... locking????");
     let mut controller_lock = INTERRUPT_CONTROLLER.lock();
     let mut distributor_lock = INTERRUPT_DISTRIBUTOR.lock();
-    log::debug!("APIC init?");
+
     controller_lock.init();
-    log::debug!("APIC init?");
     distributor_lock.init();
-    log::debug!("APIC init?");
     distributor_lock.enable_interrupt(timer_irq);
 
     // enable arch timer, 100hz
     let mut timer_lock = DEFAULT_TIMER.lock();
-    log::debug!("timer init?");
     timer_lock.set_period_us(10000);
-    log::debug!("timer init?");
     timer_lock.reset_timer();
 }
 

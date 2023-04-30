@@ -3,7 +3,6 @@ use crate::process::Thread;
 use crate::scheduler;
 use alloc::sync::Arc;
 use core::sync::atomic::{AtomicBool, Ordering};
-use francium_drivers::InterruptDistributor;
 use smallvec::SmallVec;
 use spin::Mutex;
 

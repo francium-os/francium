@@ -35,3 +35,6 @@ pub fn svc_create_thread(entry_point: usize, stack_top: usize) -> (ResultCode, u
     // TODO: This is meant to return a thread handle!
     (ResultCode(0), tid as u32)
 }
+
+// svc_create_process
+// svc_map_process_memory

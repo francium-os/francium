@@ -15,3 +15,5 @@ pub mod msr;
 pub mod syscall;
 
 pub mod page_table;
+
+pub mod cpuid;

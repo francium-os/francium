@@ -1,4 +1,3 @@
-use common::system_info::*;
 use process::syscalls;
 use process::Handle;
 
@@ -12,13 +11,13 @@ fn main() {
 
     let port_interrupt_events: Vec<Handle> = ps2_ports.iter().map(|x| x.interrupt_event).collect();
     loop {
-        println!("Waiting...");
+        //println!("Waiting...");
         let index = syscalls::wait_many(&port_interrupt_events).unwrap();
-        println!("Got port {}", index);
-        println!("got scan {:x?}", ps2_ports[index].read());
+        //println!("Got port {}", index);
+        println!("port {} got scan {:x?}", index, ps2_ports[index].read());
         syscalls::clear_event(port_interrupt_events[index]).unwrap();
     }
-    syscalls::exit_process();
+    //syscalls::exit_process();
 }
 
 #[cfg(not(target_arch = "x86_64"))]
