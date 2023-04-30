@@ -1,11 +1,12 @@
 use process::syscalls;
-use process::Handle;
 
 #[cfg(target_arch = "x86_64")]
 mod ps2;
 
 #[cfg(target_arch = "x86_64")]
 fn main() {
+    use process::Handle;
+
     println!("Hello from ps2!");
     let ps2_ports = ps2::scan();
 

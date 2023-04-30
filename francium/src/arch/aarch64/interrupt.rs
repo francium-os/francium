@@ -1,8 +1,8 @@
 use super::context::ExceptionContext;
 use crate::arch::aarch64::svc_wrappers;
+use crate::drivers::InterruptController;
 use crate::drivers::Timer;
-use crate::drivers::{InterruptController, InterruptDistributor};
-use crate::platform::{DEFAULT_TIMER, INTERRUPT_CONTROLLER, INTERRUPT_DISTRIBUTOR};
+use crate::platform::{DEFAULT_TIMER, INTERRUPT_CONTROLLER};
 use crate::timer;
 
 use aarch64_cpu::registers::*;

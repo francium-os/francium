@@ -5,6 +5,7 @@ use francium_kernel::constants::*;
 use francium_kernel::memory::KERNEL_ADDRESS_SPACE;
 use francium_kernel::mmu::PagePermission;
 use francium_kernel::*;
+use log_sink::*;
 
 #[no_mangle]
 pub extern "C" fn rust_main() -> ! {
@@ -31,7 +32,7 @@ pub extern "C" fn rust_main() -> ! {
         );
     }
 
-    log_sink::init().unwrap();
+    print_log_sink::init().unwrap();
 
     platform::scheduler_pre_init();
     scheduler::init();
