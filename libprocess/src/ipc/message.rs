@@ -186,6 +186,16 @@ impl IPCValue for bool {
     }
 }
 
+impl<'a> IPCValue for &'a str {
+    fn read(msg: &mut IPCMessage) -> &'a str {
+        todo!();
+    }
+
+    fn write(msg: &mut IPCMessage, val: & &'a str) {
+        todo!();
+    }
+}
+
 impl IPCValue for ResultCode {
     fn read(msg: &mut IPCMessage) -> ResultCode {
         ResultCode(u32::read(msg))

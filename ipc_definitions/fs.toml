@@ -3,7 +3,7 @@ struct_name = "FSServerStruct"
 handle_accessor = "crate::ipc::fs::get_handle_for_fs"
 
 [[methods]]
-name = "test"
+name = "open_file"
 id = 1
-inputs = []
-output = "OSResult<TranslateMoveHandle>"
+inputs = [{ name = "filename", ty = "&str"}]
+output = "OSResult<u32>"
