@@ -32,7 +32,7 @@ impl Method {
             .iter()
             .map(|x| {
                 let name = format_ident!("{}", x.name);
-                let ty_ = format_ident!("{}", x.ty);
+                let ty_: Type = syn::parse_str(&x.ty).unwrap();
                 quote!(#name: #ty_)
             })
             .collect();
@@ -84,7 +84,7 @@ impl Method {
             .iter()
             .map(|x| {
                 let name = format_ident!("{}", x.name);
-                let ty_ = format_ident!("{}", x.ty);
+                let ty_: Type = syn::parse_str(&x.ty).unwrap();
                 quote!(#name: #ty_)
             })
             .collect();
