@@ -162,12 +162,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "atomic_refcell"
-version = "0.1.10"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "79d6dc922a2792b006573f60b2648076355daeae5ce9cb59507e5908c9625d31"
-
-[[package]]
 name = "autocfg"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -228,7 +222,7 @@ dependencies = [
  "anyhow",
  "async-process",
  "bootloader-boot-config",
- "fatfs 0.3.6 (registry+https://github.com/rust-lang/crates.io-index)",
+ "fatfs 0.3.6",
  "futures",
  "futures-concurrency",
  "gpt",
@@ -286,11 +280,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4e3c5919066adf22df73762e50cffcde3a758f2a848b113b586d1f86728b673b"
 dependencies = [
  "iana-time-zone",
- "js-sys",
  "num-integer",
  "num-traits",
- "time",
- "wasm-bindgen",
  "winapi",
 ]
 
@@ -469,12 +460,10 @@ dependencies = [
 
 [[package]]
 name = "fatfs"
-version = "0.3.6"
-source = "git+https://github.com/francium-os/rust-fatfs.git?branch=stable-0.3#1c9f3a33c23bb378da9907932ca7224e0d868e56"
+version = "0.4.0"
+source = "git+https://github.com/francium-os/rust-fatfs.git#a3a834ef92d94dd227c316c0887654dab00ae085"
 dependencies = [
- "atomic_refcell",
  "bitflags",
- "byteorder",
  "chrono",
  "log",
 ]
@@ -611,7 +600,7 @@ name = "fs"
 version = "0.1.0"
 dependencies = [
  "async-trait",
- "fatfs 0.3.6 (git+https://github.com/francium-os/rust-fatfs.git?branch=stable-0.3)",
+ "fatfs 0.4.0",
  "francium_common",
  "ipc-gen-buildtime",
  "process",
@@ -748,7 +737,7 @@ checksum = "c85e1d9ab2eadba7e5040d4e09cbd6d072b76a557ad64e797c2cb9d4da21d7e4"
 dependencies = [
  "cfg-if",
  "libc",
- "wasi 0.11.0+wasi-snapshot-preview1",
+ "wasi",
 ]
 
 [[package]]
@@ -1509,17 +1498,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "time"
-version = "0.1.45"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1b797afad3f312d1c66a56d11d0316f916356d11bd158fbc6ca6389ff6bf805a"
-dependencies = [
- "libc",
- "wasi 0.10.0+wasi-snapshot-preview1",
- "winapi",
-]
-
-[[package]]
 name = "tock-registers"
 version = "0.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1620,12 +1598,6 @@ name = "waker-fn"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9d5b2c62b4012a3e1eca5a7e077d13b3bf498c4073e33ccd58626607748ceeca"
-
-[[package]]
-name = "wasi"
-version = "0.10.0+wasi-snapshot-preview1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1a143597ca7c7793eff794def352d41792a93c481eb1042423ff7ff72ba2c31f"
 
 [[package]]
 name = "wasi"

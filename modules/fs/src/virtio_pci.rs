@@ -14,6 +14,8 @@ pub struct VirtioNotifier {
     interrupt_event: Handle,
 }
 
+// safety: dude trust me
+unsafe impl Send for VirtioPciDevice {}
 pub struct VirtioPciDevice {
     common: &'static mut VirtioPciCommonCfg,
     notify: *mut u8,

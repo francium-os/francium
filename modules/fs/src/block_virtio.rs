@@ -99,7 +99,7 @@ u8 status;
     // data
 }*/
 
-pub fn scan() -> Vec<Box<dyn BlockDevice>> {
+pub fn scan() -> Vec<Box<dyn BlockDevice + Send>> {
     // block device transitional id is 0x1001
     let transitional_devices = ipc::pcie::get_devices_by_vidpid(0x1af4, 0x1001);
     // new device id 2, +0x1040
@@ -110,7 +110,7 @@ pub fn scan() -> Vec<Box<dyn BlockDevice>> {
     for dev in transitional_devices {
         let virtio_dev = VirtioPciDevice::new(dev);
         let block = BlockVirtio::new(virtio_dev);
-        let boxed: Box<dyn BlockDevice> = Box::new(block);
+        let boxed: Box<dyn BlockDevice + Send> = Box::new(block);
 
         blocks.push(boxed)
     }

@@ -1,8 +1,8 @@
 use crate::block::BlockDevice;
 use std::io::SeekFrom;
 
-pub struct BlockAdapter<'a> {
-    upper: &'a mut dyn BlockDevice,
+pub struct BlockAdapter {
+    upper: Box<dyn BlockDevice + Send>,
     base_sector: u64,
     offset_bytes: u64,
 
@@ -10,8 +10,8 @@ pub struct BlockAdapter<'a> {
     cache: [u8; 1024],
 }
 
-impl BlockAdapter<'_> {
-    pub fn new(block: &mut dyn BlockDevice, base: u64) -> BlockAdapter<'_> {
+impl BlockAdapter {
+    pub fn new(block: Box<dyn BlockDevice + Send>, base: u64) -> BlockAdapter {
         BlockAdapter {
             upper: block,
             base_sector: base,
@@ -40,7 +40,7 @@ impl BlockAdapter<'_> {
     }
 }
 
-impl std::io::Read for BlockAdapter<'_> {
+impl std::io::Read for BlockAdapter {
     fn read(&mut self, buf: &mut [u8]) -> Result<usize, std::io::Error> {
         let cache_offset: usize = (self.offset_bytes % 512) as usize;
 
@@ -58,7 +58,7 @@ impl std::io::Read for BlockAdapter<'_> {
     }
 }
 
-impl std::io::Write for BlockAdapter<'_> {
+impl std::io::Write for BlockAdapter {
     fn write(&mut self, _: &[u8]) -> Result<usize, std::io::Error> {
         todo!()
     }
@@ -67,7 +67,7 @@ impl std::io::Write for BlockAdapter<'_> {
     }
 }
 
-impl std::io::Seek for BlockAdapter<'_> {
+impl std::io::Seek for BlockAdapter {
     fn seek(&mut self, from: SeekFrom) -> Result<u64, std::io::Error> {
         //println!("Seek: {:x?}", from);
         match from {

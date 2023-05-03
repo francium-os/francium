@@ -14,18 +14,27 @@ mod block;
 mod block_adapter;
 mod block_virtio;
 
+use std::io::Read;
+
 include!(concat!(env!("OUT_DIR"), "/fs_server_impl.rs"));
 
-struct FSServerStruct<'a> {
+type FatFilesystem = fatfs::FileSystem<fatfs::StdIoWrapper<BlockAdapter>, fatfs::DefaultTimeProvider, fatfs::LossyOemCpConverter>;
+
+struct FSServerStruct {
     // todo: hold multiple filesystems and implement some VFS stuff
-    fs: Arc<Mutex<fatfs::FileSystem<BlockAdapter<'a>>>>
+    fs: Arc<Mutex<FatFilesystem>>
 }
 
-impl FSServerStruct<'_> {
+impl FSServerStruct {
     fn open_file(&self, file_name: &str) -> OSResult<u32> {
         let fs = self.fs.lock().unwrap();
         
-        fs.root_dir().open_file(file_name).ok_or(Err(OSError::new(Module::FS, Reason::NotFound)))
+        let mut file = fs.root_dir().open_file(file_name).unwrap();
+	let mut s: String = String::new();
+	file.read_to_string(&mut s);
+	println!("{:?}", s);
+
+	Ok(0)
     }
 }
 
@@ -37,13 +46,11 @@ async fn main() {
 
     sm::register_port(syscalls::make_tag("fs"), TranslateCopyHandle(port)).unwrap();
 
-    let server = Box::new(ServerImpl::new(FSServerStruct {}, port));
-
-    let blocks = block_virtio::scan();
-    let mut first_block = blocks.get(0);
+    let mut blocks = block_virtio::scan();
+    let first_block = blocks.pop().unwrap();
     // TODO: uhhhh, we need to parse the partition out of the {gpt, mbr}
     let adapted = BlockAdapter::new(first_block, 34);
-    let fs = fatfs::FileSystem::new(adapted, fatfs::FsOptions::new()).unwrap();
+    let fs = fatfs::FileSystem::new(fatfs::StdIoWrapper::new(adapted), fatfs::FsOptions::new()).unwrap();
     let first_fs = fs;
 
     let server = Box::new(ServerImpl::new(FSServerStruct {
