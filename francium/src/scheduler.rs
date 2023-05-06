@@ -138,7 +138,16 @@ impl Scheduler {
     pub fn tick(&mut self) {
         // XXX TODO: O(h no)
         if self.runnable_threads.iter().count() == 0 {
-            return;
+            trace!("No runnable threads left!");
+            for th in self.threads.iter() {
+                if th.state.load(Ordering::Acquire) == ThreadState::Suspended {
+                    trace!("Suspended: id={:?} name={:?}", th.id, th.process.lock().name);
+                } else {
+                    trace!("?? id={:?}", th.id);
+                }
+            }
+
+            return
         }
 
         // do the thing

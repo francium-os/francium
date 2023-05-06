@@ -1,4 +1,5 @@
 use crate::arch::context::ExceptionContext;
+use crate::arch::x86_64::msr;
 use crate::drivers::InterruptController;
 use crate::drivers::Timer;
 use crate::platform::DEFAULT_TIMER;
@@ -287,6 +288,8 @@ unsafe extern "C" fn handle_exception(
             }
 
             log::debug!("Register dump\n{:x?}", ctx.regs);
+            log::debug!("gsbase: {:x}", msr::read_gs_base());
+            log::debug!("gs_kernel_base: {:x}", msr::read_kernel_gs_base());
 
             /*let process = &crate::scheduler::get_current_process();
             let process_locked = process.lock();
@@ -342,6 +345,7 @@ unsafe extern "C" fn handle_exception(
             );
             log::debug!("error_code: {}", error_code);
             log::debug!("register dump:\n{:?}", ctx.regs);
+
             panic!("Unhandled interrupt {:?}", interrupt_number);
         }
     }

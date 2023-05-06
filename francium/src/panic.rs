@@ -8,3 +8,8 @@ fn panic(info: &PanicInfo) -> ! {
     println!("kernel {}", info);
     loop {}
 }
+
+#[no_mangle]
+extern "C" fn __stack_chk_fail() {
+    panic!("Stack check failed!");
+}

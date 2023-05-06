@@ -27,14 +27,16 @@ struct FSServerStruct {
 
 impl FSServerStruct {
     fn open_file(&self, file_name: &str) -> OSResult<u32> {
+        println!("Hi from open_file!");
+
         let fs = self.fs.lock().unwrap();
         
         let mut file = fs.root_dir().open_file(file_name).unwrap();
-	let mut s: String = String::new();
-	file.read_to_string(&mut s);
-	println!("{:?}", s);
+    	let mut s: String = String::new();
+    	file.read_to_string(&mut s);
+    	println!("{:?}", s);
 
-	Ok(0)
+    	Ok(0)
     }
 }
 
@@ -57,6 +59,7 @@ async fn main() {
         fs: Arc::new(Mutex::new(first_fs))
     }, port));
 
+    println!("fs: processing");
     server.process_forever().await;
 
     syscalls::close_handle(port).unwrap();

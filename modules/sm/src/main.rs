@@ -43,11 +43,9 @@ impl SMServerStruct {
                         }
                     }
                 };
-
                 waiter.recv().await.unwrap()
             }
         };
-
         let client_session = syscalls::connect_to_port_handle(server_port)?;
         Ok(TranslateMoveHandle(client_session))
     }

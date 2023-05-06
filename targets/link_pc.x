@@ -23,6 +23,20 @@ SECTIONS
     __rodata_end = .;
   }
 
+  .eh_frame_hdr :
+  {
+    __eh_frame_hdr_start = .;
+    *(.eh_frame_hdr*)
+    __eh_frame_hdr_end = .;
+  }
+
+  .eh_frame :
+  {
+    __eh_frame_start = .;
+    *(.eh_frame*)
+    __eh_frame_end = .;
+  }
+
   .bootloader-config :
   {
     *(.bootloader-config)
@@ -57,5 +71,5 @@ SECTIONS
     __bss_end = .;
   }
   
-  /DISCARD/ : { *(.comment) *(.gnu*) *(.note*) *(.eh_frame*) }
+  /DISCARD/ : { *(.comment) *(.gnu*) *(.note*) }
 }

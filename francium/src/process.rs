@@ -42,7 +42,11 @@ intrusive_adapter!(pub ThreadProcessAdapter = Arc<Thread>: Thread { process_link
 
 impl core::fmt::Debug for Thread {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
-        f.write_fmt(format_args!("Thread id={}", self.id))
+        if self.is_idle_thread.load(Ordering::Acquire) {
+            f.write_fmt(format_args!("Thread id={} idle", self.id))
+        } else {
+            f.write_fmt(format_args!("Thread id={} state={:?}", self.id, self.state.load(Ordering::Acquire)))
+        }
     }
 }
 
@@ -78,7 +82,7 @@ impl Thread {
             process: process.clone(),
             kernel_stack_top: kernel_stack as *const usize as usize + kernel_stack_size,
             kernel_stack_size: kernel_stack_size,
-            is_idle_thread: AtomicBool::new(false),
+            is_idle_thread: AtomicBool::new(false)
         });
 
         process.lock().threads.push_back(thread.clone());

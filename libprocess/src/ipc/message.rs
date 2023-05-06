@@ -188,6 +188,7 @@ impl IPCValue for bool {
 
 impl<'a> IPCValue for &'a str {
     fn read(msg: &mut IPCMessage) -> &'a str {
+        println!("String moment");
         todo!();
     }
 

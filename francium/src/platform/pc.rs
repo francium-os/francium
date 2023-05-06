@@ -84,7 +84,7 @@ lazy_static! {
 
         let handler = FranciumACPIHandler {};
         let tables = unsafe { AcpiTables::from_rsdp(handler, rsdp_addr as usize).unwrap() };
-        acpi::platform::PlatformInfo::new_in(&tables, &alloc::alloc::Global).unwrap()
+        acpi::platform::PlatformInfo::new_in(&tables, alloc::alloc::Global).unwrap()
     };
 }
 
