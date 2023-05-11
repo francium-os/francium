@@ -163,7 +163,6 @@ pub fn wait_handles(handles: &[u32]) -> usize {
             }
 
             HandleObject::ServerSession(server_session) => {
-                println!("{:?}", server_session);
                 // XXX: Big hack, we love to see it. Ordering here is important, post_wait has to remove the pending status first.
                 if server_session.post_wait(index) || server_session.queue.lock().len() > 0 {
                     any_pending = true;

@@ -110,7 +110,6 @@ pub fn svc_create_port(tag: u64) -> (ResultCode, u32) {
             ports.insert(tag, server_port_handle.clone());
 
             let mut port_waiters = PORT_WAITERS.lock();
-            println!("{:?}", port_waiters);
             port_waiters.retain(|x| {
                 if x.0 == tag {
                     did_wake = true;
