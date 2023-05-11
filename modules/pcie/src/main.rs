@@ -13,7 +13,7 @@ mod pcie_acpi;
 #[cfg(target_arch = "aarch64")]
 mod pcie_dt;
 
-use common::os_error::*;
+use process::os_error::*;
 use common::Handle;
 use process::ipc::pcie::PCIDeviceInfo;
 use process::ipc_server::IPCServer;
@@ -110,7 +110,7 @@ impl PCIEServerStruct {
             }
         }
 
-        Err(OSError::new(Module::PCIE, Reason::NotFound))
+        Err(OSError::new(Module::Pcie, Reason::NotFound))
     }
 
     fn get_bar(&self, device: u32, bar_index: u8) -> OSResult<(usize, usize)> {
@@ -176,7 +176,7 @@ impl PCIEServerStruct {
             }
         }
 
-        Err(OSError::new(Module::PCIE, Reason::NotFound))
+        Err(OSError::new(Module::Pcie, Reason::NotFound))
     }
 
     fn get_cap(&self, device: u32, cap_index: u8) -> OSResult<Vec<u8>> {
@@ -236,7 +236,7 @@ impl PCIEServerStruct {
                                 }
 
                                 // TODO: better return code
-                                return Err(OSError::new(Module::PCIE, Reason::NotFound));
+                                return Err(OSError::new(Module::Pcie, Reason::NotFound));
                             }
                         } else {
                             println!("Caps not supported");
@@ -246,7 +246,7 @@ impl PCIEServerStruct {
             }
         }
 
-        Err(OSError::new(Module::PCIE, Reason::NotFound))
+        Err(OSError::new(Module::Pcie, Reason::NotFound))
     }
 
     fn get_interrupt_event(&self, device: u32) -> OSResult<TranslateMoveHandle> {
@@ -280,7 +280,7 @@ impl PCIEServerStruct {
                 }
             }
         }
-        Err(OSError::new(Module::PCIE, Reason::NotFound))
+        Err(OSError::new(Module::Pcie, Reason::NotFound))
     }
 
     fn unbind_interrupt_event(
@@ -308,7 +308,7 @@ impl PCIEServerStruct {
                 }
             }
         }
-        Err(OSError::new(Module::PCIE, Reason::NotFound))
+        Err(OSError::new(Module::Pcie, Reason::NotFound))
     }
 }
 

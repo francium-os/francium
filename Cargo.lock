@@ -461,7 +461,7 @@ dependencies = [
 [[package]]
 name = "fatfs"
 version = "0.4.0"
-source = "git+https://github.com/francium-os/rust-fatfs.git#a3a834ef92d94dd227c316c0887654dab00ae085"
+source = "git+https://github.com/rafalh/rust-fatfs.git#a3a834ef92d94dd227c316c0887654dab00ae085"
 dependencies = [
  "bitflags",
  "chrono",
