@@ -1,4 +1,4 @@
-use common::os_error::{OSError, ResultCode, RESULT_OK};
+use crate::os_error::{OSError, ResultCode, RESULT_OK};
 use common::system_info::*;
 use common::{Handle, INVALID_HANDLE};
 use common::{MapType, PagePermission};

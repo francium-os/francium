@@ -9,6 +9,7 @@ pub mod ipc_server;
 pub mod syscalls;
 //pub mod allocator;
 pub mod ipc;
+pub mod os_error;
 
-pub use common::os_error;
+//pub use common::os_error;
 pub use common::{Handle, INVALID_HANDLE};

@@ -1,5 +1,5 @@
-use common::ipc::*;
-use common::os_error::OSResult;
+//use common::ipc::*;
+use crate::os_error::OSResult;
 use common::Handle;
 use spin::Mutex;
 

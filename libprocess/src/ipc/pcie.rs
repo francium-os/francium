@@ -10,7 +10,7 @@ pub struct PCIDeviceInfo {
     pub device_id: u16,
 }
 
-use common::os_error::OSResult;
+use crate::os_error::OSResult;
 //use common::ipc::TranslateMoveHandle;
 use crate::ipc::message::IPCMessage;
 use crate::ipc::message::IPCValue;

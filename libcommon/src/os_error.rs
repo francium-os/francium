@@ -16,9 +16,10 @@ impl ResultCode {
 pub enum Module {
     None = 0,
     Kernel = 1,
-    SM = 2,
-    FS = 3,
-    PCIE = 4,
+    Sm = 2,
+    Fs = 3,
+    Pcie = 4,
+    LibProcess = 5,
     Unknown = 0xffff,
 }
 

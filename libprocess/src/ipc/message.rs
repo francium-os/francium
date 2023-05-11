@@ -1,5 +1,5 @@
 use common::ipc::*;
-use common::os_error::{OSError, OSResult, ResultCode, RESULT_OK};
+use crate::os_error::{OSError, OSResult, ResultCode, RESULT_OK};
 use core::convert::TryInto;
 
 #[thread_local]
@@ -186,14 +186,22 @@ impl IPCValue for bool {
     }
 }
 
-impl<'a> IPCValue for &'a str {
-    fn read(msg: &mut IPCMessage) -> &'a str {
-        println!("String moment");
-        todo!();
+impl IPCValue for String {
+    fn read(msg: &mut IPCMessage) -> String {
+        let length = usize::read(msg);
+        let bytes: Vec<u8> = msg.buffer[msg.read_offset .. msg.read_offset + length].to_vec();
+        msg.read_offset += length;
+
+        String::from_utf8(bytes).unwrap()
     }
 
-    fn write(msg: &mut IPCMessage, val: & &'a str) {
-        todo!();
+    fn write(msg: &mut IPCMessage, val: &String) {
+        let bytes = val.as_bytes();
+        let length = bytes.len();
+        usize::write(msg, &length);
+
+        msg.buffer[msg.write_offset .. msg.write_offset + length].copy_from_slice(bytes);
+        msg.write_offset += length;
     }
 }
 
