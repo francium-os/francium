@@ -2,7 +2,7 @@ use block_adapter::BlockAdapter;
 use process::ipc::sm;
 use process::ipc::*;
 use process::ipc_server::{IPCServer, ServerImpl};
-use process::os_error::{Module, OSError, OSResult, Reason};
+use process::os_error::{OSError, OSResult, Module, Reason};
 use process::syscalls;
 use process::Handle;
 use std::sync::Mutex;
@@ -25,15 +25,26 @@ struct FSServerStruct {
     fs: Arc<Mutex<FatFilesystem>>
 }
 
+fn map_fatfs_error(e: fatfs::Error<std::io::Error>) -> OSError {
+    match e {
+        fatfs::Error::NotFound => {
+            OSError::new(Module::Fs, Reason::NotFound)
+        },
+        _ => {
+            OSError::new(Module::Fs, Reason::Unknown)
+        }
+    }
+}
+
 impl FSServerStruct {
-    fn open_file(&self, file_name: &str) -> OSResult<u32> {
+    fn open_file(&self, file_name: String) -> OSResult<u32> {
         println!("Hi from open_file!");
 
         let fs = self.fs.lock().unwrap();
         
-        let mut file = fs.root_dir().open_file(file_name).unwrap();
+        let mut file = fs.root_dir().open_file(&file_name).map_err(map_fatfs_error)?;
     	let mut s: String = String::new();
-    	file.read_to_string(&mut s);
+    	file.read_to_string(&mut s)?;
     	println!("{:?}", s);
 
     	Ok(0)

@@ -5,5 +5,5 @@ handle_accessor = "crate::ipc::fs::get_handle_for_fs"
 [[methods]]
 name = "open_file"
 id = 1
-inputs = [{ name = "filename", ty = "&str"}]
+inputs = [{ name = "filename", ty = "String"}]
 output = "OSResult<u32>"
