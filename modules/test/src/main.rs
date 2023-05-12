@@ -6,8 +6,10 @@ const SECOND: u64 = 1_000_000_000;
 fn main() {
     println!("Hello from test!");
 
-    if let Ok(file_handle) = ipc::fs::open_file("test.txt".to_string()) {
+    if let Ok(file_handle) = ipc::fs::open_file("efi/boot/bootx64.efi".to_string()) {
         println!("Hello again from test: {:?}", file_handle);
+    } else {
+        println!("Probably failed to open file..");
     }
 
     println!("Sleeping for 1 second...");

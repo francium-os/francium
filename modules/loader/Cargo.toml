@@ -7,5 +7,4 @@ edition = "2021"
 
 [dependencies]
 "process" = { path = "../../libprocess" }
-"common" = { path = "../../libcommon" }
 "francium_common" = { path = "../../crates/francium_common" }

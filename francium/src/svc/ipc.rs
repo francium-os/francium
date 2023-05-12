@@ -357,6 +357,7 @@ pub fn svc_ipc_reply(session_handle: u32, ipc_buffer_ptr: usize) -> ResultCode {
         );
 
         *thread_lock = None;
+        /* XXX sync: signal_one can preempt... */
         server_session.client.lock().upgrade().unwrap().signal_one();
         RESULT_OK
     } else {

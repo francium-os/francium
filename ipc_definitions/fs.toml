@@ -6,4 +6,4 @@ handle_accessor = "crate::ipc::fs::get_handle_for_fs"
 name = "open_file"
 id = 1
 inputs = [{ name = "filename", ty = "String"}]
-output = "OSResult<u32>"
+output = "OSResult<TranslateMoveHandle>"

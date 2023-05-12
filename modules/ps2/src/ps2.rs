@@ -1,7 +1,7 @@
 use bitflags::bitflags;
-use common::Handle;
 use francium_x86::io_port::*;
 use process::syscalls;
+use process::Handle;
 
 const DATA: u16 = 0x60;
 const STATUS_COMMAND: u16 = 0x64;

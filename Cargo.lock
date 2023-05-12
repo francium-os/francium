@@ -903,7 +903,6 @@ checksum = "955be5d0ca0465caf127165acb47964f911e2bc26073e865deb8be7189302faf"
 name = "loader"
 version = "0.1.0"
 dependencies = [
- "common",
  "francium_common",
  "process",
 ]
@@ -968,7 +967,6 @@ dependencies = [
 name = "net"
 version = "0.1.0"
 dependencies = [
- "common",
  "francium_common",
  "process",
 ]
@@ -1179,7 +1177,6 @@ name = "ps2"
 version = "0.1.0"
 dependencies = [
  "bitflags",
- "common",
  "francium_common",
  "francium_x86",
  "process",

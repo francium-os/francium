@@ -64,6 +64,7 @@ impl std::io::Read for BlockAdapter {
             assert!(remainder % 512 == 0);
             assert!(self.offset_bytes % 512 == 0);
 
+            //println!("Large block read! size = {}, remainder = {}", cache_hit_size, remainder);
             let mut locked = self.upper.lock().unwrap();
             for sector in 0..(remainder/512) {
                 let buf_byte_offset = cache_hit_size + sector * 512;

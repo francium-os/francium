@@ -1,7 +1,6 @@
 use crate::pcie::PCIBus;
 
 use process::syscalls;
-//use common::system_info::*;
 use francium_common::align::align_up;
 use francium_common::types::{MapType, PagePermission};
 use std::ptr::NonNull;

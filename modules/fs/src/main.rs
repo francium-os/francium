@@ -4,7 +4,7 @@ use process::ipc::*;
 use process::ipc_server::{IPCServer, ServerImpl};
 use process::os_error::{OSError, OSResult, Module, Reason};
 use process::syscalls;
-use process::Handle;
+use process::{Handle, INVALID_HANDLE};
 use std::sync::Mutex;
 use std::sync::Arc;
 
@@ -37,7 +37,7 @@ fn map_fatfs_error(e: fatfs::Error<std::io::Error>) -> OSError {
 }
 
 impl FSServerStruct {
-    fn open_file(&self, file_name: String) -> OSResult<u32> {
+    fn open_file(&self, file_name: String) -> OSResult<TranslateMoveHandle> {
         println!("Hi from open_file!");
 
         let fs = self.fs.lock().unwrap();
@@ -49,7 +49,14 @@ impl FSServerStruct {
         let ending_tick = syscalls::get_system_tick();
         println!("file len: {:?} in {} sec", v.len(), (ending_tick - starting_tick) as f64 / 1e9);
 
-        Ok(0)
+        /*let server_session: Handle = INVALID_HANDLE;
+        let client_session: Handle = INVALID_HANDLE;
+        syscalls::create_session(&mut server_session, &mut client_session).unwrap();*/
+
+        // Store server session _somewhere_
+
+        Ok(TranslateMoveHandle(process::Handle(0)))
+        //Ok(TranslateMoveHandle(client_session))
     }
 }
 
