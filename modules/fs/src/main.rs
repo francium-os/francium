@@ -41,13 +41,15 @@ impl FSServerStruct {
         println!("Hi from open_file!");
 
         let fs = self.fs.lock().unwrap();
-        
         let mut file = fs.root_dir().open_file(&file_name).map_err(map_fatfs_error)?;
-    	let mut s: String = String::new();
-    	file.read_to_string(&mut s)?;
-    	println!("{:?}", s);
+        let mut v: Vec<u8> = Vec::new();
 
-    	Ok(0)
+        let starting_tick = syscalls::get_system_tick();
+        file.read_to_end(&mut v).unwrap();
+        let ending_tick = syscalls::get_system_tick();
+        println!("file len: {:?} in {} sec", v.len(), (ending_tick - starting_tick) as f64 / 1e9);
+
+        Ok(0)
     }
 }
 
@@ -62,11 +64,14 @@ async fn main() {
     let mut blocks = block_virtio::scan();
     let first_block = blocks.pop().unwrap();
 
-    let adapted = Box::new(BlockAdapter::new(first_block, 0));
+    let adapted = Box::new(BlockAdapter::new(first_block.clone(), 0));
 
     let cfg = gpt::GptConfig::new().writable(false);
     let gpt_disk = cfg.open_from_device(adapted).unwrap();
-    let first_partition = gpt_disk.partitions().get(&0).unwrap();
+
+    println!("Got partition table: {:?}", gpt_disk.partitions());
+
+    let first_partition = gpt_disk.partitions().get(&1).unwrap();
     let partition_start = first_partition.first_lba;
 
     let adapted_partition = BlockAdapter::new(first_block, partition_start);

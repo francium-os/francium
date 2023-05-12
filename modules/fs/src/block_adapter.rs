@@ -1,8 +1,10 @@
 use crate::block::BlockDevice;
 use std::io::SeekFrom;
+use std::sync::Mutex;
+use std::sync::Arc;
 
 pub struct BlockAdapter {
-    upper: Box<dyn BlockDevice + Send>,
+    upper: Arc<Mutex<dyn BlockDevice + Send>>,
     base_sector: u64,
     offset_bytes: u64,
 
@@ -15,7 +17,7 @@ impl std::fmt::Debug for BlockAdapter {
 }
 
 impl BlockAdapter {
-    pub fn new(block: Box<dyn BlockDevice + Send>, base: u64) -> BlockAdapter {
+    pub fn new(block: Arc<Mutex<dyn BlockDevice + Send>>, base: u64) -> BlockAdapter {
         BlockAdapter {
             upper: block,
             base_sector: base,
@@ -27,11 +29,12 @@ impl BlockAdapter {
 
     fn fill_cache(&mut self) {
         if self.offset_bytes / 512 != self.current_cache_sector {
-            self.upper.read_sector(
+            let mut locked = self.upper.lock().unwrap();
+            locked.read_sector(
                 self.base_sector + self.offset_bytes / 512,
                 &mut self.cache[0..512],
             );
-            self.upper.read_sector(
+            locked.read_sector(
                 self.base_sector + self.offset_bytes / 512 + 1,
                 &mut self.cache[512..1024],
             );
@@ -48,15 +51,29 @@ impl std::io::Read for BlockAdapter {
     fn read(&mut self, buf: &mut [u8]) -> Result<usize, std::io::Error> {
         let cache_offset: usize = (self.offset_bytes % 512) as usize;
 
-        assert!(buf.len() < 1024 - cache_offset);
-
-        //println!("Read! off= 0x{:x} len= 0x{:x}", self.offset_bytes, buf.len());
+        let cache_hit_max_size = 1024 - cache_offset;
         self.fill_cache();
+        let cache_hit_size = std::cmp::min(cache_hit_max_size, buf.len());
 
-        buf.copy_from_slice(&self.cache[cache_offset..cache_offset + buf.len()]);
-        self.offset_bytes += buf.len() as u64;
+        buf[0..cache_hit_size].copy_from_slice(&self.cache[cache_offset..cache_offset + cache_hit_size]);
+        self.offset_bytes += cache_hit_size as u64;
 
-        //println!("{:#x?}", buf);
+        // Should be 0 mod 512.
+        let remainder = buf.len() - cache_hit_size;
+        if remainder != 0 {
+            assert!(remainder % 512 == 0);
+            assert!(self.offset_bytes % 512 == 0);
+
+            let mut locked = self.upper.lock().unwrap();
+            for sector in 0..(remainder/512) {
+                let buf_byte_offset = cache_hit_size + sector * 512;
+                locked.read_sector(
+                    self.base_sector + self.offset_bytes / 512 + sector as u64,
+                    &mut buf[buf_byte_offset .. buf_byte_offset + 512]
+                );
+            }
+            self.offset_bytes += remainder as u64;
+        }
 
         Ok(buf.len())
     }

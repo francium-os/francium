@@ -3,6 +3,7 @@ use crate::virtio_pci::{VirtioPciDevice, VirtqDesc};
 use francium_common::types::PagePermission;
 use process::ipc;
 use process::syscalls;
+use std::sync::{Arc, Mutex};
 
 struct BlockVirtio {
     virtio_dev: VirtioPciDevice,
@@ -49,8 +50,6 @@ impl BlockDevice for BlockVirtio {
     fn read_sector(&mut self, offset: u64, buffer: &mut [u8]) -> u64 {
         let q = self.virtio_dev.queues.get_mut(0).unwrap();
         let notifier = &self.virtio_dev.legacy_notifier;
-
-        //println!("Read: {:x}", offset);
 
         unsafe {
             (self.request_virt as *mut u32).write_volatile(0); // Type
@@ -104,7 +103,7 @@ u8 status;
     // data
 }*/
 
-pub fn scan() -> Vec<Box<dyn BlockDevice + Send>> {
+pub fn scan() -> Vec<Arc<Mutex<dyn BlockDevice + Send>>> {
     // block device transitional id is 0x1001
     let transitional_devices = ipc::pcie::get_devices_by_vidpid(0x1af4, 0x1001);
     // new device id 2, +0x1040
@@ -115,7 +114,7 @@ pub fn scan() -> Vec<Box<dyn BlockDevice + Send>> {
     for dev in transitional_devices {
         let virtio_dev = VirtioPciDevice::new(dev);
         let block = BlockVirtio::new(virtio_dev);
-        let boxed: Box<dyn BlockDevice + Send> = Box::new(block);
+        let boxed: Arc<Mutex<dyn BlockDevice + Send>> = Arc::new(Mutex::new(block));
 
         blocks.push(boxed)
     }
