@@ -10,6 +10,10 @@ pub struct BlockAdapter {
     cache: [u8; 1024],
 }
 
+impl std::fmt::Debug for BlockAdapter {
+    fn fmt(&self, _: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> { todo!() }
+}
+
 impl BlockAdapter {
     pub fn new(block: Box<dyn BlockDevice + Send>, base: u64) -> BlockAdapter {
         BlockAdapter {

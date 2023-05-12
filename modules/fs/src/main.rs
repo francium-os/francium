@@ -61,9 +61,17 @@ async fn main() {
 
     let mut blocks = block_virtio::scan();
     let first_block = blocks.pop().unwrap();
-    // TODO: uhhhh, we need to parse the partition out of the {gpt, mbr}
-    let adapted = BlockAdapter::new(first_block, 34);
-    let fs = fatfs::FileSystem::new(fatfs::StdIoWrapper::new(adapted), fatfs::FsOptions::new()).unwrap();
+
+    let adapted = Box::new(BlockAdapter::new(first_block, 0));
+
+    let cfg = gpt::GptConfig::new().writable(false);
+    let gpt_disk = cfg.open_from_device(adapted).unwrap();
+    let first_partition = gpt_disk.partitions().get(&0).unwrap();
+    let partition_start = first_partition.first_lba;
+
+    let adapted_partition = BlockAdapter::new(first_block, partition_start);
+
+    let fs = fatfs::FileSystem::new(fatfs::StdIoWrapper::new(adapted_partition), fatfs::FsOptions::new()).unwrap();
     let first_fs = fs;
 
     let server = Box::new(ServerImpl::new(FSServerStruct {

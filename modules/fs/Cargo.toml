@@ -12,6 +12,7 @@ tokio = { version = "1.21.2", features = ["rt", "rt-multi-thread", "macros"] }
 tock-registers = "0.8.1"
 "francium_common" = { path = "../../crates/francium_common" }
 fatfs = { git = "https://github.com/rafalh/rust-fatfs.git" }
+gpt = "3.0.0"
 
 [build-dependencies]
 "ipc-gen-buildtime" = { path = "../../ipc-gen-buildtime" }

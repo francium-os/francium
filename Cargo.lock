@@ -602,6 +602,7 @@ dependencies = [
  "async-trait",
  "fatfs 0.4.0",
  "francium_common",
+ "gpt",
  "ipc-gen-buildtime",
  "process",
  "tock-registers",
@@ -732,8 +733,7 @@ dependencies = [
 [[package]]
 name = "getrandom"
 version = "0.2.9"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c85e1d9ab2eadba7e5040d4e09cbd6d072b76a557ad64e797c2cb9d4da21d7e4"
+source = "git+https://github.com/francium-os/rust-crate-getrandom.git#761e015d4d463b398028293481bed8469a57cb51"
 dependencies = [
  "cfg-if",
  "libc",
@@ -876,7 +876,7 @@ dependencies = [
 [[package]]
 name = "libc"
 version = "0.2.139"
-source = "git+https://github.com/francium-os/rust-libc.git?branch=francium-mlibc#2f24b470e5fdb8b751a627f0635ece5928fdc7d1"
+source = "git+https://github.com/francium-os/rust-libc.git#bc8612b5cf613e5970013969ecc7cae0e03e9834"
 
 [[package]]
 name = "link-cplusplus"
