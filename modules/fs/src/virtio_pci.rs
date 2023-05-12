@@ -20,7 +20,7 @@ pub struct VirtioPciDevice {
     common: &'static mut VirtioPciCommonCfg,
     notify: *mut u8,
     notify_off_multiplier: usize,
-    _device_specific: *mut u8,
+    pub device_specific: *mut u8,
     pub queues: Vec<Virtq>,
     pub legacy_notifier: VirtioNotifier,
 }
@@ -240,7 +240,7 @@ impl VirtioPciDevice {
             common: unsafe { (common_virt as *mut VirtioPciCommonCfg).as_mut().unwrap() },
             notify: notify_virt as *mut u8,
             notify_off_multiplier: notify_off_multiplier.unwrap() as usize,
-            _device_specific: device_specific_virt as *mut u8,
+            device_specific: device_specific_virt as *mut u8,
             queues: Vec::new(),
             legacy_notifier: VirtioNotifier {
                 isr_status: isr_status_virt as *mut u8,

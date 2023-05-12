@@ -79,8 +79,9 @@ impl std::io::Seek for BlockAdapter {
                 self.offset_bytes = off;
                 Ok(self.offset_bytes)
             }
-            SeekFrom::End(_off) => {
-                panic!();
+            SeekFrom::End(off) => {
+                self.offset_bytes = (self.upper.lock().unwrap().get_size() as i64 + off) as u64;
+                Ok(self.offset_bytes)
             }
             SeekFrom::Current(off) => {
                 // TODO: Don't have any disks larger than 2**63, I guess

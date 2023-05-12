@@ -11,12 +11,16 @@ struct BlockVirtio {
     request_virt: usize,
 
     request_buffer_offset: u16,
+
+    disk_size_bytes: u64
 }
 
 impl BlockVirtio {
     fn new(mut virtio_dev: VirtioPciDevice) -> BlockVirtio {
         let request_virt = syscalls::map_memory(0, 4096, PagePermission::USER_READ_WRITE).unwrap();
         let request_phys = syscalls::query_physical_address(request_virt).unwrap();
+
+        let disk_size_sectors = unsafe { (virtio_dev.device_specific as *mut u64).read() };
 
         let q = virtio_dev.queues.get_mut(0).unwrap();
 
@@ -36,6 +40,7 @@ impl BlockVirtio {
             _request_phys: request_phys,
             request_virt: request_virt,
             request_buffer_offset: request_buffer,
+            disk_size_bytes: disk_size_sectors * 512 // TODO: sector size != 512
         }
     }
 }
@@ -70,15 +75,15 @@ impl BlockDevice for BlockVirtio {
             );
         }
 
-        /*println!("{:x?}", unsafe {
-            &std::slice::from_raw_parts(self.request_virt as *mut u8, 512 + 16)[16..16 + 512]
-        });*/
-
         1
     }
 
     fn write_sector(&mut self, _offset: u64, _buffer: &[u8]) -> u64 {
         todo!();
+    }
+
+    fn get_size(&self) -> u64 {
+        self.disk_size_bytes
     }
 }
 
