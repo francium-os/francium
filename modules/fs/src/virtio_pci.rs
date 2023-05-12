@@ -121,12 +121,8 @@ impl Virtq {
     }
 
     pub fn push_avail(&mut self, idx: u16) {
-        self.avail_ring[self.avail_index] = idx;
+        self.avail_ring[self.avail_index % self.size] = idx;
         self.avail_index += 1;
-
-        if self.avail_index == self.size {
-            self.avail_index = 0;
-        }
 
         self.avail.idx = self.avail_index as u16;
     }
