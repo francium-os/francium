@@ -165,7 +165,9 @@ pub extern "C" fn rust_lower_el_spx_sync(ctx: &mut ExceptionContext) {
     // 0b010101 SVC instruction execution in AArch64 state.
     if ec == 0b010101 {
         if (iss as usize) < svc_wrappers::SVC_HANDLERS.len() {
-            crate::per_cpu::get_current_thread().last_svc_number.store(iss as usize, core::sync::atomic::Ordering::Release);
+            crate::per_cpu::get_current_thread()
+                .last_svc_number
+                .store(iss as usize, core::sync::atomic::Ordering::Release);
 
             svc_wrappers::SVC_HANDLERS[iss as usize](ctx);
         } else {

@@ -132,8 +132,8 @@ fn bootloader_main(info: &'static mut bootloader_api::BootInfo) -> ! {
     let pcie_buf = include_bytes!("../../target/x86_64-unknown-francium/release/pcie");
     let disp_buf = include_bytes!("../../target/x86_64-unknown-francium/release/disp");
     let ps2_buf = include_bytes!("../../target/x86_64-unknown-francium/release/ps2");
-//    let net_buf = include_bytes!("../../target/x86_64-unknown-francium/release/net");
-//    let loader_buf = include_bytes!("../../target/x86_64-unknown-francium/release/loader");
+    //    let net_buf = include_bytes!("../../target/x86_64-unknown-francium/release/net");
+    //    let loader_buf = include_bytes!("../../target/x86_64-unknown-francium/release/loader");
 
     let fs_main_thread = init::load_process(fs_buf, "fs");
     scheduler::register_thread(fs_main_thread.clone());
@@ -155,7 +155,7 @@ fn bootloader_main(info: &'static mut bootloader_api::BootInfo) -> ! {
         scheduler::register_thread(disp_main_thread.clone());
     }
 
-/*    let net_main_thread = init::load_process(net_buf, "net");
+    /*    let net_main_thread = init::load_process(net_buf, "net");
     scheduler::register_thread(net_main_thread.clone());
 
     let loader_main_thread = init::load_process(loader_buf, "loader");

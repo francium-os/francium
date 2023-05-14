@@ -13,10 +13,10 @@ mod pcie_acpi;
 #[cfg(target_arch = "aarch64")]
 mod pcie_dt;
 
-use process::os_error::*;
 use common::Handle;
 use process::ipc::pcie::PCIDeviceInfo;
 use process::ipc_server::IPCServer;
+use process::os_error::*;
 
 use crate::interrupt_map::PCIInterruptMap;
 

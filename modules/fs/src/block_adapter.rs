@@ -1,7 +1,7 @@
 use crate::block::BlockDevice;
 use std::io::SeekFrom;
-use std::sync::Mutex;
 use std::sync::Arc;
+use std::sync::Mutex;
 
 pub struct BlockAdapter {
     upper: Arc<Mutex<dyn BlockDevice + Send>>,
@@ -13,7 +13,9 @@ pub struct BlockAdapter {
 }
 
 impl std::fmt::Debug for BlockAdapter {
-    fn fmt(&self, _: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> { todo!() }
+    fn fmt(&self, _: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        todo!()
+    }
 }
 
 impl BlockAdapter {
@@ -55,7 +57,8 @@ impl std::io::Read for BlockAdapter {
         self.fill_cache();
         let cache_hit_size = std::cmp::min(cache_hit_max_size, buf.len());
 
-        buf[0..cache_hit_size].copy_from_slice(&self.cache[cache_offset..cache_offset + cache_hit_size]);
+        buf[0..cache_hit_size]
+            .copy_from_slice(&self.cache[cache_offset..cache_offset + cache_hit_size]);
         self.offset_bytes += cache_hit_size as u64;
 
         // Should be 0 mod 512.
@@ -66,11 +69,11 @@ impl std::io::Read for BlockAdapter {
 
             //println!("Large block read! size = {}, remainder = {}", cache_hit_size, remainder);
             let mut locked = self.upper.lock().unwrap();
-            for sector in 0..(remainder/512) {
+            for sector in 0..(remainder / 512) {
                 let buf_byte_offset = cache_hit_size + sector * 512;
                 locked.read_sector(
                     self.base_sector + self.offset_bytes / 512 + sector as u64,
-                    &mut buf[buf_byte_offset .. buf_byte_offset + 512]
+                    &mut buf[buf_byte_offset..buf_byte_offset + 512],
                 );
             }
             self.offset_bytes += remainder as u64;

@@ -13,7 +13,7 @@ struct BlockVirtio {
 
     request_buffer_offset: u16,
 
-    disk_size_bytes: u64
+    disk_size_bytes: u64,
 }
 
 impl BlockVirtio {
@@ -41,7 +41,7 @@ impl BlockVirtio {
             _request_phys: request_phys,
             request_virt: request_virt,
             request_buffer_offset: request_buffer,
-            disk_size_bytes: disk_size_sectors * 512 // TODO: sector size != 512
+            disk_size_bytes: disk_size_sectors * 512, // TODO: sector size != 512
         }
     }
 }

@@ -20,6 +20,7 @@ pub use ipc::svc_connect_to_port_handle;
 pub use ipc::svc_create_port;
 pub use svc_break::svc_break;
 
+pub use ipc::svc_create_session;
 pub use ipc::svc_ipc_accept;
 pub use ipc::svc_ipc_receive;
 pub use ipc::svc_ipc_reply;

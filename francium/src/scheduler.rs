@@ -141,13 +141,18 @@ impl Scheduler {
             trace!("No runnable threads left!");
             for th in self.threads.iter() {
                 if th.state.load(Ordering::Acquire) == ThreadState::Suspended {
-                    trace!("Suspended: id={:?} name={:?} svc={:?}", th.id, th.process.lock().name, th.last_svc_number.load(Ordering::Acquire));
+                    trace!(
+                        "Suspended: id={:?} name={:?} svc={:?}",
+                        th.id,
+                        th.process.lock().name,
+                        th.last_svc_number.load(Ordering::Acquire)
+                    );
                 } else {
                     trace!("?? id={:?}", th.id);
                 }
             }
 
-            return
+            return;
         }
 
         // do the thing

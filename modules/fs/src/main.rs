@@ -2,11 +2,11 @@ use block_adapter::BlockAdapter;
 use process::ipc::sm;
 use process::ipc::*;
 use process::ipc_server::{IPCServer, ServerImpl};
-use process::os_error::{OSError, OSResult, Module, Reason};
+use process::os_error::{Module, OSError, OSResult, Reason};
 use process::syscalls;
 use process::{Handle, INVALID_HANDLE};
-use std::sync::Mutex;
 use std::sync::Arc;
+use std::sync::Mutex;
 
 mod virtio_pci;
 
@@ -18,21 +18,21 @@ use std::io::Read;
 
 include!(concat!(env!("OUT_DIR"), "/fs_server_impl.rs"));
 
-type FatFilesystem = fatfs::FileSystem<fatfs::StdIoWrapper<BlockAdapter>, fatfs::DefaultTimeProvider, fatfs::LossyOemCpConverter>;
+type FatFilesystem = fatfs::FileSystem<
+    fatfs::StdIoWrapper<BlockAdapter>,
+    fatfs::DefaultTimeProvider,
+    fatfs::LossyOemCpConverter,
+>;
 
 struct FSServerStruct {
     // todo: hold multiple filesystems and implement some VFS stuff
-    fs: Arc<Mutex<FatFilesystem>>
+    fs: Arc<Mutex<FatFilesystem>>,
 }
 
 fn map_fatfs_error(e: fatfs::Error<std::io::Error>) -> OSError {
     match e {
-        fatfs::Error::NotFound => {
-            OSError::new(Module::Fs, Reason::NotFound)
-        },
-        _ => {
-            OSError::new(Module::Fs, Reason::Unknown)
-        }
+        fatfs::Error::NotFound => OSError::new(Module::Fs, Reason::NotFound),
+        _ => OSError::new(Module::Fs, Reason::Unknown),
     }
 }
 
@@ -41,22 +41,28 @@ impl FSServerStruct {
         println!("Hi from open_file!");
 
         let fs = self.fs.lock().unwrap();
-        let mut file = fs.root_dir().open_file(&file_name).map_err(map_fatfs_error)?;
+        let mut file = fs
+            .root_dir()
+            .open_file(&file_name)
+            .map_err(map_fatfs_error)?;
         let mut v: Vec<u8> = Vec::new();
 
         let starting_tick = syscalls::get_system_tick();
         file.read_to_end(&mut v).unwrap();
         let ending_tick = syscalls::get_system_tick();
-        println!("file len: {:?} in {} sec", v.len(), (ending_tick - starting_tick) as f64 / 1e9);
+        println!(
+            "file len: {:?} in {} sec",
+            v.len(),
+            (ending_tick - starting_tick) as f64 / 1e9
+        );
 
-        /*let server_session: Handle = INVALID_HANDLE;
+        let server_session: Handle = INVALID_HANDLE;
         let client_session: Handle = INVALID_HANDLE;
-        syscalls::create_session(&mut server_session, &mut client_session).unwrap();*/
+        let (server_session, client_session) = syscalls::create_session().unwrap();
 
-        // Store server session _somewhere_
-
-        Ok(TranslateMoveHandle(process::Handle(0)))
-        //Ok(TranslateMoveHandle(client_session))
+        // todo: store server session _somewhere_
+        println!("got file handle {:?}", client_session);
+        Ok(TranslateMoveHandle(client_session))
     }
 }
 
@@ -83,12 +89,19 @@ async fn main() {
 
     let adapted_partition = BlockAdapter::new(first_block, partition_start);
 
-    let fs = fatfs::FileSystem::new(fatfs::StdIoWrapper::new(adapted_partition), fatfs::FsOptions::new()).unwrap();
+    let fs = fatfs::FileSystem::new(
+        fatfs::StdIoWrapper::new(adapted_partition),
+        fatfs::FsOptions::new(),
+    )
+    .unwrap();
     let first_fs = fs;
 
-    let server = Box::new(ServerImpl::new(FSServerStruct {
-        fs: Arc::new(Mutex::new(first_fs))
-    }, port));
+    let server = Box::new(ServerImpl::new(
+        FSServerStruct {
+            fs: Arc::new(Mutex::new(first_fs)),
+        },
+        port,
+    ));
 
     println!("fs: processing");
     server.process_forever().await;

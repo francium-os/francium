@@ -36,7 +36,7 @@ pub struct Thread {
     pub kernel_stack_size: usize,
 
     pub is_idle_thread: AtomicBool,
-    pub last_svc_number: AtomicUsize
+    pub last_svc_number: AtomicUsize,
 }
 
 intrusive_adapter!(pub ThreadProcessAdapter = Arc<Thread>: Thread { process_link: LinkedListAtomicLink });
@@ -46,7 +46,11 @@ impl core::fmt::Debug for Thread {
         if self.is_idle_thread.load(Ordering::Acquire) {
             f.write_fmt(format_args!("Thread id={} idle", self.id))
         } else {
-            f.write_fmt(format_args!("Thread id={} state={:?}", self.id, self.state.load(Ordering::Acquire)))
+            f.write_fmt(format_args!(
+                "Thread id={} state={:?}",
+                self.id,
+                self.state.load(Ordering::Acquire)
+            ))
         }
     }
 }
@@ -84,7 +88,7 @@ impl Thread {
             kernel_stack_top: kernel_stack as *const usize as usize + kernel_stack_size,
             kernel_stack_size: kernel_stack_size,
             is_idle_thread: AtomicBool::new(false),
-            last_svc_number: AtomicUsize::new(0)
+            last_svc_number: AtomicUsize::new(0),
         });
 
         process.lock().threads.push_back(thread.clone());

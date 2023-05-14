@@ -1,8 +1,8 @@
 use crate::pcie::PCIBus;
 
-use process::syscalls;
 use francium_common::align::align_up;
 use francium_common::types::{MapType, PagePermission};
+use process::syscalls;
 use std::ptr::NonNull;
 
 use acpi::{AcpiHandler, AcpiTables, PciConfigRegions, PhysicalMapping};
