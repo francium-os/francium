@@ -22,6 +22,10 @@
 .global syscall_create_event
 .global syscall_bind_interrupt
 .global syscall_unbind_interrupt
+.global syscall_wait_one
+.global syscall_signal_event
+.global syscall_clear_event
+.global syscall_wait_many
 
 .section .text
 
@@ -227,4 +231,9 @@ mov rbx, rdx
 syscall
 mov [rbx], rdx
 pop rbx
+ret
+
+syscall_create_session:
+mov eax, 0x1e
+syscall
 ret

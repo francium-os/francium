@@ -173,8 +173,13 @@ fn syscall_wrapper_wait_many(ctx: &mut ExceptionContext) {
     ctx.regs[1] = index_out;
 }
 
+fn syscall_wrapper_create_session(ctx: &mut ExceptionContext) {
+    let res = svc::svc_create_session(ctx.regs[0] as *mut u32, ctx.regs[1] as *mut u32);
+    ctx.regs[0] = res.0 as usize;
+}
+
 type SVCHandler = fn(&mut ExceptionContext);
-pub const SVC_HANDLERS: [SVCHandler; 30] = [
+pub const SVC_HANDLERS: [SVCHandler; 31] = [
     syscall_wrapper_break,
     syscall_wrapper_debug_output,
     syscall_wrapper_create_port,
@@ -205,4 +210,5 @@ pub const SVC_HANDLERS: [SVCHandler; 30] = [
     syscall_wrapper_signal_event,
     syscall_wrapper_clear_event,
     syscall_wrapper_wait_many,
+    syscall_wrapper_create_session,
 ];

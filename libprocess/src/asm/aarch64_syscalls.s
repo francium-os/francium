@@ -21,7 +21,11 @@
 .global syscall_create_event
 .global syscall_bind_interrupt
 .global syscall_unbind_interrupt
-
+.global syscall_wait_one
+.global syscall_signal_event
+.global syscall_clear_event
+.global syscall_wait_many
+.global syscall_create_session
 .global get_tpidr_el0_asm
 
 .section .text
@@ -166,6 +170,10 @@ syscall_wait_many:
 mov x9, x2
 svc #0x1d
 str x1, [x9]
+ret
+
+syscall_create_session:
+svc #0x1e
 ret
 
 get_tpidr_el0_asm:

@@ -60,6 +60,11 @@ extern "C" {
         num_sessions: usize,
         index_out: *mut usize,
     ) -> ResultCode;
+
+    pub fn syscall_create_session(
+        server_handle: *mut Handle,
+        client_handle_out: *mut Handle,
+    ) -> ResultCode;
 }
 
 pub fn print(s: &str) {
@@ -343,6 +348,19 @@ pub fn wait_many(handles: &[Handle]) -> Result<usize, OSError> {
         let res = syscall_wait_many(handles.as_ptr(), handles.len(), &mut index_out);
         if res == RESULT_OK {
             Ok(index_out)
+        } else {
+            Err(OSError::from_result_code(res))
+        }
+    }
+}
+
+pub fn create_session() -> Result<(Handle, Handle), OSError> {
+    unsafe {
+        let mut server_handle: Handle = INVALID_HANDLE;
+        let mut client_handle: Handle = INVALID_HANDLE;
+        let res = syscall_create_session(&mut server_handle, &mut client_handle);
+        if res == RESULT_OK {
+            Ok((server_handle, client_handle))
         } else {
             Err(OSError::from_result_code(res))
         }

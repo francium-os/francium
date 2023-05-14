@@ -253,8 +253,17 @@ unsafe extern "C" fn syscall_wrapper_wait_many(handles: *const u32, index: usize
     }
 }
 
+#[no_mangle]
+unsafe extern "C" fn syscall_wrapper_create_session(
+    server_session_out: *mut u32,
+    client_session_out: *mut u32,
+) -> u32 {
+    let res = svc::svc_create_session(server_session_out, client_session_out);
+    res.0 as u32
+}
+
 // Don't modify this. Honest.
-pub static mut SYSCALL_WRAPPERS: [*const usize; 30] = [
+pub static mut SYSCALL_WRAPPERS: [*const usize; 31] = [
     syscall_wrapper_break as *const usize,
     syscall_wrapper_debug_output as *const usize,
     syscall_wrapper_create_port as *const usize,
@@ -285,4 +294,5 @@ pub static mut SYSCALL_WRAPPERS: [*const usize; 30] = [
     syscall_wrapper_signal_event as *const usize,
     syscall_wrapper_clear_event as *const usize,
     syscall_wrapper_wait_many as *const usize,
+    syscall_wrapper_create_session as *const usize,
 ];

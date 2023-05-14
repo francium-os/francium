@@ -393,3 +393,28 @@ pub fn svc_ipc_accept(port_handle: u32) -> (ResultCode, u32) {
         )
     }
 }
+
+pub fn svc_create_session(
+    server_session_out: *mut u32,
+    client_session_out: *mut u32,
+) -> ResultCode {
+    let proc_locked = scheduler::get_current_process();
+    let mut process = proc_locked.lock();
+
+    let server_session = Arc::new(ServerSession::new());
+    let client_session = Arc::new(ClientSession::new(server_session.clone()));
+
+    let server_session_handle = process
+        .handle_table
+        .get_handle(HandleObject::ServerSession(server_session));
+    let client_session_handle = process
+        .handle_table
+        .get_handle(HandleObject::ClientSession(client_session));
+
+    unsafe {
+        *server_session_out = server_session_handle;
+        *client_session_out = client_session_handle;
+    }
+
+    RESULT_OK
+}
