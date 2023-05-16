@@ -32,12 +32,10 @@ impl<T: IPCServer + Send + Sync + 'static> ServerImpl<T> {
             /* ugh i hate this but w/e */
             let handles_copy = self.handles.clone();
 
-            let (index, mut ipc_buffer) = tokio::task::spawn_blocking(move || {
+            let (index, mut ipc_buffer) = tokio::task::block_in_place(move || {
                 let i = syscalls::ipc_receive(&handles_copy, &mut ipc_buffer).unwrap();
                 (i, ipc_buffer)
-            })
-            .await
-            .unwrap();
+            });
 
             if index == 0 {
                 // server handle is signalled!

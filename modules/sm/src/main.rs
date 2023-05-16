@@ -48,8 +48,7 @@ impl SMServerStruct {
         };
 
         let client_session =
-            tokio::task::spawn_blocking(move || syscalls::connect_to_port_handle(server_port))
-                .await??;
+            tokio::task::block_in_place(move || syscalls::connect_to_port_handle(server_port))?;
 
         Ok(TranslateMoveHandle(client_session))
     }
