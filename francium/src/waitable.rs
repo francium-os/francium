@@ -55,7 +55,7 @@ impl Waiter {
         }
     }
 
-    pub fn signal_one(&self) {
+    pub fn signal_one(&self, should_tick: bool) -> bool {
         let mut did_wake = false;
         match self.waiters.lock().pop() {
             Some(waiter) => {
@@ -65,9 +65,10 @@ impl Waiter {
             None => self.pending.store(true, Ordering::Release),
         }
 
-        if did_wake {
+        if should_tick && did_wake {
             scheduler::tick();
         }
+        did_wake
     }
 
     pub fn signal_one_with_callback(&self, callback: &dyn Fn(&Arc<Thread>) -> ()) {
@@ -110,7 +111,11 @@ pub trait Waitable {
     }
 
     fn signal_one(&self) {
-        self.get_waiter().signal_one();
+        self.get_waiter().signal_one(true);
+    }
+
+    fn signal_one_without_tick(&self) -> bool {
+        self.get_waiter().signal_one(false)
     }
 
     fn signal_one_with_callback(&self, callback: &dyn Fn(&Arc<Thread>) -> ()) {

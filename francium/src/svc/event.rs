@@ -49,7 +49,7 @@ pub fn svc_signal_event(h: u32) -> ResultCode {
     let process = proc_locked.lock();
 
     if let HandleObject::Event(ev) = process.handle_table.get_object(h) {
-        ev.w.signal_one();
+        ev.w.signal_one(true);
         RESULT_OK
     } else {
         ResultCode::new(Module::Kernel, Reason::InvalidHandle)
@@ -82,7 +82,7 @@ pub fn dispatch_interrupt_event(index: usize) -> bool {
         unsafe {
             INTERRUPT_EVENT_TABLE.force_unlock();
         }
-        ev.w.signal_one();
+        ev.w.signal_one(true);
         true
     } else {
         false

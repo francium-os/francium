@@ -343,7 +343,6 @@ pub fn svc_ipc_reply(session_handle: u32, ipc_buffer_ptr: usize) -> ResultCode {
     );
 
     if let HandleObject::ServerSession(server_session) = handle::get_handle(session_handle) {
-        // TODO: wtf?
         let current_thread = scheduler::get_current_thread();
         let mut thread_lock = server_session.client_thread.lock();
         let (client_thread, client_buffer_ptr) = thread_lock.as_ref().unwrap();
@@ -357,8 +356,21 @@ pub fn svc_ipc_reply(session_handle: u32, ipc_buffer_ptr: usize) -> ResultCode {
         );
 
         *thread_lock = None;
-        /* XXX sync: signal_one can preempt... */
-        server_session.client.lock().upgrade().unwrap().signal_one();
+
+        let did_wake = {
+            server_session
+                .client
+                .lock()
+                .upgrade()
+                .unwrap()
+                .signal_one_without_tick()
+        };
+
+        drop(thread_lock);
+        if did_wake {
+            scheduler::tick();
+        }
+
         RESULT_OK
     } else {
         ResultCode::new(Module::Kernel, Reason::InvalidHandle)
@@ -378,7 +390,7 @@ pub fn svc_ipc_accept(port_handle: u32) -> (ResultCode, u32) {
         let server_session = port.queue.lock().pop().unwrap();
 
         // wake the client
-        server_session.connect_wait.signal_one();
+        server_session.connect_wait.signal_one(true);
 
         let current_process = scheduler::get_current_process();
         let mut process = current_process.lock();
