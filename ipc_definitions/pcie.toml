@@ -1,50 +1,53 @@
 name = "pcie"
-struct_name = "PCIEServerStruct"
 handle_accessor = "crate::ipc::pcie::get_handle_for_pcie"
 
-[[methods]]
+[main_interface]
+struct_name = "PCIEServerStruct"
+session_name = "PCIESession"
+
+[[main_interface.methods]]
 name = "list_devices"
 id = 1
 inputs = []
 output = "Vec<PCIDeviceInfo>"
 
-[[methods]]
+[[main_interface.methods]]
 name = "get_devices_by_vidpid"
 id = 2
 inputs = [{name="vid", ty="u16"}, {name="pid", ty="u16"}]
 output = "Vec<u32>"
 
-[[methods]]
+[[main_interface.methods]]
 name = "get_bar"
 id = 3
 inputs = [{name="device", ty = "u32"}, {name="bar_index", ty="u8"}]
 output = "OSResult<(usize, usize)>"
 
-[[methods]]
+[[main_interface.methods]]
 name = "enable"
 id = 4
 inputs = [{name="device", ty = "u32"}]
 output = "OSResult<()>"
 
-[[methods]]
+[[main_interface.methods]]
 name = "get_devices_by_class"
 id = 5
 inputs = [{name="class", ty="u8"}, {name="subclass", ty="u8"}]
 output = "Vec<u32>"
 
-[[methods]]
+[[main_interface.methods]]
 name = "get_cap"
 id = 6
 inputs = [{name="device", ty = "u32"}, {name="cap_index", ty="u8"}]
 output = "OSResult<Vec<u8>>"
 
-[[methods]]
+[[main_interface.methods]]
 name = "get_interrupt_event"
 id = 7
 inputs = [{name="device", ty = "u32"}]
 output = "OSResult<TranslateMoveHandle>"
 
-[[methods]]
+[[main_interface.methods]]
 name = "unbind_interrupt_event"
 id = 8
 inputs = [{name="device", ty = "u32"}, {name = "handle", ty = "TranslateCopyHandle"} ]

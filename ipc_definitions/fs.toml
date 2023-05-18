@@ -1,8 +1,11 @@
 name = "fs"
-struct_name = "FSServerStruct"
 handle_accessor = "crate::ipc::fs::get_handle_for_fs"
 
-[[methods]]
+[main_interface]
+struct_name = "FSServerStruct"
+session_name = "FSSession"
+
+[[main_interface.methods]]
 name = "open_file"
 id = 1
 inputs = [{ name = "filename", ty = "String"}]

@@ -133,31 +133,53 @@ impl Method {
 #[derive(Debug, Deserialize)]
 struct ServerConfig {
     name: String,
-    struct_name: String,
     handle_accessor: String,
-    methods: Vec<Method>,
+    main_interface: Interface,
 }
 
-pub fn generate_server(path: &str) {
-    let spec = toml::from_str::<ServerConfig>(&fs::read_to_string(path).unwrap()).unwrap();
+#[derive(Debug, Deserialize)]
+struct Interface {
+    name: Option<String>,
+    struct_name: String,
+    session_name: String,
+    methods: Vec<Method>
+}
 
-    let out_dir = env::var_os("OUT_DIR").unwrap();
-    let dest_path = Path::new(&out_dir).join(spec.name + "_server_impl.rs");
-
-    let server_methods: Vec<_> = spec.methods.iter().map(|x| x.server()).collect();
-    let server_struct_name = format_ident!("{}", spec.struct_name);
+fn generate_server_interface(interface: &Interface) -> String {
+    let server_methods: Vec<_> = interface.methods.iter().map(|x| x.server()).collect();
+    let server_struct_name = format_ident!("{}", interface.struct_name);
+    let server_session_enum_name = format_ident!("{}", interface.session_name);
+    let session_struct_name = format_ident!("{}", interface.session_name);
 
     let server_impl = quote!(
         use process::ipc::message::IPC_BUFFER;
+        use process::ipc_server::*;
 
         #[async_trait::async_trait]
         impl IPCServer for #server_struct_name {
-            fn process(self: std::sync::Arc<Self>, h: Handle, ipc_buffer: &mut [u8]) {
-                self.process_internal(h, ipc_buffer)
+            type Session = #server_session_enum_name;
+            type SubInterfaces = ();
+
+            fn get_subinterface_index<T>() -> usize {
+                0
+            }
+
+            fn create_subinterfaces() -> Self::SubInterfaces {
+                ()
+            }
+
+            fn accept_session_ext(self: std::sync::Arc<Self>) -> std::sync::Arc<Self::Session> {
+                self.accept_session()
             }
         }
 
-        impl #server_struct_name {
+        impl IPCSession for #session_struct_name {
+            fn process(self: std::sync::Arc<Self>, h: Handle, ipc_buffer: &mut [u8]) {
+                self.process_internal(h, ipc_buffer);
+            }
+        }
+
+        impl #session_struct_name {
             fn process_internal(self: std::sync::Arc<Self>, h: Handle, ipc_buffer: &mut [u8]) {
                 let mut request_msg = process::ipc::message::IPCMessage::new(ipc_buffer);
                 request_msg.read_header();
@@ -169,8 +191,18 @@ pub fn generate_server(path: &str) {
             }
         }
     );
+    server_impl.to_string()
+}
 
-    fs::write(dest_path, server_impl.to_string()).unwrap();
+pub fn generate_server(path: &str) {
+    let spec = toml::from_str::<ServerConfig>(&fs::read_to_string(path).unwrap()).unwrap();
+
+    let out_dir = env::var_os("OUT_DIR").unwrap();
+    let dest_path = Path::new(&out_dir).join(spec.name + "_server_impl.rs");
+
+    let server_impl = generate_server_interface(&spec.main_interface);
+    //let server_sub_impl = spec.sub_interfaces.iter().map(|x| generate_server_interface(x)).collect::<Vec<String>>().join("\n");
+    fs::write(dest_path, server_impl).unwrap();
 
     println!("cargo:rerun-if-changed={}", path);
 }
@@ -181,7 +213,7 @@ pub fn generate_client(path: &str) {
     let out_dir = env::var_os("OUT_DIR").unwrap();
     let dest_path = Path::new(&out_dir).join(spec.name + "_client_impl.rs");
 
-    let client_methods: Vec<_> = spec
+    let client_methods: Vec<_> = spec.main_interface
         .methods
         .iter()
         .map(|x| x.client(&spec.handle_accessor))

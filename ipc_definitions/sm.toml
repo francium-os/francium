@@ -1,15 +1,18 @@
 name = "sm"
-struct_name = "SMServerStruct"
 handle_accessor = "crate::ipc::sm::get_handle_for_sm"
 
-[[methods]]
+[main_interface]
+struct_name = "SMServerStruct"
+session_name = "SMSession"
+
+[[main_interface.methods]]
 name = "get_service_handle"
 id = 1
 inputs = [{ name = "tag", ty = "u64"}]
 output = "OSResult<TranslateMoveHandle>"
 is_async = true
 
-[[methods]]
+[[main_interface.methods]]
 name = "register_port"
 id = 2
 inputs = [{ name = "tag", ty = "u64"}, { name = "port_handle", ty = "TranslateCopyHandle"} ]

@@ -24,9 +24,18 @@ type FatFilesystem = fatfs::FileSystem<
     fatfs::LossyOemCpConverter,
 >;
 
+struct IFileStruct {}
+struct IFileSession {}
+struct IDirectoryStruct {}
+struct IDirectorySession {}
+
 struct FSServerStruct {
     // todo: hold multiple filesystems and implement some VFS stuff
     fs: Arc<Mutex<FatFilesystem>>,
+}
+
+struct FSSession {
+    server: Arc<FSServerStruct>
 }
 
 fn map_fatfs_error(e: fatfs::Error<std::io::Error>) -> OSError {
@@ -37,10 +46,18 @@ fn map_fatfs_error(e: fatfs::Error<std::io::Error>) -> OSError {
 }
 
 impl FSServerStruct {
+    fn accept_session(self: Arc<FSServerStruct>) -> Arc<FSSession> {
+        Arc::new(FSSession {
+            server: self
+        })
+    }
+}
+
+impl FSSession {
     fn open_file(&self, file_name: String) -> OSResult<TranslateMoveHandle> {
         println!("Hi from open_file!");
 
-        let fs = self.fs.lock().unwrap();
+        let fs = self.server.fs.lock().unwrap();
         let mut file = fs
             .root_dir()
             .open_file(&file_name)
@@ -61,6 +78,8 @@ impl FSServerStruct {
         let (server_session, client_session) = syscalls::create_session().unwrap();
 
         // todo: store server session _somewhere_
+        //self.register_session();
+
         println!("got file handle {:?}", client_session);
         Ok(TranslateMoveHandle(client_session))
     }

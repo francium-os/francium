@@ -1,5 +1,5 @@
 use hashbrown::HashMap;
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 
 use async_broadcast::broadcast;
 
@@ -24,15 +24,27 @@ struct SMServerStruct {
     >,
 }
 
+struct SMSession {
+    server: Arc<SMServerStruct>
+}
+
 impl SMServerStruct {
+    fn accept_session(self: Arc<SMServerStruct>) -> Arc<SMSession> {
+        Arc::new(SMSession {
+            server: self
+        })
+    }
+}
+
+impl SMSession {
     async fn get_service_handle(&self, tag: u64) -> OSResult<TranslateMoveHandle> {
-        let server_port = { self.server_ports.lock().unwrap().get(&tag).map(|x| *x) };
+        let server_port = { self.server.server_ports.lock().unwrap().get(&tag).map(|x| *x) };
 
         let server_port = match server_port {
             Some(x) => x,
             None => {
                 let mut waiter = {
-                    let mut server_waiters_locked = self.server_waiters.lock().unwrap();
+                    let mut server_waiters_locked = self.server.server_waiters.lock().unwrap();
 
                     match server_waiters_locked.get(&tag) {
                         Some(ref x) => x.1.clone(),
@@ -54,9 +66,9 @@ impl SMServerStruct {
     }
 
     async fn register_port(&self, tag: u64, port_handle: TranslateCopyHandle) -> OSResult<()> {
-        self.server_ports.lock().unwrap().insert(tag, port_handle.0);
+        self.server.server_ports.lock().unwrap().insert(tag, port_handle.0);
 
-        let new_tag = self.server_waiters.lock().unwrap().remove(&tag);
+        let new_tag = self.server.server_waiters.lock().unwrap().remove(&tag);
         if let Some((send, _recv)) = new_tag {
             send.broadcast(port_handle.0).await.unwrap();
         }
