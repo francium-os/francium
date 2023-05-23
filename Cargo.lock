@@ -386,6 +386,8 @@ version = "0.1.0"
 dependencies = [
  "common",
  "francium_common",
+ "num-traits",
+ "num_enum",
  "process",
 ]
 

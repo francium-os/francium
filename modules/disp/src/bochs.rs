@@ -9,6 +9,7 @@ pub struct BochsAdapter {
 
     current_x: usize,
     current_y: usize,
+    pitch: usize
 }
 
 const VBE_DISPI_INDEX_ID: usize = 0;
@@ -54,6 +55,7 @@ impl<'a> BochsAdapter {
             io_virt: io_virt,
             current_x: 0,
             current_y: 0,
+            pitch: 0
         };
         assert!(adapter.bochs_io_read(VBE_DISPI_INDEX_ID) == 0xb0c5);
         Some(adapter)
@@ -71,6 +73,7 @@ impl<'a> BochsAdapter {
         // lets go
         self.current_x = x;
         self.current_y = y;
+        self.pitch = y;
 
         self.bochs_io_write(VBE_DISPI_INDEX_ENABLE, 0);
 
@@ -82,21 +85,11 @@ impl<'a> BochsAdapter {
         self.bochs_io_write(VBE_DISPI_INDEX_ENABLE, 0x40 | 1);
     }
 
-    pub fn fill(&self) {
-        unsafe {
-            core::ptr::write_bytes(
-                self.framebuffer_virt as *mut u8,
-                0,
-                self.current_x * self.current_y * 4,
-            );
-        }
-    }
-
     pub fn get_framebuffer(&self) -> &'a mut [u32] {
         unsafe {
             core::slice::from_raw_parts_mut(
                 self.framebuffer_virt as *mut u32,
-                self.current_x * self.current_y,
+                self.pitch * self.current_y,
             )
         }
     }
