@@ -1,9 +1,7 @@
 use francium_common::types::{MapType, PagePermission};
-use process::syscalls;
-use std::convert::{TryInto, TryFrom};
 use num_enum::TryFromPrimitive;
-
-// https://github.com/raspberrypi/firmware/wiki/Mailbox-property-interface
+use process::syscalls;
+use std::convert::{TryFrom, TryInto};
 
 #[derive(Debug, TryFromPrimitive)]
 #[repr(u32)]
@@ -233,7 +231,7 @@ pub struct MailboxAdapter {
     framebuffer_size: usize,
     current_x: usize,
     current_y: usize,
-    pitch: usize
+    pitch: usize,
 }
 
 struct MailboxMessage<'a> {
@@ -468,7 +466,7 @@ impl MailboxMessage<'_> {
                 MailboxTag::SetPalette => unimplemented!(),
                 MailboxTag::SetCursorInfo => MailboxReply::SetCursorInfo(self.read_u32()),
                 MailboxTag::SetCursorState => MailboxReply::SetCursorState(self.read_u32()),
-                MailboxTag::SetScreenGamma => MailboxReply::SetScreenGamma
+                MailboxTag::SetScreenGamma => MailboxReply::SetScreenGamma,
             };
 
             replies.push(reply);
@@ -500,7 +498,7 @@ impl<'a> MailboxAdapter {
             framebuffer_size: 0,
             current_x: 0,
             current_y: 0,
-            pitch: 0
+            pitch: 0,
         };
         adapter
     }
@@ -555,11 +553,12 @@ impl<'a> MailboxAdapter {
                         0,
                         fb_size as usize,
                         MapType::NormalUncachable,
-                        PagePermission::USER_READ_WRITE
-                    ).unwrap();
+                        PagePermission::USER_READ_WRITE,
+                    )
+                    .unwrap();
                     self.framebuffer_size = fb_size as usize;
                 }
-                MailboxReply::SetPhysicalSize(x,y) => {
+                MailboxReply::SetPhysicalSize(x, y) => {
                     self.current_x = x as usize;
                     self.current_y = y as usize;
                 }

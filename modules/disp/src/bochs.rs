@@ -9,7 +9,7 @@ pub struct BochsAdapter {
 
     current_x: usize,
     current_y: usize,
-    pitch: usize
+    pitch: usize,
 }
 
 const VBE_DISPI_INDEX_ID: usize = 0;
@@ -55,7 +55,7 @@ impl<'a> BochsAdapter {
             io_virt: io_virt,
             current_x: 0,
             current_y: 0,
-            pitch: 0
+            pitch: 0,
         };
         assert!(adapter.bochs_io_read(VBE_DISPI_INDEX_ID) == 0xb0c5);
         Some(adapter)

@@ -34,7 +34,7 @@ fn main() {
             let rpi_4_peripheral_base = 0xfe000000;
             let mut raspi = raspi::MailboxAdapter::new(rpi_4_peripheral_base);
             raspi.set_mode(1920, 1080);
-            raspi.get_framebuffer().fill(0xff0000ff); // RGBX -> 0xffRRGGBB
+            raspi.get_framebuffer().fill(0xff0000ff); // BGRX -> 0xffRRGGBB
         }
     } else {
         panic!("Unknown platform!");
