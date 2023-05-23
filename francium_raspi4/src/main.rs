@@ -35,7 +35,7 @@ pub extern "C" fn rust_main() -> ! {
     print_log_sink::init().unwrap();
 
     platform::scheduler_pre_init();
-    scheduler::init();
+    scheduler::init(1);
     // todo
     // platform::bringup_other_cpus();
 
@@ -44,7 +44,7 @@ pub extern "C" fn rust_main() -> ! {
     let sm_buf = include_bytes!("../../target/aarch64-unknown-francium/release/sm");
     let disp_buf = include_bytes!("../../target/aarch64-unknown-francium/release/disp");
     let net_buf = include_bytes!("../../target/aarch64-unknown-francium/release/net");
-    let loader_buf = include_bytes!("../../target/aarch64-unknown-francium/release/loader_buf");
+    let loader_buf = include_bytes!("../../target/aarch64-unknown-francium/release/loader");
 
     let fs_main_thread = init::load_process(fs_buf, "fs");
     scheduler::register_thread(fs_main_thread.clone());

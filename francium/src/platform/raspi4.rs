@@ -6,7 +6,7 @@ use crate::drivers::{InterruptController, InterruptDistributor, Timer};
 use spin::Mutex;
 
 pub const PHYS_MEM_BASE: usize = 0;
-pub const PHYS_MEM_SIZE: usize = 0x80000000; // 2gb for now
+pub const PHYS_MEM_SIZE: usize = 0x20000000; // 512m for now
 
 // uart0 is at 0x7e201000 which i think is at 0xfe201000 in low peri mode
 

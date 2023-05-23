@@ -8,9 +8,11 @@ extern crate alloc;
 pub mod ipc_server;
 
 #[cfg(target_os = "francium")]
-#[path = "syscalls_native.rs"] pub mod syscalls;
+#[path = "syscalls_native.rs"]
+pub mod syscalls;
 #[cfg(not(target_os = "francium"))]
-#[path = "syscalls_emulated.rs"] pub mod syscalls;
+#[path = "syscalls_emulated.rs"]
+pub mod syscalls;
 
 //pub mod allocator;
 pub mod ipc;

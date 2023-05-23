@@ -34,7 +34,7 @@ bitflags! {
 }
 
 use num_derive::FromPrimitive;
-#[derive(Copy, Clone, FromPrimitive)]
+#[derive(Copy, Clone, FromPrimitive, Debug)]
 pub enum MapType {
     NormalCachable,
     NormalUncachable,
