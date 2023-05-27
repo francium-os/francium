@@ -10,3 +10,12 @@ name = "open_file"
 id = 1
 inputs = [{ name = "filename", ty = "String"}]
 output = "OSResult<TranslateMoveHandle>"
+
+[[sub_interfaces]]
+session_name = "IFileSession"
+
+[[sub_interfaces.methods]]
+name = "read_file"
+id = 1
+inputs = [{ name = "length", ty = "usize" }]
+output = "OSResult<usize>"

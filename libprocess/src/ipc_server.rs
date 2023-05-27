@@ -37,13 +37,18 @@ pub struct ServerImpl {
     sessions: HashMap<Handle, Arc<dyn IPCSession>>,
 }
 
-impl ServerImpl where {
+impl ServerImpl {
     pub fn new(port: Handle) -> ServerImpl {
         ServerImpl {
             handles: vec![port],
             should_stop: AtomicBool::new(false),
             sessions: HashMap::new()
         }
+    }
+
+    pub fn register_session(&mut self, h: Handle, s: Arc<dyn IPCSession>) {
+        self.sessions.insert(h, s);
+        self.handles.push(h)
     }
 }
 

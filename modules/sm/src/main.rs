@@ -29,7 +29,7 @@ define_session!(SMSession {},
 SMServerStruct);
 
 impl SMServerStruct {
-    fn accept_session(self: &Arc<SMServerStruct>) -> Arc<SMSession> {
+    fn accept_main_session(self: &Arc<SMServerStruct>) -> Arc<SMSession> {
         Arc::new(SMSession {
             __server: self.clone()
         })

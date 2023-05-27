@@ -149,9 +149,6 @@ struct Interface {
 
 fn generate_server_ipcserver_impl(server: &ServerConfig) -> String {
     let server_struct_name = format_ident!("{}", server.struct_name);
-    let server_session_enum_name = format_ident!("{}SessionEnum", server.struct_name);
-    let server_session_wrapper_name = format_ident!("{}SessionWrapper", server.struct_name);
-
     let mut all_subinterface_names: Vec<String> = Vec::new();
     all_subinterface_names.push(server.main_interface.session_name.clone());
     all_subinterface_names.extend(server.sub_interfaces.iter().map(|x| x.session_name.clone()));
@@ -161,25 +158,11 @@ fn generate_server_ipcserver_impl(server: &ServerConfig) -> String {
     let mut all_subinterface_idents: Vec<_> = all_subinterface_names.iter().map(|x| format_ident!("{}", x)).collect();
 
     let server_impl = quote!(
-        enum #server_session_enum_name {
-            #(#all_subinterface_idents(Arc<#all_subinterface_idents>),)*
-        }
-
         #(impl #all_subinterface_idents {
             fn get_server(&self) -> Arc<#server_struct_name> {
                 self.__server.clone()
             }
         })*
-
-        impl IPCSession for #server_session_enum_name {
-            fn process(self :Arc<Self>, h: Handle, ipc_buffer: &mut [u8]) {
-                match self.as_ref() {
-                    #(#server_session_enum_name::#all_subinterface_idents(x) => {
-                        x.clone().process(h, ipc_buffer);
-                    })*
-                }
-            }
-        }
 
         impl IPCServer for #server_struct_name {
             fn get_server_impl<'a>(self: &'a Arc<Self>) -> MutexGuard<'a, ServerImpl> {
@@ -187,16 +170,9 @@ fn generate_server_ipcserver_impl(server: &ServerConfig) -> String {
             }
 
             fn accept_main_session_in_trait(self: &Arc<Self>) -> Arc<dyn IPCSession> {
-                Arc::<#server_session_enum_name>::new(self.accept_session().into())
+                self.accept_main_session()
             }
         }
-
-        #(
-        impl From<Arc<#all_subinterface_idents>> for #server_session_enum_name {
-            fn from(x: Arc<#all_subinterface_idents>) -> Self {
-                #server_session_enum_name::#all_subinterface_idents(x)
-            }
-        })*
     );
     server_impl.to_string()
 }
@@ -239,8 +215,8 @@ pub fn generate_server(path: &str) {
 
     let server_impl = generate_server_ipcserver_impl(&spec);
     let server_main_impl = generate_server_interface(&spec.main_interface);
-    //let server_sub_impl = spec.sub_interfaces.iter().map(|x| generate_server_interface(x)).collect::<Vec<String>>().join("\n");
-    fs::write(dest_path, header + &server_impl + &server_main_impl).unwrap();
+    let server_sub_impl = spec.sub_interfaces.iter().map(|x| generate_server_interface(x)).collect::<Vec<String>>().join("\n");
+    fs::write(dest_path, header + &server_impl + &server_main_impl + &server_sub_impl).unwrap();
 
     println!("cargo:rerun-if-changed={}", path);
 }

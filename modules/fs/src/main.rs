@@ -19,9 +19,6 @@ use std::io::Read;
 
 include!(concat!(env!("OUT_DIR"), "/fs_server_impl.rs"));
 
-struct IFileSession {}
-struct IDirectorySession {}
-
 define_server! {
     FSServerStruct {
         // todo: hold multiple filesystems and implement some VFS stuff
@@ -31,6 +28,16 @@ define_server! {
 
 define_session! {
     FSSession {},
+    FSServerStruct
+}
+
+define_session! {
+    IFileSession {},
+    FSServerStruct
+}
+
+define_session! {
+    IDirectorySession {},
     FSServerStruct
 }
 
@@ -48,7 +55,7 @@ fn map_fatfs_error(e: fatfs::Error<std::io::Error>) -> OSError {
 }
 
 impl FSServerStruct {
-    fn accept_session(self: &Arc<FSServerStruct>) -> Arc<FSSession> {
+    fn accept_main_session(self: &Arc<FSServerStruct>) -> Arc<FSSession> {
         Arc::new(FSSession {
             __server: self.clone()
         })
@@ -80,10 +87,16 @@ impl FSSession {
         let client_session: Handle = INVALID_HANDLE;
         let (server_session, client_session) = syscalls::create_session().unwrap();
 
-        //self.get_server().register_session();
+        server.get_server_impl().register_session(server_session, Arc::new(IFileSession{ __server: server.clone()}));
 
         println!("got file handle {:?}", client_session);
         Ok(TranslateMoveHandle(client_session))
+    }
+}
+
+impl IFileSession {
+    fn read_file(&self, length: usize) -> OSResult<usize> {
+        Ok(0)
     }
 }
 

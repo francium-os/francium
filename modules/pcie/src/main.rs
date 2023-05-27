@@ -33,7 +33,7 @@ define_server!(PCIEServerStruct {
 define_session!(PCIESession {}, PCIEServerStruct);
 
 impl PCIEServerStruct {
-    fn accept_session(self: &Arc<PCIEServerStruct>) -> Arc<PCIESession> {
+    fn accept_main_session(self: &Arc<PCIEServerStruct>) -> Arc<PCIESession> {
         Arc::new(PCIESession {
             __server: self.clone()
         })
