@@ -133,53 +133,86 @@ impl Method {
 #[derive(Debug, Deserialize)]
 struct ServerConfig {
     name: String,
+    struct_name: String,
     handle_accessor: String,
     main_interface: Interface,
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
+    sub_interfaces: Vec<Interface>
 }
 
 #[derive(Debug, Deserialize)]
 struct Interface {
     name: Option<String>,
-    struct_name: String,
     session_name: String,
     methods: Vec<Method>
 }
 
-fn generate_server_interface(interface: &Interface) -> String {
-    let server_methods: Vec<_> = interface.methods.iter().map(|x| x.server()).collect();
-    let server_struct_name = format_ident!("{}", interface.struct_name);
-    let server_session_enum_name = format_ident!("{}", interface.session_name);
-    let session_struct_name = format_ident!("{}", interface.session_name);
+fn generate_server_ipcserver_impl(server: &ServerConfig) -> String {
+    let server_struct_name = format_ident!("{}", server.struct_name);
+    let server_session_enum_name = format_ident!("{}SessionEnum", server.struct_name);
+    let server_session_wrapper_name = format_ident!("{}SessionWrapper", server.struct_name);
+
+    let mut all_subinterface_names: Vec<String> = Vec::new();
+    all_subinterface_names.push(server.main_interface.session_name.clone());
+    all_subinterface_names.extend(server.sub_interfaces.iter().map(|x| x.session_name.clone()));
+
+    let main_interface_ident = format_ident!("{}", server.main_interface.session_name);
+
+    let mut all_subinterface_idents: Vec<_> = all_subinterface_names.iter().map(|x| format_ident!("{}", x)).collect();
 
     let server_impl = quote!(
-        use process::ipc::message::IPC_BUFFER;
-        use process::ipc_server::*;
+        enum #server_session_enum_name {
+            #(#all_subinterface_idents(Arc<#all_subinterface_idents>),)*
+        }
 
-        #[async_trait::async_trait]
-        impl IPCServer for #server_struct_name {
-            type Session = #server_session_enum_name;
-            type SubInterfaces = ();
-
-            fn get_subinterface_index<T>() -> usize {
-                0
+        #(impl #all_subinterface_idents {
+            fn get_server(&self) -> Arc<#server_struct_name> {
+                self.__server.clone()
             }
+        })*
 
-            fn create_subinterfaces() -> Self::SubInterfaces {
-                ()
-            }
-
-            fn accept_session_ext(self: std::sync::Arc<Self>) -> std::sync::Arc<Self::Session> {
-                self.accept_session()
+        impl IPCSession for #server_session_enum_name {
+            fn process(self :Arc<Self>, h: Handle, ipc_buffer: &mut [u8]) {
+                match self.as_ref() {
+                    #(#server_session_enum_name::#all_subinterface_idents(x) => {
+                        x.clone().process(h, ipc_buffer);
+                    })*
+                }
             }
         }
 
-        impl IPCSession for #session_struct_name {
+        impl IPCServer for #server_struct_name {
+            fn get_server_impl<'a>(self: &'a Arc<Self>) -> MutexGuard<'a, ServerImpl> {
+                self.__server_impl.lock().unwrap()
+            }
+
+            fn accept_main_session_in_trait(self: &Arc<Self>) -> Arc<dyn IPCSession> {
+                Arc::<#server_session_enum_name>::new(self.accept_session().into())
+            }
+        }
+
+        #(
+        impl From<Arc<#all_subinterface_idents>> for #server_session_enum_name {
+            fn from(x: Arc<#all_subinterface_idents>) -> Self {
+                #server_session_enum_name::#all_subinterface_idents(x)
+            }
+        })*
+    );
+    server_impl.to_string()
+}
+
+fn generate_server_interface(interface: &Interface) -> String {
+    let server_methods: Vec<_> = interface.methods.iter().map(|x| x.server()).collect();
+    let session_name = format_ident!("{}", interface.session_name);
+
+    let server_impl = quote!(
+        impl IPCSession for #session_name {
             fn process(self: std::sync::Arc<Self>, h: Handle, ipc_buffer: &mut [u8]) {
                 self.process_internal(h, ipc_buffer);
             }
         }
 
-        impl #session_struct_name {
+        impl #session_name {
             fn process_internal(self: std::sync::Arc<Self>, h: Handle, ipc_buffer: &mut [u8]) {
                 let mut request_msg = process::ipc::message::IPCMessage::new(ipc_buffer);
                 request_msg.read_header();
@@ -198,11 +231,16 @@ pub fn generate_server(path: &str) {
     let spec = toml::from_str::<ServerConfig>(&fs::read_to_string(path).unwrap()).unwrap();
 
     let out_dir = env::var_os("OUT_DIR").unwrap();
-    let dest_path = Path::new(&out_dir).join(spec.name + "_server_impl.rs");
+    let dest_path = Path::new(&out_dir).join(spec.name.clone() + "_server_impl.rs");
 
-    let server_impl = generate_server_interface(&spec.main_interface);
+    let header = "use process::ipc::message::IPC_BUFFER;\n
+    use process::ipc_server::*;
+    use std::sync::MutexGuard;".to_string();
+
+    let server_impl = generate_server_ipcserver_impl(&spec);
+    let server_main_impl = generate_server_interface(&spec.main_interface);
     //let server_sub_impl = spec.sub_interfaces.iter().map(|x| generate_server_interface(x)).collect::<Vec<String>>().join("\n");
-    fs::write(dest_path, server_impl).unwrap();
+    fs::write(dest_path, header + &server_impl + &server_main_impl).unwrap();
 
     println!("cargo:rerun-if-changed={}", path);
 }

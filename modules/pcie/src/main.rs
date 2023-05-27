@@ -17,27 +17,25 @@ use common::Handle;
 use process::ipc::pcie::PCIDeviceInfo;
 use process::ipc_server::IPCServer;
 use process::os_error::*;
+use process::{define_server, define_session};
 
 use crate::interrupt_map::PCIInterruptMap;
 
 include!(concat!(env!("OUT_DIR"), "/pcie_server_impl.rs"));
 
-struct PCIEServerStruct {
+define_server!(PCIEServerStruct {
     buses: Mutex<Vec<pcie::PCIBus>>,
     mem_base: Mutex<usize>,
     io_base: Mutex<usize>,
     interrupt_map: Option<PCIInterruptMap>,
-}
+});
 
-struct PCIESession {
-    server: Arc<PCIEServerStruct>
-}
-
+define_session!(PCIESession {}, PCIEServerStruct);
 
 impl PCIEServerStruct {
-    fn accept_session(self: Arc<PCIEServerStruct>) -> Arc<PCIESession> {
+    fn accept_session(self: &Arc<PCIEServerStruct>) -> Arc<PCIESession> {
         Arc::new(PCIESession {
-            server: self
+            __server: self.clone()
         })
     }
 }
@@ -46,7 +44,8 @@ impl PCIESession {
     fn list_devices(&self) -> Vec<PCIDeviceInfo> {
         let mut all_devices = Vec::new();
 
-        let buses_locked = self.server.buses.lock().unwrap();
+        let server = self.get_server();
+        let buses_locked = server.buses.lock().unwrap();
 
         for bus in buses_locked.iter() {
             for dev in bus.devices.iter() {
@@ -67,7 +66,8 @@ impl PCIESession {
     fn get_devices_by_vidpid(&self, vid: u16, pid: u16) -> Vec<u32> {
         let mut devices = Vec::new();
 
-        let buses_locked = self.server.buses.lock().unwrap();
+        let server = self.get_server();
+        let buses_locked = server.buses.lock().unwrap();
         // this sucks but only a little
         for bus in buses_locked.iter() {
             for dev in bus.devices.iter() {
@@ -88,7 +88,8 @@ impl PCIESession {
     fn get_devices_by_class(&self, class: u8, subclass: u8) -> Vec<u32> {
         let mut devices = Vec::new();
 
-        let buses_locked = self.server.buses.lock().unwrap();
+        let server = self.get_server();
+        let buses_locked = server.buses.lock().unwrap();
 
         for bus in buses_locked.iter() {
             for dev in bus.devices.iter() {
@@ -110,7 +111,8 @@ impl PCIESession {
         let device_id: u8 = ((device & (0xff << 8)) >> 8) as u8;
         let function_id: u8 = (device & 0xff) as u8;
 
-        let mut buses_locked = self.server.buses.lock().unwrap();
+        let server = self.get_server();
+        let mut buses_locked = server.buses.lock().unwrap();
 
         for bus in buses_locked.iter_mut() {
             for dev in bus.devices.iter_mut() {
@@ -131,7 +133,8 @@ impl PCIESession {
         let device_id: u8 = ((device & (0xff << 8)) >> 8) as u8;
         let function_id: u8 = (device & 0xff) as u8;
 
-        let mut buses_locked = self.server.buses.lock().unwrap();
+        let server = self.get_server();
+        let mut buses_locked = server.buses.lock().unwrap();
 
         // just kidding this sucks a lot
         for bus in buses_locked.iter_mut() {
@@ -165,12 +168,12 @@ impl PCIESession {
                         let bar_base: usize = if old_bar_addr == 0 {
                             // BARs need to be aligned to their size...
                             let bar_base = if bar_type == 0 {
-                                let mut locked = self.server.mem_base.lock().unwrap();
+                                let mut locked = server.mem_base.lock().unwrap();
                                 let aligned_up = (*locked + bar_size - 1) & !(bar_size - 1);
                                 *locked = aligned_up + bar_size;
                                 aligned_up
                             } else {
-                                let mut locked = self.server.io_base.lock().unwrap();
+                                let mut locked = server.io_base.lock().unwrap();
                                 let aligned_up = (*locked + bar_size - 1) & !(bar_size - 1);
                                 *locked = aligned_up + bar_size;
                                 aligned_up
@@ -198,7 +201,8 @@ impl PCIESession {
         let device_id: u8 = ((device & (0xff << 8)) >> 8) as u8;
         let function_id: u8 = (device & 0xff) as u8;
 
-        let mut buses_locked = self.server.buses.lock().unwrap();
+        let server = self.get_server();
+        let mut buses_locked = server.buses.lock().unwrap();
 
         for bus in buses_locked.iter_mut() {
             for dev in bus.devices.iter_mut() {
@@ -268,7 +272,8 @@ impl PCIESession {
         let device_id: u8 = ((device & (0xff << 8)) >> 8) as u8;
         let function_id: u8 = (device & 0xff) as u8;
 
-        let mut buses_locked = self.server.buses.lock().unwrap();
+        let server = self.get_server();
+        let mut buses_locked = server.buses.lock().unwrap();
 
         for bus in buses_locked.iter_mut() {
             for dev in bus.devices.iter_mut() {
@@ -279,7 +284,7 @@ impl PCIESession {
                         let interrupt_id = if func.inner.interrupt_line != 0 {
                             func.inner.interrupt_line
                         } else {
-                            32 + self.server
+                            32 + server
                                 .interrupt_map
                                 .as_ref()
                                 .unwrap()
@@ -306,7 +311,8 @@ impl PCIESession {
         let device_id: u8 = ((device & (0xff << 8)) >> 8) as u8;
         let function_id: u8 = (device & 0xff) as u8;
 
-        let mut buses_locked = self.server.buses.lock().unwrap();
+        let server = self.get_server();
+        let mut buses_locked = server.buses.lock().unwrap();
 
         for bus in buses_locked.iter_mut() {
             for dev in bus.devices.iter_mut() {
@@ -345,15 +351,13 @@ async fn main() {
     let port = syscalls::create_port("").unwrap();
     sm::register_port(syscalls::make_tag("pcie"), TranslateCopyHandle(port)).unwrap();
 
-    let server = ServerImpl::new(
-        PCIEServerStruct {
-            buses: Mutex::new(pcie_buses),
-            mem_base: Mutex::new(pci_32bit_addr.unwrap().try_into().unwrap()),
-            io_base: Mutex::new(io_space_addr.unwrap().try_into().unwrap()),
-            interrupt_map: interrupts,
-        },
-        port,
-    );
+    let server = Arc::new(PCIEServerStruct {
+        __server_impl: Mutex::new(ServerImpl::new(port)),
+        buses: Mutex::new(pcie_buses),
+        mem_base: Mutex::new(pci_32bit_addr.unwrap().try_into().unwrap()),
+        io_base: Mutex::new(io_space_addr.unwrap().try_into().unwrap()),
+        interrupt_map: interrupts,
+    });
 
     server.process_forever().await;
 

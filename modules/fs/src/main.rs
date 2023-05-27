@@ -1,6 +1,7 @@
 use block_adapter::BlockAdapter;
 use process::ipc::sm;
 use process::ipc::*;
+use process::{define_server, define_session};
 use process::ipc_server::{IPCServer, ServerImpl};
 use process::os_error::{Module, OSError, OSResult, Reason};
 use process::syscalls;
@@ -18,25 +19,26 @@ use std::io::Read;
 
 include!(concat!(env!("OUT_DIR"), "/fs_server_impl.rs"));
 
+struct IFileSession {}
+struct IDirectorySession {}
+
+define_server! {
+    FSServerStruct {
+        // todo: hold multiple filesystems and implement some VFS stuff
+        fs: Mutex<FatFilesystem>,
+    }
+}
+
+define_session! {
+    FSSession {},
+    FSServerStruct
+}
+
 type FatFilesystem = fatfs::FileSystem<
     fatfs::StdIoWrapper<BlockAdapter>,
     fatfs::DefaultTimeProvider,
     fatfs::LossyOemCpConverter,
 >;
-
-struct IFileStruct {}
-struct IFileSession {}
-struct IDirectoryStruct {}
-struct IDirectorySession {}
-
-struct FSServerStruct {
-    // todo: hold multiple filesystems and implement some VFS stuff
-    fs: Arc<Mutex<FatFilesystem>>,
-}
-
-struct FSSession {
-    server: Arc<FSServerStruct>
-}
 
 fn map_fatfs_error(e: fatfs::Error<std::io::Error>) -> OSError {
     match e {
@@ -46,9 +48,9 @@ fn map_fatfs_error(e: fatfs::Error<std::io::Error>) -> OSError {
 }
 
 impl FSServerStruct {
-    fn accept_session(self: Arc<FSServerStruct>) -> Arc<FSSession> {
+    fn accept_session(self: &Arc<FSServerStruct>) -> Arc<FSSession> {
         Arc::new(FSSession {
-            server: self
+            __server: self.clone()
         })
     }
 }
@@ -57,7 +59,8 @@ impl FSSession {
     fn open_file(&self, file_name: String) -> OSResult<TranslateMoveHandle> {
         println!("Hi from open_file!");
 
-        let fs = self.server.fs.lock().unwrap();
+        let server = self.get_server();
+        let fs = server.fs.lock().unwrap();
         let mut file = fs
             .root_dir()
             .open_file(&file_name)
@@ -77,8 +80,7 @@ impl FSSession {
         let client_session: Handle = INVALID_HANDLE;
         let (server_session, client_session) = syscalls::create_session().unwrap();
 
-        // todo: store server session _somewhere_
-        //self.register_session();
+        //self.get_server().register_session();
 
         println!("got file handle {:?}", client_session);
         Ok(TranslateMoveHandle(client_session))
@@ -115,12 +117,11 @@ async fn main() {
     .unwrap();
     let first_fs = fs;
 
-    let server = Box::new(ServerImpl::new(
-        FSServerStruct {
-            fs: Arc::new(Mutex::new(first_fs)),
+    let server = Arc::new(FSServerStruct {
+            __server_impl: Mutex::new(ServerImpl::new(port)),
+            fs: Mutex::new(first_fs),
         },
-        port,
-    ));
+    );
 
     println!("fs: processing");
     server.process_forever().await;

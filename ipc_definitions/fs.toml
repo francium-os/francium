@@ -1,8 +1,8 @@
 name = "fs"
 handle_accessor = "crate::ipc::fs::get_handle_for_fs"
+struct_name = "FSServerStruct"
 
 [main_interface]
-struct_name = "FSServerStruct"
 session_name = "FSSession"
 
 [[main_interface.methods]]

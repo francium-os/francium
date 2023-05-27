@@ -8,10 +8,11 @@ use process::ipc_server::{IPCServer, ServerImpl};
 use process::os_error::OSResult;
 use process::syscalls;
 use process::Handle;
+use process::{define_server, define_session};
 
 include!(concat!(env!("OUT_DIR"), "/sm_server_impl.rs"));
 
-struct SMServerStruct {
+define_server!(SMServerStruct {
     server_ports: Mutex<HashMap<u64, Handle>>,
     server_waiters: Mutex<
         HashMap<
@@ -22,29 +23,29 @@ struct SMServerStruct {
             ),
         >,
     >,
-}
+});
 
-struct SMSession {
-    server: Arc<SMServerStruct>
-}
+define_session!(SMSession {},
+SMServerStruct);
 
 impl SMServerStruct {
-    fn accept_session(self: Arc<SMServerStruct>) -> Arc<SMSession> {
+    fn accept_session(self: &Arc<SMServerStruct>) -> Arc<SMSession> {
         Arc::new(SMSession {
-            server: self
+            __server: self.clone()
         })
     }
 }
 
 impl SMSession {
     async fn get_service_handle(&self, tag: u64) -> OSResult<TranslateMoveHandle> {
-        let server_port = { self.server.server_ports.lock().unwrap().get(&tag).map(|x| *x) };
+        let server_port = { self.get_server().server_ports.lock().unwrap().get(&tag).map(|x| *x) };
 
         let server_port = match server_port {
             Some(x) => x,
             None => {
                 let mut waiter = {
-                    let mut server_waiters_locked = self.server.server_waiters.lock().unwrap();
+                    let server = self.get_server();
+                    let mut server_waiters_locked = server.server_waiters.lock().unwrap();
 
                     match server_waiters_locked.get(&tag) {
                         Some(ref x) => x.1.clone(),
@@ -66,9 +67,9 @@ impl SMSession {
     }
 
     async fn register_port(&self, tag: u64, port_handle: TranslateCopyHandle) -> OSResult<()> {
-        self.server.server_ports.lock().unwrap().insert(tag, port_handle.0);
+        self.get_server().server_ports.lock().unwrap().insert(tag, port_handle.0);
 
-        let new_tag = self.server.server_waiters.lock().unwrap().remove(&tag);
+        let new_tag = self.get_server().server_waiters.lock().unwrap().remove(&tag);
         if let Some((send, _recv)) = new_tag {
             send.broadcast(port_handle.0).await.unwrap();
         }
@@ -82,13 +83,12 @@ async fn main() {
     println!("Hello from sm!");
 
     let port = syscalls::create_port("sm").unwrap();
-    let server = ServerImpl::new(
-        SMServerStruct {
-            server_ports: Mutex::new(HashMap::new()),
-            server_waiters: Mutex::new(HashMap::new()),
-        },
-        port,
-    );
+
+    let server = Arc::new(SMServerStruct {
+        __server_impl: Mutex::new(ServerImpl::new(port)),
+        server_ports: Mutex::new(HashMap::new()),
+        server_waiters: Mutex::new(HashMap::new()),
+    });
 
     server.process_forever().await;
 

@@ -1,8 +1,8 @@
 name = "sm"
 handle_accessor = "crate::ipc::sm::get_handle_for_sm"
+struct_name = "SMServerStruct"
 
 [main_interface]
-struct_name = "SMServerStruct"
 session_name = "SMSession"
 
 [[main_interface.methods]]

@@ -1,8 +1,8 @@
 name = "pcie"
 handle_accessor = "crate::ipc::pcie::get_handle_for_pcie"
+struct_name = "PCIEServerStruct"
 
 [main_interface]
-struct_name = "PCIEServerStruct"
 session_name = "PCIESession"
 
 [[main_interface.methods]]
