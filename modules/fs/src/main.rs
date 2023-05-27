@@ -1,10 +1,10 @@
 use block_adapter::BlockAdapter;
 use process::ipc::sm;
 use process::ipc::*;
-use process::{define_server, define_session};
 use process::ipc_server::{IPCServer, ServerImpl};
 use process::os_error::{Module, OSError, OSResult, Reason};
 use process::syscalls;
+use process::{define_server, define_session};
 use process::{Handle, INVALID_HANDLE};
 use std::sync::Arc;
 use std::sync::Mutex;
@@ -57,7 +57,7 @@ fn map_fatfs_error(e: fatfs::Error<std::io::Error>) -> OSError {
 impl FSServerStruct {
     fn accept_main_session(self: &Arc<FSServerStruct>) -> Arc<FSSession> {
         Arc::new(FSSession {
-            __server: self.clone()
+            __server: self.clone(),
         })
     }
 }
@@ -87,7 +87,12 @@ impl FSSession {
         let client_session: Handle = INVALID_HANDLE;
         let (server_session, client_session) = syscalls::create_session().unwrap();
 
-        server.get_server_impl().register_session(server_session, Arc::new(IFileSession{ __server: server.clone()}));
+        server.get_server_impl().register_session(
+            server_session,
+            Arc::new(IFileSession {
+                __server: server.clone(),
+            }),
+        );
 
         println!("got file handle {:?}", client_session);
         Ok(TranslateMoveHandle(client_session))
@@ -131,10 +136,9 @@ async fn main() {
     let first_fs = fs;
 
     let server = Arc::new(FSServerStruct {
-            __server_impl: Mutex::new(ServerImpl::new(port)),
-            fs: Mutex::new(first_fs),
-        },
-    );
+        __server_impl: Mutex::new(ServerImpl::new(port)),
+        fs: Mutex::new(first_fs),
+    });
 
     println!("fs: processing");
     server.process_forever().await;

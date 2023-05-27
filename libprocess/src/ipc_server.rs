@@ -1,10 +1,10 @@
 use crate::syscalls;
-use std::sync::{Arc, Mutex, MutexGuard};
 use common::{Handle, INVALID_HANDLE};
 use core::sync::atomic::{AtomicBool, Ordering};
 use smallvec::SmallVec;
-use tokio;
 use std::collections::HashMap;
+use std::sync::{Arc, Mutex, MutexGuard};
+use tokio;
 
 #[macro_export]
 macro_rules! define_server {
@@ -42,7 +42,7 @@ impl ServerImpl {
         ServerImpl {
             handles: vec![port],
             should_stop: AtomicBool::new(false),
-            sessions: HashMap::new()
+            sessions: HashMap::new(),
         }
     }
 
@@ -91,6 +91,6 @@ pub trait IPCServer {
     }
 }
 
-pub trait IPCSession : Send + Sync {
+pub trait IPCSession: Send + Sync {
     fn process(self: Arc<Self>, h: Handle, ipc_buffer: &mut [u8]);
 }

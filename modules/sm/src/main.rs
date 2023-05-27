@@ -25,20 +25,26 @@ define_server!(SMServerStruct {
     >,
 });
 
-define_session!(SMSession {},
-SMServerStruct);
+define_session!(SMSession {}, SMServerStruct);
 
 impl SMServerStruct {
     fn accept_main_session(self: &Arc<SMServerStruct>) -> Arc<SMSession> {
         Arc::new(SMSession {
-            __server: self.clone()
+            __server: self.clone(),
         })
     }
 }
 
 impl SMSession {
     async fn get_service_handle(&self, tag: u64) -> OSResult<TranslateMoveHandle> {
-        let server_port = { self.get_server().server_ports.lock().unwrap().get(&tag).map(|x| *x) };
+        let server_port = {
+            self.get_server()
+                .server_ports
+                .lock()
+                .unwrap()
+                .get(&tag)
+                .map(|x| *x)
+        };
 
         let server_port = match server_port {
             Some(x) => x,
@@ -67,9 +73,18 @@ impl SMSession {
     }
 
     async fn register_port(&self, tag: u64, port_handle: TranslateCopyHandle) -> OSResult<()> {
-        self.get_server().server_ports.lock().unwrap().insert(tag, port_handle.0);
+        self.get_server()
+            .server_ports
+            .lock()
+            .unwrap()
+            .insert(tag, port_handle.0);
 
-        let new_tag = self.get_server().server_waiters.lock().unwrap().remove(&tag);
+        let new_tag = self
+            .get_server()
+            .server_waiters
+            .lock()
+            .unwrap()
+            .remove(&tag);
         if let Some((send, _recv)) = new_tag {
             send.broadcast(port_handle.0).await.unwrap();
         }

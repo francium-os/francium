@@ -137,14 +137,14 @@ struct ServerConfig {
     handle_accessor: String,
     main_interface: Interface,
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
-    sub_interfaces: Vec<Interface>
+    sub_interfaces: Vec<Interface>,
 }
 
 #[derive(Debug, Deserialize)]
 struct Interface {
     name: Option<String>,
     session_name: String,
-    methods: Vec<Method>
+    methods: Vec<Method>,
 }
 
 fn generate_server_ipcserver_impl(server: &ServerConfig) -> String {
@@ -155,7 +155,10 @@ fn generate_server_ipcserver_impl(server: &ServerConfig) -> String {
 
     let main_interface_ident = format_ident!("{}", server.main_interface.session_name);
 
-    let mut all_subinterface_idents: Vec<_> = all_subinterface_names.iter().map(|x| format_ident!("{}", x)).collect();
+    let mut all_subinterface_idents: Vec<_> = all_subinterface_names
+        .iter()
+        .map(|x| format_ident!("{}", x))
+        .collect();
 
     let server_impl = quote!(
         #(impl #all_subinterface_idents {
@@ -211,12 +214,22 @@ pub fn generate_server(path: &str) {
 
     let header = "use process::ipc::message::IPC_BUFFER;\n
     use process::ipc_server::*;
-    use std::sync::MutexGuard;".to_string();
+    use std::sync::MutexGuard;"
+        .to_string();
 
     let server_impl = generate_server_ipcserver_impl(&spec);
     let server_main_impl = generate_server_interface(&spec.main_interface);
-    let server_sub_impl = spec.sub_interfaces.iter().map(|x| generate_server_interface(x)).collect::<Vec<String>>().join("\n");
-    fs::write(dest_path, header + &server_impl + &server_main_impl + &server_sub_impl).unwrap();
+    let server_sub_impl = spec
+        .sub_interfaces
+        .iter()
+        .map(|x| generate_server_interface(x))
+        .collect::<Vec<String>>()
+        .join("\n");
+    fs::write(
+        dest_path,
+        header + &server_impl + &server_main_impl + &server_sub_impl,
+    )
+    .unwrap();
 
     println!("cargo:rerun-if-changed={}", path);
 }
@@ -227,7 +240,8 @@ pub fn generate_client(path: &str) {
     let out_dir = env::var_os("OUT_DIR").unwrap();
     let dest_path = Path::new(&out_dir).join(spec.name + "_client_impl.rs");
 
-    let client_methods: Vec<_> = spec.main_interface
+    let client_methods: Vec<_> = spec
+        .main_interface
         .methods
         .iter()
         .map(|x| x.client(&spec.handle_accessor))
