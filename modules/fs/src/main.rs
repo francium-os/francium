@@ -19,10 +19,21 @@ use std::io::Read;
 
 include!(concat!(env!("OUT_DIR"), "/fs_server_impl.rs"));
 
+type FatFilesystem = fatfs::FileSystem<
+    fatfs::StdIoWrapper<BlockAdapter>,
+    fatfs::DefaultTimeProvider,
+    fatfs::LossyOemCpConverter,
+>;
+
+type FatFile<'a> = fatfs::File<'a, fatfs::StdIoWrapper<BlockAdapter>,
+    fatfs::DefaultTimeProvider,
+    fatfs::LossyOemCpConverter,
+>;
+
 define_server! {
     FSServerStruct {
         // todo: hold multiple filesystems and implement some VFS stuff
-        fs: Mutex<FatFilesystem>,
+        fs: Box<FatFilesystem>,
     }
 }
 
@@ -31,21 +42,15 @@ define_session! {
     FSServerStruct
 }
 
-define_session! {
-    IFileSession {},
-    FSServerStruct
+struct IFileSession<'a> {
+    __server: Arc<FSServerStruct>,
+    file: FatFile<'a>
 }
 
 define_session! {
     IDirectorySession {},
     FSServerStruct
 }
-
-type FatFilesystem = fatfs::FileSystem<
-    fatfs::StdIoWrapper<BlockAdapter>,
-    fatfs::DefaultTimeProvider,
-    fatfs::LossyOemCpConverter,
->;
 
 fn map_fatfs_error(e: fatfs::Error<std::io::Error>) -> OSError {
     match e {
@@ -67,21 +72,10 @@ impl FSSession {
         println!("Hi from open_file!");
 
         let server = self.get_server();
-        let fs = server.fs.lock().unwrap();
-        let mut file = fs
+        let mut file = server.fs
             .root_dir()
             .open_file(&file_name)
             .map_err(map_fatfs_error)?;
-        let mut v: Vec<u8> = Vec::new();
-
-        let starting_tick = syscalls::get_system_tick();
-        file.read_to_end(&mut v).unwrap();
-        let ending_tick = syscalls::get_system_tick();
-        println!(
-            "file len: {:?} in {} sec",
-            v.len(),
-            (ending_tick - starting_tick) as f64 / 1e9
-        );
 
         let server_session: Handle = INVALID_HANDLE;
         let client_session: Handle = INVALID_HANDLE;
@@ -91,6 +85,7 @@ impl FSSession {
             server_session,
             Arc::new(IFileSession {
                 __server: server.clone(),
+                file: file
             }),
         );
 
@@ -99,7 +94,7 @@ impl FSSession {
     }
 }
 
-impl IFileSession {
+impl<'a> IFileSession<'a> {
     fn read_file(&self, length: usize) -> OSResult<usize> {
         Ok(0)
     }
@@ -137,7 +132,7 @@ async fn main() {
 
     let server = Arc::new(FSServerStruct {
         __server_impl: Mutex::new(ServerImpl::new(port)),
-        fs: Mutex::new(first_fs),
+        fs: Box::new(first_fs),
     });
 
     println!("fs: processing");

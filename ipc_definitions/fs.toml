@@ -13,6 +13,7 @@ output = "OSResult<TranslateMoveHandle>"
 
 [[sub_interfaces]]
 session_name = "IFileSession"
+lifetimes = "<'a>"
 
 [[sub_interfaces.methods]]
 name = "read_file"

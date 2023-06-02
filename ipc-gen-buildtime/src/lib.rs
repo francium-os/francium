@@ -144,24 +144,32 @@ struct ServerConfig {
 struct Interface {
     name: Option<String>,
     session_name: String,
+    #[serde(default)]
+    lifetimes: String,
     methods: Vec<Method>,
 }
 
 fn generate_server_ipcserver_impl(server: &ServerConfig) -> String {
     let server_struct_name = format_ident!("{}", server.struct_name);
-    let mut all_subinterface_names: Vec<String> = Vec::new();
-    all_subinterface_names.push(server.main_interface.session_name.clone());
-    all_subinterface_names.extend(server.sub_interfaces.iter().map(|x| x.session_name.clone()));
+
+    let mut all_subinterfaces: Vec<&Interface> = Vec::new();
+    all_subinterfaces.push(&server.main_interface);
+    all_subinterfaces.extend(server.sub_interfaces.iter());
 
     let main_interface_ident = format_ident!("{}", server.main_interface.session_name);
 
-    let mut all_subinterface_idents: Vec<_> = all_subinterface_names
+    let mut all_subinterface_idents: Vec<_> = all_subinterfaces
         .iter()
-        .map(|x| format_ident!("{}", x))
+        .map(|x| format_ident!("{}", x.session_name))
         .collect();
 
+    let mut all_subinterface_lifetimes: Vec<_> = all_subinterfaces
+        .iter()
+        .map(|x| syn::parse_str::<syn::Generics>(&x.lifetimes).unwrap())
+        .collect(); 
+
     let server_impl = quote!(
-        #(impl #all_subinterface_idents {
+        #(impl #all_subinterface_lifetimes #all_subinterface_idents #all_subinterface_lifetimes {
             fn get_server(&self) -> Arc<#server_struct_name> {
                 self.__server.clone()
             }
@@ -183,15 +191,16 @@ fn generate_server_ipcserver_impl(server: &ServerConfig) -> String {
 fn generate_server_interface(interface: &Interface) -> String {
     let server_methods: Vec<_> = interface.methods.iter().map(|x| x.server()).collect();
     let session_name = format_ident!("{}", interface.session_name);
+    let session_lifetime = syn::parse_str::<syn::Generics>(&interface.lifetimes).unwrap();
 
     let server_impl = quote!(
-        impl IPCSession for #session_name {
+        impl #session_lifetime IPCSession for #session_name #session_lifetime {
             fn process(self: std::sync::Arc<Self>, h: Handle, ipc_buffer: &mut [u8]) {
                 self.process_internal(h, ipc_buffer);
             }
         }
 
-        impl #session_name {
+        impl #session_lifetime #session_name #session_lifetime {
             fn process_internal(self: std::sync::Arc<Self>, h: Handle, ipc_buffer: &mut [u8]) {
                 let mut request_msg = process::ipc::message::IPCMessage::new(ipc_buffer);
                 request_msg.read_header();
@@ -226,10 +235,13 @@ pub fn generate_server(path: &str) {
         .collect::<Vec<String>>()
         .join("\n");
     fs::write(
-        dest_path,
+        &dest_path,
         header + &server_impl + &server_main_impl + &server_sub_impl,
     )
     .unwrap();
+
+    // lol. lmao
+    std::process::Command::new("rustfmt").arg("--edition").arg("2021").arg(&dest_path).output().unwrap();
 
     println!("cargo:rerun-if-changed={}", path);
 }
@@ -253,6 +265,10 @@ pub fn generate_client(path: &str) {
         #(#client_methods)*
     };
 
-    fs::write(dest_path, client_impl.to_string()).unwrap();
+    fs::write(&dest_path, client_impl.to_string()).unwrap();
+    
+    // lol. lmao
+    std::process::Command::new("rustfmt").arg("--edition").arg("2021").arg(&dest_path).output().unwrap();
+
     println!("cargo:rerun-if-changed={}", path);
 }

@@ -2,7 +2,7 @@ board ?= virt
 
 CARGO ?= cargo +francium
 
-# export RUSTFLAGS = -Cforce-unwind-tables
+export RUSTFLAGS = -Zmacro-backtrace
 
 ifeq ($(board), virt)
 arch=aarch64

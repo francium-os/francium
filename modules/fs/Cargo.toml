@@ -11,7 +11,7 @@ tokio = { version = "1.21.2", features = ["rt", "rt-multi-thread", "macros"] }
 "process" = { path = "../../libprocess" }
 tock-registers = "0.8.1"
 "francium_common" = { path = "../../crates/francium_common" }
-fatfs = { git = "https://github.com/rafalh/rust-fatfs.git" }
+fatfs = { git = "https://github.com/francium-os/rust-fatfs.git" }
 gpt = "3.0.0"
 
 [build-dependencies]
