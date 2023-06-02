@@ -134,6 +134,8 @@ impl Method {
 struct ServerConfig {
     name: String,
     struct_name: String,
+    #[serde(default)]
+    lifetimes: String,
     handle_accessor: String,
     main_interface: Interface,
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
@@ -151,6 +153,7 @@ struct Interface {
 
 fn generate_server_ipcserver_impl(server: &ServerConfig) -> String {
     let server_struct_name = format_ident!("{}", server.struct_name);
+    let server_lifetimes = syn::parse_str::<syn::Generics>(&server.lifetimes).unwrap();
 
     let mut all_subinterfaces: Vec<&Interface> = Vec::new();
     all_subinterfaces.push(&server.main_interface);
@@ -170,17 +173,17 @@ fn generate_server_ipcserver_impl(server: &ServerConfig) -> String {
 
     let server_impl = quote!(
         #(impl #all_subinterface_lifetimes #all_subinterface_idents #all_subinterface_lifetimes {
-            fn get_server(&self) -> Arc<#server_struct_name> {
+            fn get_server(&self) -> Arc<#server_struct_name #server_lifetimes > {
                 self.__server.clone()
             }
         })*
 
-        impl IPCServer for #server_struct_name {
-            fn get_server_impl<'a>(self: &'a Arc<Self>) -> MutexGuard<'a, ServerImpl> {
-                self.__server_impl.lock().unwrap()
+        impl #server_lifetimes IPCServer<'a> for #server_struct_name #server_lifetimes {
+            fn get_server_impl<'arc>(self: &'arc Arc<Self>) -> &'arc Mutex<ServerImpl<'a>> {
+                &self.__server_impl
             }
 
-            fn accept_main_session_in_trait(self: &Arc<Self>) -> Arc<dyn IPCSession> {
+            fn accept_main_session_in_trait(self: &Arc<Self>) -> Arc<dyn IPCSession + 'a> {
                 self.accept_main_session()
             }
         }

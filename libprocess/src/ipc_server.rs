@@ -12,7 +12,7 @@ macro_rules! define_server {
         $($manual_fields:tt)*
     }) => {
         struct $struct_name {
-            __server_impl: Mutex<ServerImpl>,
+            __server_impl: Mutex<ServerImpl<'a>>,
             $($manual_fields)*
         }
     }
@@ -31,14 +31,14 @@ macro_rules! define_session {
     }
 }
 
-pub struct ServerImpl {
+pub struct ServerImpl<'a> {
     handles: Vec<Handle>,
     should_stop: AtomicBool,
-    sessions: HashMap<Handle, Arc<dyn IPCSession>>,
+    sessions: HashMap<Handle, Arc<dyn IPCSession + 'a>>,
 }
 
-impl ServerImpl {
-    pub fn new(port: Handle) -> ServerImpl {
+impl<'a> ServerImpl<'a> {
+    pub fn new(port: Handle) -> ServerImpl<'a> {
         ServerImpl {
             handles: vec![port],
             should_stop: AtomicBool::new(false),
@@ -53,15 +53,15 @@ impl ServerImpl {
 }
 
 #[async_trait::async_trait]
-pub trait IPCServer {
-    fn get_server_impl<'a>(self: &'a Arc<Self>) -> MutexGuard<'a, ServerImpl>;
-    fn accept_main_session_in_trait(self: &Arc<Self>) -> Arc<dyn IPCSession>;
+pub trait IPCServer<'serv> {
+    fn get_server_impl<'arc>(self: &'arc Arc<Self>) -> &'arc Mutex<ServerImpl<'serv>>;
+    fn accept_main_session_in_trait(self: &Arc<Self>) -> Arc<dyn IPCSession + 'serv>;
 
     async fn process_forever(self: Arc<Self>) {
         loop {
             let mut ipc_buffer: [u8; 128] = [0; 128];
 
-            let mut server = self.get_server_impl();
+            let mut server = self.get_server_impl().lock().unwrap();
             /* ugh i hate this but w/e */
             let (index, mut ipc_buffer) = tokio::task::block_in_place(|| {
                 let i = syscalls::ipc_receive(&server.handles, &mut ipc_buffer).unwrap();

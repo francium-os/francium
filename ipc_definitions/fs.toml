@@ -1,9 +1,11 @@
 name = "fs"
 handle_accessor = "crate::ipc::fs::get_handle_for_fs"
 struct_name = "FSServerStruct"
+lifetimes = "<'a>"
 
 [main_interface]
 session_name = "FSSession"
+lifetimes = "<'a>"
 
 [[main_interface.methods]]
 name = "open_file"

@@ -30,26 +30,25 @@ type FatFile<'a> = fatfs::File<'a, fatfs::StdIoWrapper<BlockAdapter>,
     fatfs::LossyOemCpConverter,
 >;
 
-define_server! {
-    FSServerStruct {
+struct FSServerStruct<'a> {
+    __server_impl: Mutex<ServerImpl<'a>>,
         // todo: hold multiple filesystems and implement some VFS stuff
         fs: Box<FatFilesystem>,
-    }
+        
 }
 
-define_session! {
-    FSSession {},
-    FSServerStruct
+
+struct FSSession<'a> {
+    __server: Arc<FSServerStruct<'a>>,
 }
 
 struct IFileSession<'a> {
-    __server: Arc<FSServerStruct>,
+    __server: Arc<FSServerStruct<'a>>,
     file: FatFile<'a>
 }
 
-define_session! {
-    IDirectorySession {},
-    FSServerStruct
+struct IDirectorySession<'a> {
+    __server: Arc<FSServerStruct<'a>>,
 }
 
 fn map_fatfs_error(e: fatfs::Error<std::io::Error>) -> OSError {
@@ -59,15 +58,15 @@ fn map_fatfs_error(e: fatfs::Error<std::io::Error>) -> OSError {
     }
 }
 
-impl FSServerStruct {
-    fn accept_main_session(self: &Arc<FSServerStruct>) -> Arc<FSSession> {
+impl<'a> FSServerStruct<'a> {
+    fn accept_main_session(self: &Arc<FSServerStruct<'a>>) -> Arc<FSSession<'a>> {
         Arc::new(FSSession {
             __server: self.clone(),
         })
     }
 }
 
-impl FSSession {
+impl<'a> FSSession<'a> {
     fn open_file(&self, file_name: String) -> OSResult<TranslateMoveHandle> {
         println!("Hi from open_file!");
 
@@ -81,7 +80,7 @@ impl FSSession {
         let client_session: Handle = INVALID_HANDLE;
         let (server_session, client_session) = syscalls::create_session().unwrap();
 
-        server.get_server_impl().register_session(
+        server.get_server_impl().lock().unwrap().register_session(
             server_session,
             Arc::new(IFileSession {
                 __server: server.clone(),
@@ -132,7 +131,7 @@ async fn main() {
 
     let server = Arc::new(FSServerStruct {
         __server_impl: Mutex::new(ServerImpl::new(port)),
-        fs: Box::new(first_fs),
+        fs: Box::new(first_fs)
     });
 
     println!("fs: processing");
