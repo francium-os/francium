@@ -4,7 +4,6 @@ use process::ipc::*;
 use process::ipc_server::{IPCServer, ServerImpl};
 use process::os_error::{Module, OSError, OSResult, Reason};
 use process::syscalls;
-use process::{define_server, define_session};
 use process::{Handle, INVALID_HANDLE};
 use std::sync::Arc;
 use std::sync::Mutex;
@@ -31,24 +30,19 @@ type FatFile<'a> = fatfs::File<'a, fatfs::StdIoWrapper<BlockAdapter>,
 >;
 
 struct FSServerStruct<'a> {
-    __server_impl: Mutex<ServerImpl<'a>>,
-        // todo: hold multiple filesystems and implement some VFS stuff
-        fs: Box<FatFilesystem>,
-        
+    __server_impl: Mutex<ServerImpl<'a, FSServerStruct<'a>>>,
+    // todo: hold multiple filesystems and implement some VFS stuff
+    fs: Box<FatFilesystem>,
 }
 
-
-struct FSSession<'a> {
-    __server: Arc<FSServerStruct<'a>>,
+struct FSSession {
 }
 
 struct IFileSession<'a> {
-    __server: Arc<FSServerStruct<'a>>,
     file: FatFile<'a>
 }
 
-struct IDirectorySession<'a> {
-    __server: Arc<FSServerStruct<'a>>,
+struct IDirectorySession {
 }
 
 fn map_fatfs_error(e: fatfs::Error<std::io::Error>) -> OSError {
@@ -59,18 +53,15 @@ fn map_fatfs_error(e: fatfs::Error<std::io::Error>) -> OSError {
 }
 
 impl<'a> FSServerStruct<'a> {
-    fn accept_main_session(self: &Arc<FSServerStruct<'a>>) -> Arc<FSSession<'a>> {
-        Arc::new(FSSession {
-            __server: self.clone(),
-        })
+    fn accept_main_session(self: &Arc<Self>) -> Box<FSSession> {
+        Box::new(FSSession {})
     }
 }
 
-impl<'a> FSSession<'a> {
-    fn open_file(&self, file_name: String) -> OSResult<TranslateMoveHandle> {
+impl FSSession {
+    fn open_file(&self, server: Arc<FSServerStruct>, file_name: String) -> OSResult<TranslateMoveHandle> {
         println!("Hi from open_file!");
 
-        let server = self.get_server();
         let mut file = server.fs
             .root_dir()
             .open_file(&file_name)
@@ -80,10 +71,9 @@ impl<'a> FSSession<'a> {
         let client_session: Handle = INVALID_HANDLE;
         let (server_session, client_session) = syscalls::create_session().unwrap();
 
-        server.get_server_impl().lock().unwrap().register_session(
+        server.get_server_impl().register_session(
             server_session,
-            Arc::new(IFileSession {
-                __server: server.clone(),
+            Box::new(IFileSession {
                 file: file
             }),
         );
@@ -94,7 +84,7 @@ impl<'a> FSSession<'a> {
 }
 
 impl<'a> IFileSession<'a> {
-    fn read_file(&self, length: usize) -> OSResult<usize> {
+    fn read_file(&self, server: Arc<FSServerStruct>, length: usize) -> OSResult<usize> {
         Ok(0)
     }
 }
@@ -130,7 +120,7 @@ async fn main() {
     let first_fs = fs;
 
     let server = Arc::new(FSServerStruct {
-        __server_impl: Mutex::new(ServerImpl::new(port)),
+        __server_impl: Mutex::new(ServerImpl::new()),
         fs: Box::new(first_fs)
     });
 

@@ -42,14 +42,22 @@ impl Method {
 
         let output_type: Type = syn::parse_str(&self.output).unwrap();
 
-        let maybe_await = if let Some(is_async) = self.is_async {
-            if is_async {
-                quote!(.await)
-            } else {
-                quote!()
-            }
+        let maybe_await = if self.is_async.unwrap_or(false) {
+            quote!(.await)
         } else {
             quote!()
+        };
+
+        let spawn_or_block = if self.is_async.unwrap_or(false) {
+            quote!(tokio::spawn)
+        } else {
+            quote!(tokio::task::block_in_place)
+        };
+
+        let closure_or_async_block = if self.is_async.unwrap_or(false) {
+            quote!(async move)
+        } else {
+            quote!(||)
         };
 
         quote! {
@@ -58,8 +66,8 @@ impl Method {
 
                 #(let #inputs = request_msg.read();)*
 
-                tokio::spawn(async move {
-                    let res: #output_type = self.#method_name (#(#input_names),*) #maybe_await;
+                #spawn_or_block(#closure_or_async_block {
+                    let res: #output_type = self.#method_name (server, #(#input_names),*) #maybe_await;
                     let mut reply_msg = unsafe { process::ipc::message::IPCMessage::new(&mut IPC_BUFFER) };
                     reply_msg.write(res);
                     reply_msg.write_translates();
@@ -172,39 +180,38 @@ fn generate_server_ipcserver_impl(server: &ServerConfig) -> String {
         .collect(); 
 
     let server_impl = quote!(
-        #(impl #all_subinterface_lifetimes #all_subinterface_idents #all_subinterface_lifetimes {
-            fn get_server(&self) -> Arc<#server_struct_name #server_lifetimes > {
-                self.__server.clone()
-            }
-        })*
-
-        impl #server_lifetimes IPCServer<'a> for #server_struct_name #server_lifetimes {
-            fn get_server_impl<'arc>(self: &'arc Arc<Self>) -> &'arc Mutex<ServerImpl<'a>> {
-                &self.__server_impl
+        impl<'a> IPCServer<'a> for #server_struct_name {
+            // etc
+            fn get_server_impl<'m, 'r>(self: &'r Arc<Self>) -> MutexGuard<'m, ServerImpl<'a, Self>> where 'r: 'm {
+                self.__server_impl.lock().unwrap()
             }
 
-            fn accept_main_session_in_trait(self: &Arc<Self>) -> Arc<dyn IPCSession + 'a> {
+            fn accept_main_session_in_trait(self: &Arc<Self>) -> Box<dyn IPCSession<Server = Self>> {
                 self.accept_main_session()
+            }
+
+            fn process_server(self: Arc<Self>, h: process::Handle, ipc_buffer: &mut [u8]) {
+                let server_impl = self.get_server_impl();
+                let session = &server_impl.sessions[&h];
+                drop(server_impl);
+
+                session.process_session(self, h, ipc_buffer);
             }
         }
     );
     server_impl.to_string()
 }
 
-fn generate_server_interface(interface: &Interface) -> String {
+fn generate_server_interface(server: &ServerConfig, interface: &Interface) -> String {
+    let server_struct_name = format_ident!("{}", server.struct_name);
     let server_methods: Vec<_> = interface.methods.iter().map(|x| x.server()).collect();
     let session_name = format_ident!("{}", interface.session_name);
     let session_lifetime = syn::parse_str::<syn::Generics>(&interface.lifetimes).unwrap();
 
     let server_impl = quote!(
         impl #session_lifetime IPCSession for #session_name #session_lifetime {
-            fn process(self: std::sync::Arc<Self>, h: Handle, ipc_buffer: &mut [u8]) {
-                self.process_internal(h, ipc_buffer);
-            }
-        }
-
-        impl #session_lifetime #session_name #session_lifetime {
-            fn process_internal(self: std::sync::Arc<Self>, h: Handle, ipc_buffer: &mut [u8]) {
+            type Server = #server_struct_name;
+            fn process_session(&self, server: Arc<Self::Server>, h: process::Handle, ipc_buffer: &mut [u8]) {
                 let mut request_msg = process::ipc::message::IPCMessage::new(ipc_buffer);
                 request_msg.read_header();
 
@@ -230,11 +237,11 @@ pub fn generate_server(path: &str) {
         .to_string();
 
     let server_impl = generate_server_ipcserver_impl(&spec);
-    let server_main_impl = generate_server_interface(&spec.main_interface);
+    let server_main_impl = generate_server_interface(&spec, &spec.main_interface);
     let server_sub_impl = spec
         .sub_interfaces
         .iter()
-        .map(|x| generate_server_interface(x))
+        .map(|x| generate_server_interface(&spec, x))
         .collect::<Vec<String>>()
         .join("\n");
     fs::write(

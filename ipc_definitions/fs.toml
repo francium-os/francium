@@ -5,7 +5,6 @@ lifetimes = "<'a>"
 
 [main_interface]
 session_name = "FSSession"
-lifetimes = "<'a>"
 
 [[main_interface.methods]]
 name = "open_file"
