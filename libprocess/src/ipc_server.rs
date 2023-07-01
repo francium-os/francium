@@ -7,7 +7,7 @@ use std::sync::atomic::Ordering;
 use std::collections::HashMap;
 
 pub struct ServerImpl<'a, T> where T: IPCServer<'a> + ?Sized + 'a {
-	pub sessions: HashMap<Handle, Box<dyn IPCSession<Server = T> + 'a>>,
+	pub sessions: HashMap<Handle, Box<dyn IPCSession<'a, Server = T> + 'a>>,
     handles: Vec<Handle>,
     should_stop: bool
 }
@@ -21,7 +21,7 @@ impl<'a, T> ServerImpl<'a, T> where T: IPCServer<'a> + ?Sized + 'a {
         }
     }
 
-    pub fn register_session(self: &ServerImpl<'a, T>, handle: Handle, session: Box<dyn IPCSession<Server = T> + 'a>) {
+    pub fn register_session(self: &ServerImpl<'a, T>, handle: Handle, session: Box<dyn IPCSession<'a, Server = T> + 'a>) {
 
     }
 }
@@ -29,10 +29,10 @@ impl<'a, T> ServerImpl<'a, T> where T: IPCServer<'a> + ?Sized + 'a {
 #[async_trait]
 pub trait IPCServer<'a> {
     fn get_server_impl<'m, 'r>(self: &'r Arc<Self>) -> MutexGuard<'m, ServerImpl<'a, Self>> where 'r: 'm;
-    fn accept_main_session_in_trait(self: &Arc<Self>) -> Box<dyn IPCSession<Server = Self>>;
+    fn accept_main_session_in_trait(self: &Arc<Self>) -> Box<dyn IPCSession<'a, Server = Self>>;
 	fn process_server(self: Arc<Self>, handle: Handle, ipc_buffer: &mut [u8]);
 
-	async fn process_forever(self: Arc<Self>) {
+	async fn process_forever(self: Arc<Self>) where Self: 'a {
         loop {
             let mut ipc_buffer: [u8; 128] = [0; 128];
 
@@ -75,7 +75,7 @@ pub trait IPCServer<'a> {
     }
 }
 
-pub trait IPCSession: Send + Sync {
+pub trait IPCSession<'a>: Send + Sync {
     type Server;
     fn process_session(&self, server: Arc<Self::Server>, handle: Handle, ipc_buffer: &mut [u8]);
 }

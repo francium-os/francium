@@ -180,13 +180,13 @@ fn generate_server_ipcserver_impl(server: &ServerConfig) -> String {
         .collect(); 
 
     let server_impl = quote!(
-        impl<'a> IPCServer<'a> for #server_struct_name {
+        impl<'a> IPCServer<'a> for #server_struct_name #server_lifetimes {
             // etc
             fn get_server_impl<'m, 'r>(self: &'r Arc<Self>) -> MutexGuard<'m, ServerImpl<'a, Self>> where 'r: 'm {
                 self.__server_impl.lock().unwrap()
             }
 
-            fn accept_main_session_in_trait(self: &Arc<Self>) -> Box<dyn IPCSession<Server = Self>> {
+            fn accept_main_session_in_trait(self: &Arc<Self>) -> Box<dyn IPCSession<'a, Server = Self>> {
                 self.accept_main_session()
             }
 
@@ -206,11 +206,17 @@ fn generate_server_interface(server: &ServerConfig, interface: &Interface) -> St
     let server_struct_name = format_ident!("{}", server.struct_name);
     let server_methods: Vec<_> = interface.methods.iter().map(|x| x.server()).collect();
     let session_name = format_ident!("{}", interface.session_name);
+
     let session_lifetime = syn::parse_str::<syn::Generics>(&interface.lifetimes).unwrap();
+    let lifetime = if interface.lifetimes == "" {
+        syn::parse_str::<syn::Generics>(&server.lifetimes).unwrap()
+    } else {
+        session_lifetime.clone()
+    };
 
     let server_impl = quote!(
-        impl #session_lifetime IPCSession for #session_name #session_lifetime {
-            type Server = #server_struct_name;
+        impl #lifetime IPCSession<'a> for #session_name #session_lifetime {
+            type Server = #server_struct_name #lifetime;
             fn process_session(&self, server: Arc<Self::Server>, h: process::Handle, ipc_buffer: &mut [u8]) {
                 let mut request_msg = process::ipc::message::IPCMessage::new(ipc_buffer);
                 request_msg.read_header();
