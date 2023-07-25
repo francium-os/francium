@@ -24,7 +24,7 @@ include!(concat!(env!("OUT_DIR"), "/fs_server_impl.rs"));
 
 struct ChannelPair {
     request: mpsc::Sender<()>,
-    response: mpsc::Receiver<()>
+    response: mpsc::Receiver<()>,
 }
 define_server! {
     FSServerStruct {
@@ -119,7 +119,7 @@ impl IFileSession {
 
 fn fs_worker_thread(request: mpsc::Receiver<()>, response: mpsc::Sender<()>, fs: FatFilesystem) {
     println!("Hello from fs worker");
-    loop{}
+    loop {}
 }
 
 #[tokio::main]
@@ -156,13 +156,15 @@ async fn main() {
     let (tx_request, rx_request) = mpsc::channel();
     let (tx_response, rx_response) = mpsc::channel();
 
-    let fs_worker_thread = thread::spawn(move || {
-        fs_worker_thread(rx_request, tx_response, first_fs)
-    });
+    let fs_worker_thread =
+        thread::spawn(move || fs_worker_thread(rx_request, tx_response, first_fs));
 
     let server = Arc::new(FSServerStruct {
         __server_impl: Mutex::new(ServerImpl::new(port)),
-        fs_worker: Mutex::new(ChannelPair { request: tx_request, response: rx_response }),
+        fs_worker: Mutex::new(ChannelPair {
+            request: tx_request,
+            response: rx_response,
+        }),
     });
 
     println!("fs: processing");
