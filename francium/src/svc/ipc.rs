@@ -416,6 +416,9 @@ pub fn svc_create_session(
     let server_session = Arc::new(ServerSession::new());
     let client_session = Arc::new(ClientSession::new(server_session.clone()));
 
+    // TODO: ugh, i really wanted OnceCell here
+    *server_session.client.lock() = Arc::downgrade(&client_session);
+
     let server_session_handle = process
         .handle_table
         .get_handle(HandleObject::ServerSession(server_session));
