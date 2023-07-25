@@ -1,9 +1,8 @@
 use crate::syscalls;
-use common::{Handle, INVALID_HANDLE};
+use common::Handle;
 use core::sync::atomic::{AtomicBool, Ordering};
-use smallvec::SmallVec;
 use std::collections::HashMap;
-use std::sync::{Arc, Mutex, MutexGuard};
+use std::sync::{Arc, MutexGuard};
 use tokio;
 
 #[macro_export]

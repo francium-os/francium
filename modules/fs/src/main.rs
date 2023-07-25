@@ -1,12 +1,11 @@
 use block_adapter::BlockAdapter;
-use fatfs::FileSystem;
 use process::ipc::sm;
 use process::ipc::*;
 use process::ipc_server::{IPCServer, ServerImpl};
 use process::os_error::{Module, OSError, OSResult, Reason};
 use process::syscalls;
 use process::{define_server, define_session};
-use process::{Handle, INVALID_HANDLE};
+use process::Handle;
 use std::sync::Arc;
 use std::sync::Mutex;
 
@@ -16,7 +15,6 @@ mod block;
 mod block_adapter;
 mod block_virtio;
 
-use std::io::Read;
 use std::sync::mpsc;
 use std::thread;
 

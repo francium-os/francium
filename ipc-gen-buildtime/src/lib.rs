@@ -190,7 +190,7 @@ struct ServerConfig {
 
 #[derive(Debug, Deserialize)]
 struct Interface {
-    name: Option<String>,
+    //name: Option<String>,
     session_name: String,
     methods: Vec<MethodInfo>,
 }
@@ -201,9 +201,7 @@ fn generate_server_ipcserver_impl(server: &ServerConfig) -> String {
     all_subinterface_names.push(server.main_interface.session_name.clone());
     all_subinterface_names.extend(server.sub_interfaces.iter().map(|x| x.session_name.clone()));
 
-    let main_interface_ident = format_ident!("{}", server.main_interface.session_name);
-
-    let mut all_subinterface_idents: Vec<_> = all_subinterface_names
+    let all_subinterface_idents: Vec<_> = all_subinterface_names
         .iter()
         .map(|x| format_ident!("{}", x))
         .collect();
