@@ -8,6 +8,7 @@ fn main() {
 
     if let Ok(file_handle) = ipc::fs::open_file("efi/boot/bootx64.efi".to_string()) {
         println!("Hello again from test: {:?}", file_handle);
+        println!("Reading file: {:?}", ipc::fs::read_file(file_handle.0, 0));
     } else {
         println!("Probably failed to open file..");
     }

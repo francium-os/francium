@@ -1,4 +1,5 @@
 use block_adapter::BlockAdapter;
+use fatfs::FileSystem;
 use process::ipc::sm;
 use process::ipc::*;
 use process::ipc_server::{IPCServer, ServerImpl};
@@ -16,13 +17,18 @@ mod block_adapter;
 mod block_virtio;
 
 use std::io::Read;
+use std::sync::mpsc;
+use std::thread;
 
 include!(concat!(env!("OUT_DIR"), "/fs_server_impl.rs"));
 
+struct ChannelPair {
+    request: mpsc::Sender<()>,
+    response: mpsc::Receiver<()>
+}
 define_server! {
     FSServerStruct {
-        // todo: hold multiple filesystems and implement some VFS stuff
-        fs: Mutex<FatFilesystem>,
+        fs_worker: Mutex<ChannelPair>
     }
 }
 
@@ -67,7 +73,8 @@ impl FSSession {
         println!("Hi from open_file!");
 
         let server = self.get_server();
-        let fs = server.fs.lock().unwrap();
+        let fs = server.fs_worker.lock();
+        /*
         let mut file = fs
             .root_dir()
             .open_file(&file_name)
@@ -83,10 +90,14 @@ impl FSSession {
             (ending_tick - starting_tick) as f64 / 1e9
         );
 
-        let server_session: Handle = INVALID_HANDLE;
-        let client_session: Handle = INVALID_HANDLE;
-        let (server_session, client_session) = syscalls::create_session().unwrap();
+        server.get_server_impl().register_session(
+            server_session,
+            Arc::new(IFileSession {
+                __server: server.clone(),
+            }),
+        );*/
 
+        let (server_session, client_session) = syscalls::create_session().unwrap();
         server.get_server_impl().register_session(
             server_session,
             Arc::new(IFileSession {
@@ -101,8 +112,14 @@ impl FSSession {
 
 impl IFileSession {
     fn read_file(&self, length: usize) -> OSResult<usize> {
+        println!("Read file");
         Ok(0)
     }
+}
+
+fn fs_worker_thread(request: mpsc::Receiver<()>, response: mpsc::Sender<()>, fs: FatFilesystem) {
+    println!("Hello from fs worker");
+    loop{}
 }
 
 #[tokio::main]
@@ -133,15 +150,25 @@ async fn main() {
         fatfs::FsOptions::new(),
     )
     .unwrap();
+
     let first_fs = fs;
+
+    let (tx_request, rx_request) = mpsc::channel();
+    let (tx_response, rx_response) = mpsc::channel();
+
+    let fs_worker_thread = thread::spawn(move || {
+        fs_worker_thread(rx_request, tx_response, first_fs)
+    });
 
     let server = Arc::new(FSServerStruct {
         __server_impl: Mutex::new(ServerImpl::new(port)),
-        fs: Mutex::new(first_fs),
+        fs_worker: Mutex::new(ChannelPair { request: tx_request, response: rx_response }),
     });
 
     println!("fs: processing");
     server.process_forever().await;
+
+    tokio::task::block_in_place(|| fs_worker_thread.join().unwrap());
 
     syscalls::close_handle(port).unwrap();
     println!("FS exiting!");
