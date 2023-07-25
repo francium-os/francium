@@ -4,8 +4,8 @@ use serde_derive::Deserialize;
 use std::env;
 use std::fs;
 use std::path::Path;
-use syn::{Path as SynPath, Type, Ident};
 use syn::__private::TokenStream2;
+use syn::{Ident, Path as SynPath, Type};
 
 #[derive(Debug, Deserialize)]
 struct Ty {
@@ -32,7 +32,7 @@ struct Method {
 }
 
 impl Method {
-    fn new(info: &MethodInfo) -> Method{
+    fn new(info: &MethodInfo) -> Method {
         let input_names: Vec<_> = info
             .inputs
             .iter()
@@ -56,7 +56,7 @@ impl Method {
             input_names: input_names,
             inputs: inputs,
             output_type: output_type,
-            is_async: info.is_async
+            is_async: info.is_async,
         }
     }
 
@@ -126,7 +126,7 @@ impl Method {
         let body = self.client_body();
 
         quote! {
-            fn #method_name ( __ipc_handle: Handle, #(#inputs),* ) -> #output_type {
+            pub fn #method_name ( __ipc_handle: Handle, #(#inputs),* ) -> #output_type {
                 #method_name_with_handle(__ipc_handle, #(#input_names),*)
             }
 
@@ -158,7 +158,7 @@ impl Method {
         let method_id: u32 = self.id;
 
         quote! {
-            pub fn #method_name ( __ipc_handle: Handle, #(#inputs),* ) -> #output_type {
+            fn #method_name ( __ipc_handle: Handle, #(#inputs),* ) -> #output_type {
                 let mut request_msg = unsafe { crate::ipc::message::IPCMessage::new(&mut IPC_BUFFER) };
 
                 #write_inputs
@@ -229,7 +229,11 @@ fn generate_server_ipcserver_impl(server: &ServerConfig) -> String {
 }
 
 fn generate_server_interface(interface: &Interface) -> String {
-    let server_methods: Vec<_> = interface.methods.iter().map(|x| Method::new(x).server()).collect();
+    let server_methods: Vec<_> = interface
+        .methods
+        .iter()
+        .map(|x| Method::new(x).server())
+        .collect();
     let session_name = format_ident!("{}", interface.session_name);
 
     let server_impl = quote!(
