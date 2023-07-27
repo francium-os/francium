@@ -45,10 +45,13 @@ pub fn svc_create_event() -> (ResultCode, u32) {
 }
 
 pub fn svc_signal_event(h: u32) -> ResultCode {
-    let proc_locked = scheduler::get_current_process();
-    let process = proc_locked.lock();
+    let proc = scheduler::get_current_process();
+    let proc_locked = proc.lock();
 
-    if let HandleObject::Event(ev) = process.handle_table.get_object(h) {
+    if let HandleObject::Event(ev) = proc_locked.handle_table.get_object(h) {
+        println!("event signal poggers");
+        drop(proc_locked);
+
         ev.w.signal_one(true);
         RESULT_OK
     } else {
