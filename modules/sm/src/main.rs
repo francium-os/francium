@@ -105,7 +105,7 @@ async fn main() {
         server_waiters: Mutex::new(HashMap::new()),
     });
 
-    server.process_forever().await;
+    server.process_forever();
 
     syscalls::close_handle(port).unwrap();
     println!("SM exiting!");

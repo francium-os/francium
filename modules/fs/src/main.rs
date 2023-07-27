@@ -166,7 +166,7 @@ async fn main() {
     });
 
     println!("fs: processing");
-    server.process_forever().await;
+    server.process_forever();
 
     tokio::task::block_in_place(|| fs_worker_thread.join().unwrap());
 

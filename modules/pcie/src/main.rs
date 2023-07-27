@@ -359,7 +359,7 @@ async fn main() {
         interrupt_map: interrupts,
     });
 
-    server.process_forever().await;
+    server.process_forever();
 
     syscalls::exit_process();
 }
