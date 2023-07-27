@@ -2,31 +2,29 @@ use block_adapter::BlockAdapter;
 use process::ipc::sm;
 use process::ipc::*;
 use process::ipc_server::{IPCServer, ServerImpl};
-use process::os_error::{Module, OSError, OSResult, Reason};
+use process::os_error::{Module, OSError, OSResult, Reason, ResultCode};
 use process::syscalls;
 use process::{define_server, define_session};
 use process::Handle;
 use std::sync::Arc;
 use std::sync::Mutex;
+use std::sync::mpsc;
+use std::thread;
 
 mod virtio_pci;
 
 mod block;
 mod block_adapter;
 mod block_virtio;
+mod fs_worker;
 
-use std::sync::mpsc;
-use std::thread;
+use fs_worker::*;
 
 include!(concat!(env!("OUT_DIR"), "/fs_server_impl.rs"));
 
-struct ChannelPair {
-    request: mpsc::Sender<()>,
-    response: mpsc::Receiver<()>,
-}
 define_server! {
     FSServerStruct {
-        fs_worker: Mutex<ChannelPair>
+        fs_worker: Mutex<FSWorkerClient>
     }
 }
 
@@ -36,7 +34,9 @@ define_session! {
 }
 
 define_session! {
-    IFileSession {},
+    IFileSession {
+        file_handle: usize
+    },
     FSServerStruct
 }
 
@@ -44,12 +44,6 @@ define_session! {
     IDirectorySession {},
     FSServerStruct
 }
-
-type FatFilesystem = fatfs::FileSystem<
-    fatfs::StdIoWrapper<BlockAdapter>,
-    fatfs::DefaultTimeProvider,
-    fatfs::LossyOemCpConverter,
->;
 
 fn map_fatfs_error(e: fatfs::Error<std::io::Error>) -> OSError {
     match e {
@@ -68,38 +62,22 @@ impl FSServerStruct {
 
 impl FSSession {
     fn open_file(&self, file_name: String) -> OSResult<TranslateMoveHandle> {
-        println!("Hi from open_file!");
-
         let server = self.get_server();
-        let fs = server.fs_worker.lock();
-        /*
-        let mut file = fs
-            .root_dir()
-            .open_file(&file_name)
-            .map_err(map_fatfs_error)?;
-        let mut v: Vec<u8> = Vec::new();
+        let fs = server.fs_worker.lock().unwrap();
 
-        let starting_tick = syscalls::get_system_tick();
-        file.read_to_end(&mut v).unwrap();
-        let ending_tick = syscalls::get_system_tick();
-        println!(
-            "file len: {:?} in {} sec",
-            v.len(),
-            (ending_tick - starting_tick) as f64 / 1e9
-        );
-
-        server.get_server_impl().register_session(
-            server_session,
-            Arc::new(IFileSession {
-                __server: server.clone(),
-            }),
-        );*/
+        let response = fs.do_request(FSWorkerRequest::Open(file_name))?;
+        let file_handle = if let FSWorkerResponse::Open(open) = response {
+            open
+        } else {
+            Err(OSError::from_result_code(ResultCode::new(Module::Fs, Reason::Unknown)))
+        }?;
 
         let (server_session, client_session) = syscalls::create_session().unwrap();
         server.get_server_impl().register_session(
             server_session,
             Arc::new(IFileSession {
                 __server: server.clone(),
+                file_handle: file_handle
             }),
         );
 
@@ -113,11 +91,6 @@ impl IFileSession {
         println!("Read file");
         Ok(0)
     }
-}
-
-fn fs_worker_thread(request: mpsc::Receiver<()>, response: mpsc::Sender<()>, fs: FatFilesystem) {
-    println!("Hello from fs worker");
-    loop {}
 }
 
 #[tokio::main]
@@ -159,10 +132,7 @@ async fn main() {
 
     let server = Arc::new(FSServerStruct {
         __server_impl: Mutex::new(ServerImpl::new(port)),
-        fs_worker: Mutex::new(ChannelPair {
-            request: tx_request,
-            response: rx_response,
-        }),
+        fs_worker: Mutex::new(FSWorkerClient::new(tx_request, rx_response)),
     });
 
     println!("fs: processing");
