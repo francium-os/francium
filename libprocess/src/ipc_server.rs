@@ -1,6 +1,5 @@
 use crate::syscalls;
 use common::Handle;
-use core::sync::atomic::{AtomicBool, Ordering};
 use std::collections::HashMap;
 use std::sync::{Arc, MutexGuard};
 use tokio;
@@ -70,7 +69,7 @@ pub trait IPCServer {
         loop {
             let mut ipc_buffer: [u8; 128] = [0; 128];
 
-            let mut server = self.get_server_impl();
+            let server = self.get_server_impl();
             /* ugh i hate this but w/e */
             let (index, mut ipc_buffer) = tokio::task::block_in_place(|| {
                 let copied_handles = server.handles.clone();
@@ -80,7 +79,6 @@ pub trait IPCServer {
                 (i, ipc_buffer)
             });
 
-            println!("{:?}", index);
             let mut server = self.get_server_impl();
             if index == 0 {
                 // server handle is signalled!
@@ -90,8 +88,9 @@ pub trait IPCServer {
                 server.handles.push(new_session);
                 drop(server);
             } else if index == 1 {
-                // new session, do. uh. nothing?
+                // new session, do nothing
                 syscalls::clear_event(server.new_session_event).unwrap();
+                drop(server);
             } else {
                 // a client has a message for us!
                 // todo: maybe move message into here?
@@ -103,10 +102,10 @@ pub trait IPCServer {
                 session.process(handle, &mut ipc_buffer);
             }
 
-            /*let server = self.get_server_impl();
+            let server = self.get_server_impl();
             if server.should_stop {
                 break;
-            }*/
+            }
         }
     }
 }
