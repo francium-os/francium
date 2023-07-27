@@ -45,4 +45,20 @@ impl From<std::io::Error> for OSError {
     }
 }
 
+impl<T> From<std::sync::mpsc::SendError<T>> for OSError {
+    fn from(_e: std::sync::mpsc::SendError<T>) -> Self {
+        OSError {
+            common: CommonError::new(Module::LibProcess, Reason::Unknown),
+        }
+    }
+}
+
+impl From<std::sync::mpsc::RecvError> for OSError {
+    fn from(_e: std::sync::mpsc::RecvError) -> Self {
+        OSError {
+            common: CommonError::new(Module::LibProcess, Reason::Unknown),
+        }
+    }
+}
+
 pub type OSResult<T> = Result<T, OSError>;
