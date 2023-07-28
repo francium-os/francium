@@ -49,7 +49,6 @@ pub fn svc_signal_event(h: u32) -> ResultCode {
     let proc_locked = proc.lock();
 
     if let HandleObject::Event(ev) = proc_locked.handle_table.get_object(h) {
-        println!("event signal poggers");
         drop(proc_locked);
 
         ev.w.signal_one(true);
