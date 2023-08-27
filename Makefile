@@ -8,18 +8,27 @@ ifeq ($(board), virt)
 arch=aarch64
 target=aarch64-unknown-francium
 kernel_target=aarch64-unknown-none-softfloat
+modules = $(fs) $(sm) $(test) $(pcie) $(disp) $(ps2) $(net) $(loader)
+else ifeq ($(board), virt-riscv)
+arch=riscv64
+target=riscv64-unknown-francium
+kernel_target=riscv64-unknown-none-softfloat
+modules = $(fs) $(sm) $(test) $(pcie) $(disp) $(ps2) $(net) $(loader)
 else ifeq ($(board), raspi3)
 arch=aarch64
 target=aarch64-unknown-francium
 kernel_target=aarch64-unknown-none-softfloat
+modules = $(fs) $(sm) $(test) $(pcie) $(disp) $(ps2) $(net) $(loader)
 else ifeq ($(board), raspi4)
 arch=aarch64
 target=aarch64-unknown-francium
 kernel_target=aarch64-unknown-none-softfloat
+modules = $(fs) $(sm) $(test) $(pcie) $(disp) $(ps2) $(net) $(loader)
 else ifeq ($(board), pc)
 arch=x86_64
 target=x86_64-unknown-francium
 kernel_target=x86_64-unknown-none
+modules = $(fs) $(sm) $(test) $(pcie) $(disp) $(ps2) $(net) $(loader)
 else
 $(error Bad board!)
 endif
@@ -57,11 +66,11 @@ CARGO_FLAGS =
 .PHONY: qemu gdb bochs $(francium) $(bootimg_bios) $(bootimg_uefi) $(fs) $(sm) $(test) $(pcie) $(disp) $(ps2) $(net) $(loader) clean clean-user clean-kernel
 
 all: $(francium) $(if $(filter $(board),raspi4), kernel8_pi4.bin)
-$(francium): $(fs) $(sm) $(test) $(pcie) $(disp) $(ps2) $(net) $(loader)
-	cargo build --package=francium_$(board) --release --target=$(kernel_target)
+$(francium): $(modules)
+	$(CARGO) build --package=francium_$(board) --release --target=$(kernel_target)
 
 $(bootimg_bios) $(bootimg_uefi): $(francium)
-	cargo run --package=francium_pc_bootimg --release
+	$(CARGO) run --package=francium_pc_bootimg --release
 
 
 ifeq ($(board), raspi3)
