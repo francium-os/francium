@@ -25,7 +25,7 @@ use francium_x86::page_table::X86_64Specific as ArchSpecific;
 #[cfg(target_arch = "aarch64")]
 use francium_aarch64::page_table::AArch64Specific as ArchSpecific;
 
-pub type PageTable = francium_mmu::PageTable<ArchSpecific, FranciumPhysAlloc, FranciumPhysAccess>;
+pub type PageTable = francium_mmu::PageTable<ArchSpecific, {ArchSpecific::ENTRIES_PER_LEVEL}, FranciumPhysAlloc, FranciumPhysAccess>;
 
 pub fn phys_to_virt(phys: PhysAddr) -> usize {
     FranciumPhysAccess::phys_to_virt(phys)

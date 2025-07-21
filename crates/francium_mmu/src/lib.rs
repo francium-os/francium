@@ -1,5 +1,4 @@
 #![no_std]
-#![feature(generic_const_exprs)]
 
 use core::marker::PhantomData;
 use francium_common::types::*;
@@ -37,33 +36,29 @@ pub trait PhysAccess {
 #[derive(Debug)]
 #[repr(align(4096))]
 #[repr(C)]
-pub struct PageTable<T: PageTableSpecific, A: PhysAlloc, P: PhysAccess>
-where
-    [(); T::ENTRIES_PER_LEVEL]:,
+pub struct PageTable<T: PageTableSpecific, const N: usize, A: PhysAlloc, P: PhysAccess>
 {
-    entries: [PageTableEntry; T::ENTRIES_PER_LEVEL],
+    entries: [PageTableEntry; N],
     _t: PhantomData<T>,
     _a: PhantomData<A>,
     _p: PhantomData<P>,
 }
 
-impl<T: PageTableSpecific, A: PhysAlloc, P: PhysAccess> PageTable<T, A, P>
-where
-    [(); T::ENTRIES_PER_LEVEL]:,
+impl<T: PageTableSpecific, const N: usize, A: PhysAlloc, P: PhysAccess> PageTable<T, N, A, P>
 {
-    pub const fn new() -> PageTable<T, A, P> {
+    pub const fn new() -> PageTable<T, N, A, P> {
         PageTable {
-            entries: [0; T::ENTRIES_PER_LEVEL],
+            entries: [0; N],
             _t: PhantomData,
             _a: PhantomData,
             _p: PhantomData,
         }
     }
 
-    pub fn user_process(&self) -> PageTable<T, A, P> {
+    pub fn user_process(&self) -> PageTable<T, N, A, P> {
         // TODO: is there a better way to do this
 
-        let mut pg = PageTable::<T, A, P>::new();
+        let mut pg = PageTable::<T, N, A, P>::new();
 
         pg.entries[448] = self.entries[448];
         pg.entries[480] = self.entries[480];
@@ -147,15 +142,15 @@ where
                 let new_table_phys: PhysAddr = A::alloc()?;
 
                 let x: usize = P::phys_to_virt(new_table_phys);
-                let page_table = x as *mut PageTable<T, A, P>;
-                *page_table = PageTable::<T, A, P>::new();
+                let page_table = x as *mut PageTable<T, N, A, P>;
+                *page_table = PageTable::<T, N, A, P>::new();
 
                 let new_entry = T::new_entry(T::get_table_default_flags(), new_table_phys);
                 self.entries[index] = new_entry;
             }
 
             let x: usize = P::phys_to_virt(T::get_addr(self.entries[index]));
-            let page_table = x as *mut PageTable<T, A, P>;
+            let page_table = x as *mut PageTable<T, N, A, P>;
             page_table
                 .as_mut()?
                 .map_internal(virt, entry, perm, level + 1, final_level)
@@ -178,7 +173,7 @@ where
             if T::is_table(entry) {
                 if level < final_level {
                     let x: usize = P::phys_to_virt(T::get_addr(self.entries[index]));
-                    let page_table = x as *const PageTable<T, A, P>;
+                    let page_table = x as *const PageTable<T, N, A, P>;
                     page_table.as_ref()?.walk_internal(virt, level + 1)
                 } else {
                     // calc block size from level
