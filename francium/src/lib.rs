@@ -1,5 +1,4 @@
 #![no_std]
-#![feature(naked_functions)]
 #![feature(allocator_api)]
 #![feature(const_trait_impl)]
 

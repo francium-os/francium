@@ -1,5 +1,4 @@
 #![no_std]
-#![feature(naked_functions)]
 
 #[macro_use]
 extern crate bitflags;
