@@ -3,3 +3,4 @@ kernel8_pi3.bin
 kernel8_pi4.bin
 bochs.log
 serial_out.txt
+modules/disp/splash.rgb
