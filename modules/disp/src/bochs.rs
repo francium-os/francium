@@ -18,10 +18,11 @@ const VBE_DISPI_INDEX_YRES: usize = 2;
 const VBE_DISPI_INDEX_BPP: usize = 3;
 const VBE_DISPI_INDEX_ENABLE: usize = 4;
 //const VBE_DISPI_INDEX_BANK: usize = 5;
-//const VBE_DISPI_INDEX_VIRT_WIDTH: usize = 6;
-//const VBE_DISPI_INDEX_VIRT_HEIGHT: usize = 7;
-//const VBE_DISPI_INDEX_X_OFFSET: usize = 8;
-//const VBE_DISPI_INDEX_Y_OFFSET: usize = 9;
+const VBE_DISPI_INDEX_VIRT_WIDTH: usize = 6;
+const VBE_DISPI_INDEX_VIRT_HEIGHT: usize = 7;
+const VBE_DISPI_INDEX_X_OFFSET: usize = 8;
+const VBE_DISPI_INDEX_Y_OFFSET: usize = 9;
+const VBE_DISPI_INDEX_VIDEO_MEMORY_64K: usize = 0xa;
 
 impl<'a> BochsAdapter {
     pub fn new() -> Option<BochsAdapter> {
@@ -58,6 +59,8 @@ impl<'a> BochsAdapter {
             pitch: 0,
         };
         assert!(adapter.bochs_io_read(VBE_DISPI_INDEX_ID) == 0xb0c5);
+
+        println!("how much VGA memory: {}k", adapter.bochs_io_read(VBE_DISPI_INDEX_VIDEO_MEMORY_64K) * 64);
         Some(adapter)
     }
 
@@ -73,12 +76,18 @@ impl<'a> BochsAdapter {
         // lets go
         self.current_x = x;
         self.current_y = y;
-        self.pitch = y;
+        self.pitch = y * 4;  // for a 32bpp mode
 
         self.bochs_io_write(VBE_DISPI_INDEX_ENABLE, 0);
 
         self.bochs_io_write(VBE_DISPI_INDEX_XRES, x as u16);
         self.bochs_io_write(VBE_DISPI_INDEX_YRES, y as u16);
+        self.bochs_io_write(VBE_DISPI_INDEX_VIRT_WIDTH, y as u16);
+        self.bochs_io_write(VBE_DISPI_INDEX_VIRT_HEIGHT, y as u16);
+
+        self.bochs_io_write(VBE_DISPI_INDEX_X_OFFSET, 0);
+        self.bochs_io_write(VBE_DISPI_INDEX_Y_OFFSET, 0);
+
         self.bochs_io_write(VBE_DISPI_INDEX_BPP, 32);
 
         // VBE_DISPI_LFB_ENABLED flag (0x40)

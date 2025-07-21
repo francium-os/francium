@@ -2,7 +2,7 @@ board ?= virt
 
 CARGO ?= cargo +francium
 
-# export RUSTFLAGS = -Cforce-unwind-tables
+export RUSTFLAGS = -Z macro-backtrace
 
 ifeq ($(board), virt)
 arch=aarch64
@@ -57,6 +57,8 @@ ifeq ($(board), virt)
 qemu_args=-M $(board),gic-version=2 -cpu cortex-a53 -kernel $(francium) -serial stdio -m 2048 -device bochs-display -drive format=raw,file=$(bootimg_uefi),if=none,id=boot -device virtio-blk,serial=fee1dead,drive=boot
 else ifeq ($(board), raspi3)
 qemu_args=-M $(board)b -kernel kernel8_pi3.bin -serial stdio
+else ifeq ($(board), raspi4)
+qemu_args=-M $(board)b -kernel kernel8_pi4.bin -serial stdio
 endif
 
 else ifeq ($(arch), x86_64)
@@ -99,7 +101,10 @@ $(test):
 $(pcie):
 	$(CARGO) build --package=pcie --release --target=$(target)
 
-$(disp):
+modules/disp/splash.rgb: modules/disp/splash.png
+	convert $< $@
+
+$(disp): modules/disp/splash.rgb
 	$(CARGO) build --package=disp --release --target=$(target)
 
 $(ps2):
