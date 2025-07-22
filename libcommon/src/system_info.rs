@@ -1,3 +1,5 @@
+use core::fmt;
+
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 
 #[repr(C)]
@@ -31,6 +33,17 @@ pub enum Platform {
     Pc,
     Raspi3,
     Raspi4,
+}
+
+impl fmt::Display for Platform {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Platform::Virt => write!(f, "QEMU virt target"),
+            Platform::Pc => write!(f, "PC"),
+            Platform::Raspi3 => write!(f, "Raspberry Pi 3"),
+            Platform::Raspi4 => write!(f, "Raspberry Pi 4")
+        }
+    }
 }
 
 #[repr(C)]

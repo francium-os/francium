@@ -1,4 +1,4 @@
-use super::font::FONT8X8;
+use francium_common::font::FONT8X8;
 use spin::Mutex;
 
 pub enum EarlyFramebufferFormat {

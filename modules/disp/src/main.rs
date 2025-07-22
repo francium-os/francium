@@ -1,9 +1,31 @@
 use common::system_info::*;
+use francium_common::font;
 use process::syscalls;
 
 mod bochs;
 #[cfg(target_arch = "aarch64")]
 mod raspi;
+
+fn print_string(fb: &mut [u32], pitch: usize, xx: usize, yy: usize, s: &str) -> usize {
+    let mut offset: usize = 0;
+    for c in s.chars() {
+        print_char(fb, pitch, xx + offset, yy, c);
+        offset += 8;
+    }
+    offset
+}
+
+fn print_char(fb: &mut [u32], pitch: usize, xx: usize, yy: usize, c: char) {
+    let pixels = &font::FONT8X8[c as usize];
+    for y in 0..8 {
+        let row = pixels[y];
+        for x in 0..8 {
+            if (row & (1<<x)) != 0 {
+                fb[(xx+x)+(yy+y)*pitch] = 0xffffffff;
+            }
+        }
+    }
+}
 
 fn main() {
     println!("Hello from disp!");
@@ -20,18 +42,22 @@ fn main() {
     let splash_x: usize = 640;
     let splash_y: usize = 480;
 
+    let platform_name = platform.to_string();
+
     let (fb_width, fb_height, fb) = match platform {
         Platform::Virt | Platform::Pc => {
             let mut bochs = bochs::BochsAdapter::new().unwrap();
             bochs.set_mode(1024, 768);
             (1024, 768, bochs.get_framebuffer())
         },
+        #[cfg(target_arch = "aarch64")]
         Platform::Raspi3 => {
             let rpi_3_peripheral_base = 0x3f000000;
             let mut raspi = raspi::MailboxAdapter::new(rpi_3_peripheral_base);
             raspi.set_mode(1920, 1080);
             (1920, 1080, raspi.get_framebuffer())
         },
+        #[cfg(target_arch = "aarch64")]
         Platform::Raspi4 => {
             let rpi_4_peripheral_base = 0xfe000000;
             let mut raspi = raspi::MailboxAdapter::new(rpi_4_peripheral_base);
@@ -52,6 +78,9 @@ fn main() {
     }
 
     // print platform
+    let mut off = print_string(fb, fb_width, 0, 600, "Hello from platform '");
+    off += print_string(fb, fb_width, off, 600, &platform_name);
+    off += print_string(fb, fb_width, off, 600, "'");
     
     syscalls::exit_process();
 }

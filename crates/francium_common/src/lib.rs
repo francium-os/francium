@@ -5,3 +5,4 @@ extern crate bitflags;
 
 pub mod align;
 pub mod types;
+pub mod font;
