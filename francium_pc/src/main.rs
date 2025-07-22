@@ -22,6 +22,9 @@ const CONFIG: bootloader_api::BootloaderConfig = {
     config.mappings.physical_memory = Some(bootloader_api::config::Mapping::FixedAddress(
         0xffff_f000_0000_0000,
     ));
+    config.mappings.kernel_base = bootloader_api::config::Mapping::FixedAddress(
+        0 // this is actually an offset, kernel is linked at KERNEL_BASE already despite being "PIE"
+    );
     config
 };
 bootloader_api::entry_point!(bootloader_main_thunk, config = &CONFIG);
@@ -168,14 +171,13 @@ fn bootloader_main(info: &'static mut bootloader_api::BootInfo) -> ! {
     panic!("We shouldn't get here!");
 }
 
-#[naked]
+#[unsafe(naked)]
 #[no_mangle]
 unsafe extern "C" fn ap_entry_trampoline() {
-    core::arch::asm!(
+    core::arch::naked_asm!(
         "mov rbx, [rip + __ap_stack_pointers]
         mov rsp, [rbx + rdi * 8]
-        jmp ap_entry",
-        options(noreturn)
+        jmp ap_entry"
     );
 }
 

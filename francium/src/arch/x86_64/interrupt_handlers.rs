@@ -4,14 +4,14 @@ use crate::drivers::InterruptController;
 use crate::drivers::Timer;
 use crate::platform::DEFAULT_TIMER;
 use crate::platform::INTERRUPT_CONTROLLER;
-use core::arch::{asm, global_asm};
+use core::arch::{asm, naked_asm, global_asm};
 
 macro_rules! interrupt_noerror {
     ($interrupt_name:ident, $interrupt_number:expr) => {
-        #[naked]
+        #[unsafe(naked)]
         #[no_mangle]
         unsafe extern "C" fn $interrupt_name() {
-            asm!(
+            naked_asm!(
                 concat!(
                     "push 0\n",
                     "push ",
@@ -19,7 +19,7 @@ macro_rules! interrupt_noerror {
                     "\n",
                     "jmp exception_error\n"
                 ),
-                options(noreturn)
+                
             );
         }
     };
@@ -27,17 +27,17 @@ macro_rules! interrupt_noerror {
 
 macro_rules! interrupt_error {
     ($interrupt_name:ident, $interrupt_number:expr) => {
-        #[naked]
+        #[unsafe(naked)]
         #[no_mangle]
         unsafe extern "C" fn $interrupt_name() {
-            asm!(
+            naked_asm!(
                 concat!(
                     "push ",
                     stringify!($interrupt_number),
                     "\n",
                     "jmp exception_error"
                 ),
-                options(noreturn)
+                
             );
         }
     };
@@ -45,10 +45,10 @@ macro_rules! interrupt_error {
 
 macro_rules! irq_handler {
     ($interrupt_name:ident, $interrupt_number:expr) => {
-        #[naked]
+        #[unsafe(naked)]
         #[no_mangle]
         unsafe extern "C" fn $interrupt_name() {
-            asm!(
+            naked_asm!(
                 concat!(
                     "push 0\n",
                     "push ",
@@ -56,7 +56,7 @@ macro_rules! irq_handler {
                     "\n",
                     "jmp exception_error"
                 ),
-                options(noreturn)
+                
             );
         }
     };

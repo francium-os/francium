@@ -1,8 +1,8 @@
 use crate::arch::x86_64::svc_wrappers::SYSCALL_WRAPPERS;
-use core::arch::asm;
-#[naked]
+use core::arch::naked_asm;
+#[unsafe(naked)]
 unsafe extern "C" fn syscall_handler() {
-    asm!("swapgs
+    naked_asm!("swapgs
 
     	mov r9, rsp
 		mov rsp, gs:8
@@ -42,7 +42,6 @@ unsafe extern "C" fn syscall_handler() {
 		sysretq
 	",
         sym SYSCALL_WRAPPERS,
-        options(noreturn)
     );
 }
 

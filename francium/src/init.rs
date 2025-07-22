@@ -437,7 +437,7 @@ static mut PER_CPU_SINGLE_CORE: PerCpuData = PerCpuData {
 
 pub fn setup_boot_per_cpu() {
     unsafe {
-        let per_cpu_ptr = &PER_CPU_SINGLE_CORE as *const PerCpuData as usize;
+        let per_cpu_ptr = &raw const PER_CPU_SINGLE_CORE as *const PerCpuData as usize;
         PER_CPU_SINGLE_CORE.per_cpu_ptr = per_cpu_ptr;
 
         crate::arch::setup_per_cpu(per_cpu_ptr);

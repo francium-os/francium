@@ -16,6 +16,8 @@ per_cpu_table_location:
 .quad 0
 initial_cr3:
 .quad 0
+trampoline_location:
+.quad 0
 .align 32
 _L8020_GDT_table:
     .quad 0x0000000000000000
@@ -68,9 +70,10 @@ _L8090:
     wrmsr
 
     // Now go!
-    lea rax, (ap_entry_trampoline - 0xfffffff800000000)
-    mov rbx, 0xfffffff800000000
-    add rax, rbx
+    mov rax, qword ptr [0x8020]
+    // - 0xfffffff800000000)
+    //mov rbx, 0xfffffff800000000
+    //add rax, rbx
     jmp rax
 
 ap_trampoline_end:

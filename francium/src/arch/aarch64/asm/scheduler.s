@@ -18,6 +18,7 @@ stp x27, x28,  [x0, #0xd8]
 stp x29, x30,  [x0, #0xe8]
 
 /* Wow, SIMD state is expensive. */
+/*
 str q0, [x0, #0x100]
 str q1, [x0, #0x110]
 str q2, [x0, #0x120]
@@ -49,7 +50,7 @@ str q27, [x0, #0x2b0]
 str q28, [x0, #0x2c0]
 str q29, [x0, #0x2d0]
 str q30, [x0, #0x2e0]
-str q31, [x0, #0x2f0]
+str q31, [x0, #0x2f0]*/
 
 mov x4, sp
 // Save SP.
@@ -63,7 +64,7 @@ ldp x27, x28,  [x1, #0xd8]
 ldp x29, x30,  [x1, #0xe8]
 
 /* SIMD state is still expensive. */
-ldr q0, [x1, #0x100]
+/*ldr q0, [x1, #0x100]
 ldr q1, [x1, #0x110]
 ldr q2, [x1, #0x120]
 ldr q3, [x1, #0x130]
@@ -94,7 +95,7 @@ ldr q27, [x1, #0x2b0]
 ldr q28, [x1, #0x2c0]
 ldr q29, [x1, #0x2d0]
 ldr q30, [x1, #0x2e0]
-ldr q31, [x1, #0x2f0]
+ldr q31, [x1, #0x2f0]*/
 
 // Restore SP.
 ldr x0, [x1, #0xf8]
