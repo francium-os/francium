@@ -127,6 +127,16 @@ extern "C" {
 }
 static mut AP_BOOTSTRAP_STACKS: Vec<usize> = Vec::new();
 
+#[unsafe(naked)]
+#[no_mangle]
+unsafe extern "C" fn ap_load_stack() {
+    core::arch::naked_asm!(
+        "mov rbx, [rip + __ap_stack_pointers]
+        mov rsp, [rbx + rdi * 8]
+        jmp ap_entry"
+    );
+}
+
 use crate::mmu::PageTable;
 use francium_common::types::{MapType, PagePermission};
 lazy_static! {
@@ -164,6 +174,7 @@ pub fn bringup_other_cpus() {
             .virt_to_phys(&*TRAMPOLINE_PAGETABLE as *const PageTable as usize)
             .unwrap();
         ((trampoline_ptr + 0x18) as *mut usize).write_volatile(cr3_phys.0);
+        ((trampoline_ptr + 0x20) as *mut usize).write_volatile(ap_load_stack as unsafe extern "C" fn() as usize);
     }
 
     // TODO: Flush caches? maybe.

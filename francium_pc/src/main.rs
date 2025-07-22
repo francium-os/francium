@@ -171,16 +171,6 @@ fn bootloader_main(info: &'static mut bootloader_api::BootInfo) -> ! {
     panic!("We shouldn't get here!");
 }
 
-#[unsafe(naked)]
-#[no_mangle]
-unsafe extern "C" fn ap_entry_trampoline() {
-    core::arch::naked_asm!(
-        "mov rbx, [rip + __ap_stack_pointers]
-        mov rsp, [rbx + rdi * 8]
-        jmp ap_entry"
-    );
-}
-
 #[no_mangle]
 extern "C" fn ap_entry(cpu_number: usize) {
     log::debug!("Hello from an AP! ({})", cpu_number);

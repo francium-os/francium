@@ -23,6 +23,7 @@ members = [
   "crates/francium_x86",
   "crates/francium_aarch64"
 ]
+rust-version = "1.67.0"
 
 [profile.dev]
 panic = "abort"
