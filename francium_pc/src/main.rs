@@ -111,8 +111,8 @@ fn bootloader_main(info: &'static mut bootloader_api::BootInfo) -> ! {
         print_log_sink::init().unwrap();
     }
 
-    log::debug!("hello from rust after enabling nyaa!");
-
+    log::debug!("hello from rust after enabling mmu!");
+    log::debug!("setup kernel heap");
     // Set up kernel heap
     {
         let kernel_aspace = &mut KERNEL_ADDRESS_SPACE.write();
@@ -123,11 +123,14 @@ fn bootloader_main(info: &'static mut bootloader_api::BootInfo) -> ! {
         );
     }
 
+    log::debug!("scheduler preinit");
     platform::scheduler_pre_init();
+    log::debug!("scheduler init");
     scheduler::init(platform::get_cpu_count());
-
+    log::debug!("other cpus?");
     platform::bringup_other_cpus();
 
+    log::debug!("loading other processes...");
     let fs_buf = include_bytes!("../../target/x86_64-unknown-francium/release/fs");
     let test_buf = include_bytes!("../../target/x86_64-unknown-francium/release/test");
     let sm_buf = include_bytes!("../../target/x86_64-unknown-francium/release/sm");
