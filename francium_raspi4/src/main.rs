@@ -21,7 +21,7 @@ pub extern "C" fn rust_main() -> ! {
     println!("hello from rust before enabling mmu!");
     mmu::enable_mmu();
     println!("hello from rust after enabling mmu!");
-
+    println!("setting up heap!");
     // Set up kernel heap
     {
         let kernel_aspace = &mut KERNEL_ADDRESS_SPACE.write();
@@ -32,9 +32,16 @@ pub extern "C" fn rust_main() -> ! {
         );
     }
 
+    println!("setup print_log_sink");
+
     print_log_sink::init().unwrap();
 
+    println!("setup pre scheduler");
+
     platform::scheduler_pre_init();
+
+    println!("setup scheduler");
+
     scheduler::init(1);
     // todo
     // platform::bringup_other_cpus();
@@ -46,6 +53,8 @@ pub extern "C" fn rust_main() -> ! {
     let net_buf = include_bytes!("../../target/aarch64-unknown-francium/release/net");
     let loader_buf = include_bytes!("../../target/aarch64-unknown-francium/release/loader");
 
+
+    println!("loading fs...");
     let fs_main_thread = init::load_process(fs_buf, "fs");
     scheduler::register_thread(fs_main_thread.clone());
 

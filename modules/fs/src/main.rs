@@ -103,9 +103,6 @@ async fn main() {
 
     let mut blocks = block_virtio::scan();
 
-    syscalls::close_handle(port).unwrap();
-    syscalls::exit_process();
-
     let Some(first_block) = blocks.pop() else {
         // die
         println!("fs: no block :(");

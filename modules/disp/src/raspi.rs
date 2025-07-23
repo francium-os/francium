@@ -1,7 +1,7 @@
 use francium_common::types::{MapType, PagePermission};
 use num_enum::TryFromPrimitive;
 use process::syscalls;
-use std::convert::{TryFrom, TryInto};
+use std::convert::TryInto;
 
 #[derive(Debug, TryFromPrimitive)]
 #[repr(u32)]
@@ -41,6 +41,7 @@ enum MailboxTag {
 
 #[derive(Debug)]
 #[repr(u32)]
+#[allow(dead_code)]
 enum MailboxRequest {
     AllocateBuffer(u32) = MailboxTag::AllocateBuffer as u32,
     ReleaseBuffer = MailboxTag::ReleaseBuffer as u32,
@@ -85,6 +86,7 @@ impl MailboxRequest {
 }
 
 #[derive(Debug)]
+#[allow(dead_code)]
 enum MailboxReply {
     AllocateBuffer(u32, u32),
     ReleaseBuffer,
@@ -269,6 +271,7 @@ impl MailboxMessage<'_> {
         val
     }
 
+    #[allow(dead_code,unused_variables)]
     pub fn send(&mut self, requests: &[MailboxRequest]) {
         // Length placeholder
         self.write_u32(0);
@@ -374,7 +377,7 @@ impl MailboxMessage<'_> {
     pub fn recv(&mut self) -> Vec<MailboxReply> {
         let mut replies = Vec::new();
 
-        let buffer_size = self.read_u32();
+        let _buffer_size = self.read_u32();
         let buffer_response_code = self.read_u32();
         if buffer_response_code != 0x80000000 {
             panic!(

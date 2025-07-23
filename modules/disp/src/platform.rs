@@ -1,8 +1,6 @@
 use common::system_info::{SystemInfo, SystemInfoType};
 use francium_common::types::{MapType, PagePermission, FramebufferInfo};
-use process::ipc;
 use process::syscalls;
-
 #[derive(Debug)]
 pub struct PlatformFramebuffer {
     framebuffer_virt: usize,
