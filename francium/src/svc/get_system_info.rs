@@ -39,6 +39,18 @@ pub fn svc_get_system_info(
                 }
                 RESULT_OK
             }
+        },
+        SystemInfoType::FramebufferInfo => {
+            #[cfg(feature = "platform_pc")]
+            {
+                unsafe {
+                    *out_ptr = SystemInfo::FramebufferInfo(crate::arch::x86_64::info::FRAMEBUFFER_INFO.clone().unwrap());
+                }
+                RESULT_OK
+            }
+            #[cfg(not(feature = "platform_pc"))] {
+                panic!();
+            }
         }
         _ => {
             unimplemented!();

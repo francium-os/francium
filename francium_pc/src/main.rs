@@ -4,9 +4,10 @@
 
 extern crate alloc;
 
+use francium_common::types::{FramebufferInfo,FramebufferFormat};
 use francium_kernel::arch::x86_64;
 use francium_kernel::constants::*;
-use francium_kernel::log_sink::framebuffer_log_sink::{EarlyFramebuffer, EarlyFramebufferFormat};
+use francium_kernel::log_sink::framebuffer_log_sink::EarlyFramebuffer;
 use francium_kernel::log_sink::*;
 use francium_kernel::memory::KERNEL_ADDRESS_SPACE;
 use francium_kernel::mmu::PagePermission;
@@ -81,24 +82,31 @@ fn bootloader_main(info: &'static mut bootloader_api::BootInfo) -> ! {
 
             // The framebuffer is probably not contained in the bootloader's mapping of memory.
             // Don't log anything before we switch page tables.
-            framebuffer_log_sink::init(EarlyFramebuffer {
-                framebuffer: framebuffer_slice_phys,
+
+            let framebuffer_info = FramebufferInfo {
+                phys_addr: framebuffer_phys,
+                size: fb_info.byte_len,
                 width: fb_info.width,
                 height: fb_info.height,
                 stride: fb_info.stride,
                 bytes_per_pixel: fb_info.bytes_per_pixel,
                 pixel_format: match fb_info.pixel_format {
-                    bootloader_api::info::PixelFormat::Rgb => EarlyFramebufferFormat::Rgb,
-                    bootloader_api::info::PixelFormat::Bgr => EarlyFramebufferFormat::Bgr,
+                    bootloader_api::info::PixelFormat::Rgb => FramebufferFormat::Rgb,
+                    bootloader_api::info::PixelFormat::Bgr => FramebufferFormat::Bgr,
                     _ => panic!("Unknown pixel format!"),
-                },
+                }
+            };
 
+            framebuffer_log_sink::init(EarlyFramebuffer {
+                info: framebuffer_info.clone(),
+                framebuffer: framebuffer_slice_phys,
                 x: 0,
-                y: 0,
+                y: 0
             })
             .unwrap();
-        }
 
+            x86_64::info::FRAMEBUFFER_INFO = Some(framebuffer_info);
+        }
         x86_64::info::SYSTEM_INFO_RSDP_ADDR = info.rsdp_addr.into_option();
     }
 
@@ -127,8 +135,8 @@ fn bootloader_main(info: &'static mut bootloader_api::BootInfo) -> ! {
     platform::scheduler_pre_init();
     log::debug!("scheduler init");
     scheduler::init(platform::get_cpu_count());
-    log::debug!("other cpus?");
-    platform::bringup_other_cpus();
+    log::debug!("skip other cpus");
+    //platform::bringup_other_cpus();
 
     log::debug!("loading other processes...");
     let fs_buf = include_bytes!("../../target/x86_64-unknown-francium/release/fs");
@@ -140,11 +148,11 @@ fn bootloader_main(info: &'static mut bootloader_api::BootInfo) -> ! {
     //    let net_buf = include_bytes!("../../target/x86_64-unknown-francium/release/net");
     //    let loader_buf = include_bytes!("../../target/x86_64-unknown-francium/release/loader");
 
-    let fs_main_thread = init::load_process(fs_buf, "fs");
-    scheduler::register_thread(fs_main_thread.clone());
+    //let fs_main_thread = init::load_process(fs_buf, "fs");
+    //scheduler::register_thread(fs_main_thread.clone());
 
-    let test_main_thread = init::load_process(test_buf, "test");
-    scheduler::register_thread(test_main_thread.clone());
+    //let test_main_thread = init::load_process(test_buf, "test");
+    //scheduler::register_thread(test_main_thread.clone());
 
     let sm_main_thread = init::load_process(sm_buf, "sm");
     scheduler::register_thread(sm_main_thread.clone());
@@ -155,10 +163,10 @@ fn bootloader_main(info: &'static mut bootloader_api::BootInfo) -> ! {
     let ps2_main_thread = init::load_process(ps2_buf, "ps2");
     scheduler::register_thread(ps2_main_thread.clone());
 
-    if !enable_framebuffer {
+    //if !enable_framebuffer {
         let disp_main_thread = init::load_process(disp_buf, "disp");
         scheduler::register_thread(disp_main_thread.clone());
-    }
+    //}
 
     /*    let net_main_thread = init::load_process(net_buf, "net");
     scheduler::register_thread(net_main_thread.clone());
@@ -170,7 +178,7 @@ fn bootloader_main(info: &'static mut bootloader_api::BootInfo) -> ! {
 
     log::debug!("Running...");
 
-    scheduler::force_switch_to(fs_main_thread);
+    scheduler::force_switch_to(sm_main_thread);
     panic!("We shouldn't get here!");
 }
 

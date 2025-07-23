@@ -1,18 +1,10 @@
 use francium_common::font::FONT8X8;
+use francium_common::types::FramebufferInfo;
 use spin::Mutex;
 
-pub enum EarlyFramebufferFormat {
-    Rgb,
-    Bgr,
-}
-
 pub struct EarlyFramebuffer {
+    pub info: FramebufferInfo,
     pub framebuffer: &'static mut [u8],
-    pub pixel_format: EarlyFramebufferFormat,
-    pub width: usize,
-    pub height: usize,
-    pub stride: usize,
-    pub bytes_per_pixel: usize,
 
     // state
     pub x: usize,
@@ -21,9 +13,9 @@ pub struct EarlyFramebuffer {
 
 impl EarlyFramebuffer {
     fn clear(&mut self) {
-        for y in 0..self.height {
-            for x in 0..self.width {
-                let off = (x + y * self.stride) * self.bytes_per_pixel;
+        for y in 0..self.info.height {
+            for x in 0..self.info.width {
+                let off = (x + y * self.info.stride) * self.info.bytes_per_pixel;
                 self.framebuffer[off] = 0;
                 self.framebuffer[off + 1] = 0;
                 self.framebuffer[off + 2] = 0;
@@ -32,11 +24,11 @@ impl EarlyFramebuffer {
     }
 
     fn scroll(&mut self) {
-        let line_bytes = self.stride * self.bytes_per_pixel;
+        let line_bytes = self.info.stride * self.info.bytes_per_pixel;
 
         self.framebuffer
-            .copy_within(8 * line_bytes..self.height * line_bytes, 0);
-        self.framebuffer[(self.height - 8) * line_bytes..self.height * line_bytes].fill(0);
+            .copy_within(8 * line_bytes..self.info.height * line_bytes, 0);
+        self.framebuffer[(self.info.height - 8) * line_bytes..self.info.height * line_bytes].fill(0);
         self.y -= 8;
     }
 
@@ -52,7 +44,7 @@ impl EarlyFramebuffer {
                     for yy in 0..8 {
                         for xx in 0..8 {
                             let offset =
-                                (self.x + xx + (self.y + yy) * self.stride) * self.bytes_per_pixel;
+                                (self.x + xx + (self.y + yy) * self.info.stride) * self.info.bytes_per_pixel;
 
                             if (font_entry[yy] & (1 << xx)) == (1 << xx) {
                                 self.framebuffer[offset] = 0xff;
@@ -69,12 +61,12 @@ impl EarlyFramebuffer {
                 }
             }
 
-            if self.x >= self.width {
+            if self.x >= self.info.width {
                 self.x = 0;
                 self.y += 8;
             }
 
-            if self.y >= self.height {
+            if self.y >= self.info.height {
                 self.scroll();
             }
         }

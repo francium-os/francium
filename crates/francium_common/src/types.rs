@@ -40,3 +40,22 @@ pub enum MapType {
     NormalUncachable,
     Device,
 }
+
+#[repr(C)]
+#[derive(Clone, Debug)]
+pub enum FramebufferFormat {
+    Rgb,
+    Bgr,
+}
+#[repr(C)]
+#[derive(Clone, Debug)]
+pub struct FramebufferInfo {
+    pub phys_addr: usize,
+    pub size: usize,
+
+    pub pixel_format: FramebufferFormat,
+    pub width: usize,
+    pub height: usize,
+    pub stride: usize,
+    pub bytes_per_pixel: usize,
+}

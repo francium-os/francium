@@ -3,6 +3,7 @@ use francium_common::font;
 use process::syscalls;
 
 mod bochs;
+mod platform;
 #[cfg(target_arch = "aarch64")]
 mod raspi;
 
@@ -46,9 +47,14 @@ fn main() {
 
     let (fb_width, fb_height, fb) = match platform {
         Platform::Virt | Platform::Pc => {
-            let mut bochs = bochs::BochsAdapter::new().unwrap();
-            bochs.set_mode(1024, 768);
-            (1024, 768, bochs.get_framebuffer())
+            if let Some(mut bochs) = bochs::BochsAdapter::new() {
+                bochs.set_mode(1024, 768);
+                (1024, 768, bochs.get_framebuffer())
+            } else if let Some(platform) = platform::PlatformFramebuffer::new() {
+                (platform.info.width, platform.info.height, platform.get_framebuffer())
+            } else {
+                panic!("No framebuffer found!!");
+            }
         },
         #[cfg(target_arch = "aarch64")]
         Platform::Raspi3 => {

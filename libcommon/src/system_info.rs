@@ -1,5 +1,5 @@
 use core::fmt;
-
+use francium_common::types::FramebufferInfo;
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 
 #[repr(C)]
@@ -24,6 +24,7 @@ pub struct MemoryRegion {
 pub enum SystemInfoType {
     MemoryRegion = 0,
     Platform = 1,
+    FramebufferInfo = 2,
 }
 
 #[repr(C)]
@@ -51,4 +52,5 @@ pub enum SystemInfo {
     None,
     MemoryRegion(MemoryRegion),
     Platform(Platform),
+    FramebufferInfo(FramebufferInfo),
 }

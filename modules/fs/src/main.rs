@@ -102,7 +102,17 @@ async fn main() {
     sm::register_port(syscalls::make_tag("fs"), TranslateCopyHandle(port)).unwrap();
 
     let mut blocks = block_virtio::scan();
-    let first_block = blocks.pop().unwrap();
+
+    syscalls::close_handle(port).unwrap();
+    syscalls::exit_process();
+
+    let Some(first_block) = blocks.pop() else {
+        // die
+        println!("fs: no block :(");
+        syscalls::close_handle(port).unwrap();
+        syscalls::exit_process();
+    };
+    println!("fs: found virtio block");
 
     let adapted = Box::new(BlockAdapter::new(first_block.clone(), 0));
 
