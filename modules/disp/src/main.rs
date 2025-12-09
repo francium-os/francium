@@ -72,7 +72,8 @@ fn main() {
             let mut raspi = raspi::MailboxAdapter::new(rpi_4_peripheral_base);
             raspi.set_mode(1920, 1080);
             (1920, 1080, 1920, raspi.get_framebuffer())
-        }
+        },
+        _ => unimplemented!()
     };
 
     fb.fill(0x00000000);
